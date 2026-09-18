@@ -56,12 +56,19 @@ export const social: readonly { label: string; href: string; icon: IconName }[] 
   { label: 'YouTube', href: '[YOUTUBE_URL]', icon: 'youtube' },
 ];
 
+/* Two columns, not four. The third ("Buyer information") was mostly anchors
+   into pages already listed here — #plot-sizes, #approvals, #faq — plus a
+   second "Book a site visit"; none of it earned the height it cost on a phone.
+   Master plan moves into Explore rather than being dropped: along with
+   /amenities and /location it has no primary-nav entry, so the footer is the
+   only thing linking it. */
 export const footerNav: readonly { title: string; links: readonly NavLink[] }[] = [
   {
-    title: 'Company',
+    title: 'Explore',
     links: [
       { label: 'About us', href: '/about' },
       { label: 'All projects', href: '/projects' },
+      { label: 'Master plan', href: '/master-plan' },
       { label: 'Amenities', href: '/amenities' },
       { label: 'Location', href: '/location' },
       { label: 'Contact', href: '/contact' },
@@ -75,16 +82,6 @@ export const footerNav: readonly { title: string; links: readonly NavLink[] }[] 
       { label: 'Siri Vanam', href: '/projects/siri-vanam-gummadavelli' },
       { label: 'Sri Nivasam', href: '/projects/sri-nivasam-swarnagiri' },
       { label: 'SV Apartment', href: '/projects/sv-apartment-genome-valley' },
-    ],
-  },
-  {
-    title: 'Buyer information',
-    links: [
-      { label: 'Master plan', href: '/master-plan' },
-      { label: 'Plot sizes', href: '/master-plan#plot-sizes' },
-      { label: 'Approvals', href: '/about#approvals' },
-      { label: 'Book a site visit', href: '/contact' },
-      { label: 'Frequently asked questions', href: '/contact#faq' },
     ],
   },
 ];

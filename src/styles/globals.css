@@ -151,6 +151,10 @@
 
   body[data-scroll-locked] {
     overflow: hidden;
+    /* iOS Safari lets momentum carry the page even with overflow:hidden set.
+       Pinning the height as well stops the rubber-band dragging the page
+       around behind the mobile menu. */
+    height: 100svh;
   }
 
   /* Display sizing is set by class, not by tag, so semantic level and visual

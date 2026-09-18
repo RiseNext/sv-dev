@@ -15,23 +15,45 @@ import { nav, site } from '@/content/site';
 
    Two groups, both fixed at 16px from the top: the brand + links centred, the
    conversion actions hard right. The bar never changes on scroll — no shrink,
-   no background swap — because it already sits on its own blurred glass plate
-   and does not need the page behind it to behave.
+   no background swap — because it already sits on its own plate and does not
+   need the page behind it to behave.
 
    One <nav> in the DOM at every width. Below 1024px the link pills are
-   replaced by a Menu pill that opens a sheet; rendering the links twice would
-   mean two sources of truth and every link announced twice.
+   replaced by a Menu pill that opens a full-screen overlay; rendering the links
+   twice would mean two sources of truth and every link announced twice.
 
-   The bar is kept short on purpose — 36px pills inside a 3px plate — so it
-   takes as little of the first screen as possible. A group with children is a
-   chevron toggle at EVERY width: inline as a dropdown, and inside the sheet as
-   a collapsible row, so Projects opens the same way on a phone as on a desk.
+   ─── MOBILE: FULL-SCREEN OVERLAY ──────────────────────────────────────────
+   The phone menu is not a shrunken desktop dropdown. It takes the whole
+   screen and sets the links in the display serif at heading size, so the menu
+   reads as part of the brand rather than as browser chrome. Call and Book a
+   site visit sit at the bottom, in the thumb zone — on desktop those two live
+   in the top-right group, which has no room on a phone.
+
+   ─── WHY IT IS SMOOTH ─────────────────────────────────────────────────────
+   Three rules, all of them about staying off the main thread:
+
+   1. The overlay animates `opacity` and `transform` ONLY. Both are composited,
+      so the whole panel is one GPU layer and the animation never triggers
+      layout or paint. Height/top/width animations would, which is why the
+      panel does not slide by growing.
+   2. It stays mounted and is toggled with `inert` + `visibility`, not the
+      `hidden` attribute. `hidden` removes the element outright, so there is no
+      "before" state for the browser to transition from — that is why the old
+      sheet popped in and out with no motion at all.
+   3. `backdrop-filter` is DESKTOP ONLY. A blurred plate fixed over scrolling
+      content forces the compositor to re-sample and re-blur its backdrop every
+      frame; on phone GPUs that alone is enough to drop scrolling below 60fps.
+      Mobile gets a plain opaque plate, which looks the same over the page and
+      costs nothing.
    ========================================================================== */
 
 const INLINE_NAV = '(min-width: 64rem)';
 
-const GLASS =
-  'rounded-card border border-white/10 bg-glass p-[3px] shadow-[0_1px_2px_rgba(26,22,19,0.04)] backdrop-blur-[13px]';
+/* Opaque on a phone, glass from 1024px up — see rule 3 above. */
+const PLATE =
+  'rounded-card border border-white/10 bg-surface p-[3px] shadow-[0_1px_2px_rgba(26,22,19,0.04)] ' +
+  'tablet:bg-glass tablet:backdrop-blur-[13px]';
+
 /* 40px on a phone, 36px once the links go inline: the compact bar is worth it
    on a desktop, but the Menu pill is the most-tapped control on the site and
    should not be shrunk to win back four pixels. */
@@ -50,7 +72,7 @@ export function PillNav() {
   const sheetRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
 
-  const sheetMode = menuOpen && !isInline;
+  const overlayOpen = menuOpen && !isInline;
 
   const isActive = useCallback(
     (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href)),
@@ -64,12 +86,12 @@ export function PillNav() {
   }, [pathname, isInline]);
 
   useEffect(() => {
-    if (!sheetMode) return;
+    if (!overlayOpen) return;
     document.body.dataset.scrollLocked = 'true';
     return () => {
       delete document.body.dataset.scrollLocked;
     };
-  }, [sheetMode]);
+  }, [overlayOpen]);
 
   /* Close the desktop dropdown on an outside click. */
   useEffect(() => {
@@ -81,7 +103,7 @@ export function PillNav() {
     return () => document.removeEventListener('mousedown', onPointerDown);
   }, [isInline, openSubmenu]);
 
-  const closeSheet = useCallback(() => {
+  const closeMenu = useCallback(() => {
     setMenuOpen(false);
     setOpenSubmenu(null);
     toggleRef.current?.focus();
@@ -90,13 +112,13 @@ export function PillNav() {
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
       if (openSubmenu) setOpenSubmenu(null);
-      else if (menuOpen) closeSheet();
+      else if (menuOpen) closeMenu();
       return;
     }
 
-    if (event.key !== 'Tab' || !sheetMode) return;
+    if (event.key !== 'Tab' || !overlayOpen) return;
 
-    /* The trigger stays visible above the sheet and doubles as the close
+    /* The trigger stays visible above the overlay and doubles as the close
        button, so it is the first stop in the cycle, not an escape hatch. */
     const focusable = [
       toggleRef.current,
@@ -123,7 +145,7 @@ export function PillNav() {
     <div ref={rootRef} onKeyDown={onKeyDown}>
       {/* ---------- Centre group: brand + links ---------- */}
       <div className="fixed left-1/2 top-3 z-100 w-max max-w-[calc(100vw-1.5rem)] -translate-x-1/2">
-        <nav aria-label="Primary" className={cx(GLASS, 'flex items-center gap-0.5')}>
+        <nav aria-label="Primary" className={cx(PLATE, 'flex items-center gap-0.5')}>
           <Link
             href="/"
             aria-label={`${site.name} — home`}
@@ -137,7 +159,7 @@ export function PillNav() {
             {nav.map((item) => {
               const active = isActive(item.href);
               const expanded = openSubmenu === item.label;
-              /* The sheet renders the same groups, so the inline dropdown
+              /* The overlay renders the same groups, so the inline dropdown
                  needs its own id — two elements cannot share one. */
               const submenuId = `nav-submenu-${slug(item.label)}`;
 
@@ -210,8 +232,8 @@ export function PillNav() {
             type="button"
             className={cx(PILL, 'bg-surface text-ink tablet:hidden')}
             aria-expanded={menuOpen}
-            aria-controls="primary-navigation-sheet"
-            onClick={() => (menuOpen ? closeSheet() : setMenuOpen(true))}
+            aria-controls="primary-navigation-overlay"
+            onClick={() => (menuOpen ? closeMenu() : setMenuOpen(true))}
           >
             {menuOpen ? 'Close' : 'Menu'}
             <Icon name={menuOpen ? 'close' : 'menu'} size={18} />
@@ -221,7 +243,7 @@ export function PillNav() {
 
       {/* ---------- Right group: the two conversion actions ---------- */}
       <div className="fixed right-3 top-3 z-100 hidden tablet:block">
-        <div className={cx(GLASS, 'flex items-center gap-0.5')}>
+        <div className={cx(PLATE, 'flex items-center gap-0.5')}>
           <a {...anchorProps(telHref(site.phone))} className={cx(PILL, 'text-ink hover:bg-white/50')}>
             <Icon name="phone" size={15} />
             Call
@@ -232,36 +254,50 @@ export function PillNav() {
         </div>
       </div>
 
-      {/* ---------- Mobile sheet ---------- */}
-      <div
-        hidden={!sheetMode}
-        className="fixed inset-0 z-90 bg-ink/40 tablet:hidden"
-        onClick={closeSheet}
-        aria-hidden="true"
-      />
-
+      {/* ---------- Mobile full-screen overlay ----------
+          Stays mounted so it has a state to transition from. `inert` takes it
+          out of the focus order AND the accessibility tree while closed, which
+          is what `hidden` used to do — without costing the animation. */}
       <div
         ref={sheetRef}
-        id="primary-navigation-sheet"
-        hidden={!sheetMode}
-        className="fixed inset-x-3 top-3 z-95 max-h-[calc(100svh-1.5rem)] overflow-y-auto rounded-card bg-surface p-3 pt-16 shadow-[0_20px_60px_rgba(26,22,19,0.2)] tablet:hidden"
+        id="primary-navigation-overlay"
+        inert={!overlayOpen}
+        aria-label="Site menu"
+        className={cx(
+          'fixed inset-0 z-95 flex flex-col overflow-y-auto overscroll-contain bg-bg',
+          'px-5 pb-8 pt-20 tablet:hidden',
+          'transition-[opacity,transform,visibility] duration-300 ease-out motion-reduce:transition-none',
+          overlayOpen
+            ? 'visible translate-y-0 opacity-100'
+            : 'invisible -translate-y-1 opacity-0',
+        )}
       >
         <ul className="flex flex-col">
-          {nav.map((item) => {
+          {nav.map((item, index) => {
             const active = isActive(item.href);
             const expanded = openSubmenu === item.label;
-            const sheetId = `sheet-submenu-${slug(item.label)}`;
+            const submenuId = `overlay-submenu-${slug(item.label)}`;
             const row = cx(
-              'flex min-h-12 items-center font-display text-heading-xs',
+              'flex min-h-14 items-center font-display text-heading-md transition-colors',
               active ? 'text-ink' : 'text-ink-soft',
             );
 
             return (
-              <li key={item.label} className="border-b border-line last:border-b-0">
+              <li
+                key={item.label}
+                className={cx(
+                  'border-b border-line last:border-b-0',
+                  /* Links rise in one after another. Delay only on the way in;
+                     closing is immediate so the menu never feels sticky. */
+                  'transition-[opacity,transform] duration-300 ease-out motion-reduce:transition-none',
+                  overlayOpen ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0',
+                )}
+                style={{ transitionDelay: overlayOpen ? `${80 + index * 45}ms` : '0ms' }}
+              >
                 {item.children ? (
                   /* The label still navigates; the chevron beside it is its own
-                     button, so tapping ^ reveals the projects in place instead
-                     of leaving the sheet. */
+                     button, so tapping it reveals the projects in place instead
+                     of leaving the menu. */
                   <div className="flex items-center">
                     <Link href={item.href} aria-current={active ? 'page' : undefined} className={cx(row, 'flex-1')}>
                       {item.label}
@@ -269,16 +305,16 @@ export function PillNav() {
                     <button
                       type="button"
                       aria-expanded={expanded}
-                      aria-controls={sheetId}
+                      aria-controls={submenuId}
                       onClick={() => setOpenSubmenu(expanded ? null : item.label)}
-                      className="-mr-2 flex size-12 items-center justify-center text-ink"
+                      className="-mr-2 flex size-14 items-center justify-center text-ink"
                     >
                       <span className="visually-hidden">
                         {expanded ? `Hide ${item.label}` : `Show ${item.label}`}
                       </span>
                       <Icon
                         name="chevronDown"
-                        size={18}
+                        size={20}
                         className={cx('transition-transform duration-200', expanded && 'rotate-180')}
                       />
                     </button>
@@ -290,14 +326,14 @@ export function PillNav() {
                 )}
 
                 {item.children ? (
-                  <ul id={sheetId} hidden={!expanded} className="pb-2">
+                  <ul id={submenuId} hidden={!expanded} className="pb-3">
                     {item.children.map((child) => (
                       <li key={child.label}>
                         <Link
                           href={child.href}
                           aria-current={pathname === child.href ? 'page' : undefined}
                           className={cx(
-                            'flex min-h-11 items-center text-body-sm',
+                            'flex min-h-12 items-center text-body-sm',
                             pathname === child.href ? 'text-ink' : 'text-ink-soft',
                           )}
                         >
@@ -312,16 +348,26 @@ export function PillNav() {
           })}
         </ul>
 
-        <div className="mt-3 flex flex-col gap-2">
+        {/* The desktop top-right group has no room on a phone, so its two
+            actions land here instead — pinned to the bottom of the overlay,
+            inside thumb reach. */}
+        <div
+          className={cx(
+            'mt-auto flex flex-col gap-2 pt-10',
+            'transition-[opacity,transform] duration-300 ease-out motion-reduce:transition-none',
+            overlayOpen ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0',
+          )}
+          style={{ transitionDelay: overlayOpen ? `${80 + nav.length * 45}ms` : '0ms' }}
+        >
           <Link
             href="/contact"
-            className="inline-flex min-h-11 items-center justify-center rounded-pill bg-core-black px-5 text-body-sm font-medium text-white"
+            className="inline-flex min-h-12 items-center justify-center rounded-pill bg-core-black px-5 text-body-sm font-medium text-white"
           >
             Book a site visit
           </Link>
           <a
             {...anchorProps(telHref(site.phone))}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-pill border border-line-strong px-5 text-body-sm font-medium text-ink"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-pill border border-line-strong px-5 text-body-sm font-medium text-ink"
           >
             <Icon name="phone" size={16} />
             {site.phone}
