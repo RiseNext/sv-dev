@@ -20,8 +20,15 @@
    ========================================================================== */
 
 @theme {
-  /* ---------- Breakpoints — two, matching the reference -------------------- */
+  /* ---------- Breakpoints --------------------------------------------------
+     The reference ships two (1024/1280) because its mobile layout is a single
+     fluid column all the way up. Ours is not: card grids, stat rows and
+     specification lists all read as a stretched phone layout between 640px and
+     1024px — a tablet held in portrait lands exactly there. `mid` is the step
+     that turns those into two columns; it is a layout breakpoint only, and no
+     type or spacing token responds to it. */
   --breakpoint-*: initial;
+  --breakpoint-mid: 40rem; /* 640px — phone landscape and tablet portrait */
   --breakpoint-tablet: 64rem; /* 1024px */
   --breakpoint-desktop: 80rem; /* 1280px */
 
@@ -125,8 +132,8 @@
     color-scheme: light;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    /* Anchor targets clear the floating nav. */
-    scroll-padding-top: 6rem;
+    /* Anchor targets clear the floating nav (12px offset + a 42px plate). */
+    scroll-padding-top: 4.5rem;
     background-color: var(--color-ink);
   }
 

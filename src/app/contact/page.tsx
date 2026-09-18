@@ -34,10 +34,20 @@ export default function ContactPage() {
 
       <section className="px-gutter pt-16" aria-label="Enquiry">
         <div className="container-page grid gap-4 tablet:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-          <Reveal className="rounded-media bg-surface p-6 tablet:p-10">
-            <Suspense fallback={null}>
-              <ContactForm />
-            </Suspense>
+          {/* A soft dark bloom sits under the enquiry card — decorative only, so
+              it is blurred well inside the gutter and never carries type. It
+              lifts the white form off the off-white field without introducing
+              the hard dark band the palette rules out. */}
+          <Reveal className="relative isolate">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -inset-3 -z-10 rounded-[2rem] bg-ink/20 blur-2xl tablet:-inset-5"
+            />
+            <div className="rounded-media bg-surface p-6 tablet:p-10">
+              <Suspense fallback={null}>
+                <ContactForm />
+              </Suspense>
+            </div>
           </Reveal>
 
           <Reveal delay={100} className="flex flex-col gap-4">

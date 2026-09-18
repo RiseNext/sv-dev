@@ -29,7 +29,7 @@ export default function MasterPlanPage() {
           <Lightbox image={media.masterPlan} downloadHref={masterPlan.downloadHref} />
         </Reveal>
 
-        <ul className="container-page mt-4 grid gap-px overflow-hidden rounded-card bg-line tablet:grid-cols-4">
+        <ul className="container-page mt-4 grid gap-px overflow-hidden rounded-card bg-line mid:grid-cols-2 tablet:grid-cols-4">
           {masterPlan.notes.map((note) => (
             <li key={note.title} className="flex items-start gap-3 bg-surface p-6">
               <Icon name={note.icon} size={20} className="mt-0.5 shrink-0 text-gold-ink" />

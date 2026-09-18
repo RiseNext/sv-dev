@@ -108,7 +108,7 @@ export function ProjectDetail({ project }: { project: Project }) {
 
       {project.stats?.length ? (
         <section className="px-gutter pt-section-sm" aria-label="Project at a glance">
-          <dl className="container-page grid gap-px overflow-hidden rounded-card bg-line tablet:grid-cols-4">
+          <dl className="container-page grid gap-px overflow-hidden rounded-card bg-line mid:grid-cols-2 tablet:grid-cols-4">
             {project.stats.map((stat) => (
               <div key={stat.label} className="flex flex-col-reverse gap-1 bg-bg p-6">
                 <dt className="label-mono font-mono">{stat.label}</dt>
@@ -175,7 +175,7 @@ export function ProjectDetail({ project }: { project: Project }) {
 
       {project.proximity?.length ? (
         <section className="px-gutter pt-section-sm" aria-label="Proximity">
-          <ul className="container-page grid gap-px overflow-hidden rounded-card bg-line tablet:grid-cols-2">
+          <ul className="container-page grid gap-px overflow-hidden rounded-card bg-line mid:grid-cols-2">
             {project.proximity.map((item) => (
               <li key={item.place} className="flex items-baseline gap-4 bg-bg px-6 py-4">
                 <span className="inline-flex w-24 shrink-0 items-center gap-2 font-mono text-body-xs text-ink">
@@ -199,7 +199,7 @@ export function ProjectDetail({ project }: { project: Project }) {
 
       {project.gallery?.length ? (
         <section className="px-gutter pt-section" aria-label="Site photography">
-          <ul className="container-page grid gap-4 tablet:grid-cols-3">
+          <ul className="container-page grid gap-4 mid:grid-cols-2 tablet:grid-cols-3">
             {project.gallery.map((image, index) => (
               <Reveal as="li" key={image.src} delay={index * 60}>
                 <Frame image={image} ratio="aspect-[4/3]" sizes="(min-width: 1024px) 33vw, 100vw" />

@@ -21,14 +21,24 @@ import { nav, site } from '@/content/site';
    One <nav> in the DOM at every width. Below 1024px the link pills are
    replaced by a Menu pill that opens a sheet; rendering the links twice would
    mean two sources of truth and every link announced twice.
+
+   The bar is kept short on purpose — 36px pills inside a 3px plate — so it
+   takes as little of the first screen as possible. A group with children is a
+   chevron toggle at EVERY width: inline as a dropdown, and inside the sheet as
+   a collapsible row, so Projects opens the same way on a phone as on a desk.
    ========================================================================== */
 
 const INLINE_NAV = '(min-width: 64rem)';
 
 const GLASS =
-  'rounded-card border border-white/10 bg-glass p-1 shadow-[0_1px_2px_rgba(26,22,19,0.04)] backdrop-blur-[13px]';
+  'rounded-card border border-white/10 bg-glass p-[3px] shadow-[0_1px_2px_rgba(26,22,19,0.04)] backdrop-blur-[13px]';
+/* 40px on a phone, 36px once the links go inline: the compact bar is worth it
+   on a desktop, but the Menu pill is the most-tapped control on the site and
+   should not be shrunk to win back four pixels. */
 const PILL =
-  'inline-flex min-h-11 items-center gap-2 rounded-pill px-4 text-body-sm font-medium transition-colors duration-200';
+  'inline-flex min-h-10 items-center gap-1.5 rounded-pill px-3.5 text-body-sm font-medium transition-colors duration-200 tablet:min-h-9';
+
+const slug = (label: string) => label.toLowerCase().replace(/\s+/g, '-');
 
 export function PillNav() {
   const pathname = usePathname();
@@ -112,22 +122,24 @@ export function PillNav() {
   return (
     <div ref={rootRef} onKeyDown={onKeyDown}>
       {/* ---------- Centre group: brand + links ---------- */}
-      <div className="fixed left-1/2 top-4 z-100 w-max -translate-x-1/2">
-        <nav aria-label="Primary" className={cx(GLASS, 'flex items-center gap-1')}>
+      <div className="fixed left-1/2 top-3 z-100 w-max max-w-[calc(100vw-1.5rem)] -translate-x-1/2">
+        <nav aria-label="Primary" className={cx(GLASS, 'flex items-center gap-0.5')}>
           <Link
             href="/"
             aria-label={`${site.name} — home`}
-            className={cx(PILL, 'bg-surface pl-1.5 pr-4 text-ink')}
+            className={cx(PILL, 'bg-surface pl-1 pr-3 text-ink')}
           >
-            <Logo />
+            <Logo size="xs" />
           </Link>
 
           {/* Links inline from 1024px up; the Menu pill below it. */}
-          <ul className="hidden items-center gap-1 tablet:flex">
+          <ul className="hidden items-center gap-0.5 tablet:flex">
             {nav.map((item) => {
               const active = isActive(item.href);
               const expanded = openSubmenu === item.label;
-              const submenuId = `submenu-${item.label.toLowerCase().replace(/\s+/g, '-')}`;
+              /* The sheet renders the same groups, so the inline dropdown
+                 needs its own id — two elements cannot share one. */
+              const submenuId = `nav-submenu-${slug(item.label)}`;
 
               if (!item.children) {
                 return (
@@ -160,7 +172,7 @@ export function PillNav() {
                     {item.label}
                     <Icon
                       name="chevronDown"
-                      size={15}
+                      size={14}
                       className={cx('transition-transform duration-200', expanded && 'rotate-180')}
                     />
                   </button>
@@ -208,10 +220,10 @@ export function PillNav() {
       </div>
 
       {/* ---------- Right group: the two conversion actions ---------- */}
-      <div className="fixed right-4 top-4 z-100 hidden tablet:block">
-        <div className={cx(GLASS, 'flex items-center gap-1')}>
+      <div className="fixed right-3 top-3 z-100 hidden tablet:block">
+        <div className={cx(GLASS, 'flex items-center gap-0.5')}>
           <a {...anchorProps(telHref(site.phone))} className={cx(PILL, 'text-ink hover:bg-white/50')}>
-            <Icon name="phone" size={16} />
+            <Icon name="phone" size={15} />
             Call
           </a>
           <Link href="/contact" className={cx(PILL, 'bg-surface text-ink hover:bg-white')}>
@@ -232,50 +244,84 @@ export function PillNav() {
         ref={sheetRef}
         id="primary-navigation-sheet"
         hidden={!sheetMode}
-        className="fixed inset-x-3 top-3 z-95 rounded-card bg-surface p-3 pt-20 shadow-[0_20px_60px_rgba(26,22,19,0.2)] tablet:hidden"
+        className="fixed inset-x-3 top-3 z-95 max-h-[calc(100svh-1.5rem)] overflow-y-auto rounded-card bg-surface p-3 pt-16 shadow-[0_20px_60px_rgba(26,22,19,0.2)] tablet:hidden"
       >
         <ul className="flex flex-col">
-          {nav.map((item) => (
-            <li key={item.label} className="border-b border-line last:border-b-0">
-              <Link
-                href={item.href}
-                aria-current={isActive(item.href) ? 'page' : undefined}
-                className={cx(
-                  'flex min-h-14 items-center font-display text-heading-sm',
-                  isActive(item.href) ? 'text-ink' : 'text-ink-soft',
-                )}
-              >
-                {item.label}
-              </Link>
+          {nav.map((item) => {
+            const active = isActive(item.href);
+            const expanded = openSubmenu === item.label;
+            const sheetId = `sheet-submenu-${slug(item.label)}`;
+            const row = cx(
+              'flex min-h-12 items-center font-display text-heading-xs',
+              active ? 'text-ink' : 'text-ink-soft',
+            );
 
-              {item.children ? (
-                <ul className="pb-3">
-                  {item.children.map((child) => (
-                    <li key={child.label}>
-                      <Link
-                        href={child.href}
-                        className="flex min-h-11 items-center text-body-sm text-ink-soft"
-                      >
-                        {child.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </li>
-          ))}
+            return (
+              <li key={item.label} className="border-b border-line last:border-b-0">
+                {item.children ? (
+                  /* The label still navigates; the chevron beside it is its own
+                     button, so tapping ^ reveals the projects in place instead
+                     of leaving the sheet. */
+                  <div className="flex items-center">
+                    <Link href={item.href} aria-current={active ? 'page' : undefined} className={cx(row, 'flex-1')}>
+                      {item.label}
+                    </Link>
+                    <button
+                      type="button"
+                      aria-expanded={expanded}
+                      aria-controls={sheetId}
+                      onClick={() => setOpenSubmenu(expanded ? null : item.label)}
+                      className="-mr-2 flex size-12 items-center justify-center text-ink"
+                    >
+                      <span className="visually-hidden">
+                        {expanded ? `Hide ${item.label}` : `Show ${item.label}`}
+                      </span>
+                      <Icon
+                        name="chevronDown"
+                        size={18}
+                        className={cx('transition-transform duration-200', expanded && 'rotate-180')}
+                      />
+                    </button>
+                  </div>
+                ) : (
+                  <Link href={item.href} aria-current={active ? 'page' : undefined} className={row}>
+                    {item.label}
+                  </Link>
+                )}
+
+                {item.children ? (
+                  <ul id={sheetId} hidden={!expanded} className="pb-2">
+                    {item.children.map((child) => (
+                      <li key={child.label}>
+                        <Link
+                          href={child.href}
+                          aria-current={pathname === child.href ? 'page' : undefined}
+                          className={cx(
+                            'flex min-h-11 items-center text-body-sm',
+                            pathname === child.href ? 'text-ink' : 'text-ink-soft',
+                          )}
+                        >
+                          {child.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
 
-        <div className="mt-4 flex flex-col gap-2">
+        <div className="mt-3 flex flex-col gap-2">
           <Link
             href="/contact"
-            className="inline-flex min-h-12 items-center justify-center rounded-pill bg-core-black px-5 text-body-sm font-medium text-white"
+            className="inline-flex min-h-11 items-center justify-center rounded-pill bg-core-black px-5 text-body-sm font-medium text-white"
           >
             Book a site visit
           </Link>
           <a
             {...anchorProps(telHref(site.phone))}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-pill border border-line-strong px-5 text-body-sm font-medium text-ink"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-pill border border-line-strong px-5 text-body-sm font-medium text-ink"
           >
             <Icon name="phone" size={16} />
             {site.phone}

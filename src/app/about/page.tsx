@@ -23,7 +23,7 @@ export default function AboutPage() {
       />
 
       <section className="px-gutter pt-section-sm" aria-label="Track record">
-        <dl className="container-page grid gap-px overflow-hidden rounded-card bg-line tablet:grid-cols-4">
+        <dl className="container-page grid gap-px overflow-hidden rounded-card bg-line mid:grid-cols-2 tablet:grid-cols-4">
           {home.hero.stats.map((stat) => (
             <div key={stat.label} className="flex flex-col-reverse gap-1 bg-bg p-6 tablet:p-8">
               <dt className="label-mono font-mono">{stat.label}</dt>

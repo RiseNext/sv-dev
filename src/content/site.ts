@@ -26,8 +26,7 @@ export const site = {
   officeHours: 'Site visits seven days a week, 9am – 7pm',
 } as const;
 
-/* Primary navigation is the five-item structure the client specified:
-   Home · About Us · Projects · Blog · Contact Us.
+/* Primary navigation: Home · About Us · Projects · Contact Us.
 
    /master-plan, /amenities and /location are NOT deleted — those routes still
    work and are linked from the footer. They were written as site-wide pages
@@ -48,7 +47,6 @@ export const nav: readonly NavLink[] = [
       { label: 'SV Apartment', href: '/projects/sv-apartment-genome-valley' },
     ],
   },
-  { label: 'Blog', href: '/blog' },
   { label: 'Contact Us', href: '/contact' },
 ];
 
@@ -64,7 +62,6 @@ export const footerNav: readonly { title: string; links: readonly NavLink[] }[] 
     links: [
       { label: 'About us', href: '/about' },
       { label: 'All projects', href: '/projects' },
-      { label: 'Blog', href: '/blog' },
       { label: 'Amenities', href: '/amenities' },
       { label: 'Location', href: '/location' },
       { label: 'Contact', href: '/contact' },

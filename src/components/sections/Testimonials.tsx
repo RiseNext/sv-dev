@@ -24,7 +24,7 @@ export function Testimonials() {
           </h2>
         </Reveal>
 
-        <ul className="mt-14 grid gap-4 tablet:grid-cols-3">
+        <ul className="mt-14 grid gap-4 mid:grid-cols-2 tablet:grid-cols-3">
           {testimonials.map((item, index) => (
             <Reveal as="li" key={item.id} delay={index * 80}>
               <figure className="flex h-full flex-col rounded-media bg-surface p-6 tablet:p-8">

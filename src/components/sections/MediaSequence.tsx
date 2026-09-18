@@ -36,10 +36,16 @@ import { cx } from '@/lib/cx';
    are measured once per resize. GSAP is not imported: nothing here needs a
    timeline.
 
-   DEGRADATION: everything above is enhancement. Without JS, under
-   `prefers-reduced-motion`, or below 1024px, `stacked` stays false — the deck
-   never forms and the cards are a plain column. That is why the stacking class
-   comes from state rather than being written into the markup.
+   The deck runs at EVERY width. It was desktop-only at first, which left the
+   phone — where most of this site's traffic will be — with three static
+   pictures and none of the section's character. Card height is capped in
+   `svh` rather than set by aspect ratio so a card always fits the viewport it
+   has to park in, phone landscape included.
+
+   DEGRADATION: everything above is enhancement. Without JS or under
+   `prefers-reduced-motion`, `stacked` stays false — the deck never forms and
+   the cards are a plain column. That is why the stacking class comes from
+   state rather than being written into the markup.
 
    CONSTRAINT: no ancestor of a card may set `overflow: hidden` or a
    `transform` — either one silently kills sticky. The transforms below are all
@@ -93,11 +99,9 @@ export function MediaSequence({ items }: { items: readonly Item[] }) {
   useEffect(() => {
     if (!stacked) return;
 
-    const desktop = window.matchMedia('(min-width: 64rem)');
     const count = items.length;
 
     let frame = 0;
-    let live = false;
     let tops: number[] = [];
     let viewport = 0;
     let stick = 0;
@@ -107,14 +111,17 @@ export function MediaSequence({ items }: { items: readonly Item[] }) {
       const rows = rowRefs.current.slice(0, count).filter(Boolean) as HTMLLIElement[];
       if (rows.length !== count) return false;
       viewport = window.innerHeight;
-      stick = parseFloat(getComputedStyle(document.documentElement).fontSize) * STICK_REM;
-      cardHeight = cardRefs.current[0]?.offsetHeight ?? viewport * 0.78;
+      /* Read the parking offset off the element rather than recomputing the
+         calc() — it stays correct if the deck's spacing is ever changed. */
+      const first = rows[0];
+      stick = first ? parseFloat(getComputedStyle(first).top) || 0 : 0;
+      cardHeight = cardRefs.current[0]?.offsetHeight ?? viewport * 0.68;
       tops = rows.map(layoutTop);
       return true;
     };
 
     const update = () => {
-      if (!live || tops.length !== count) return;
+      if (tops.length !== count) return;
       const scroll = window.scrollY;
       /* One card's whole handover happens in the distance the incoming card
          covers between the bottom edge of the viewport and its parking slot. */
@@ -143,8 +150,7 @@ export function MediaSequence({ items }: { items: readonly Item[] }) {
       }
     };
 
-    /* Hands every node back to the stylesheet — used on teardown and whenever
-       the viewport drops below the breakpoint the deck needs. */
+    /* Hands every node back to the stylesheet on teardown. */
     const reset = () => {
       for (let i = 0; i < count; i += 1) {
         const card = cardRefs.current[i];
@@ -157,11 +163,6 @@ export function MediaSequence({ items }: { items: readonly Item[] }) {
     };
 
     const sync = () => {
-      live = desktop.matches;
-      if (!live) {
-        reset();
-        return;
-      }
       if (measure()) update();
     };
 
@@ -177,15 +178,15 @@ export function MediaSequence({ items }: { items: readonly Item[] }) {
 
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', sync);
+    window.addEventListener('orientationchange', sync);
     window.addEventListener('load', sync);
-    desktop.addEventListener('change', sync);
 
     return () => {
       if (frame) cancelAnimationFrame(frame);
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', sync);
+      window.removeEventListener('orientationchange', sync);
       window.removeEventListener('load', sync);
-      desktop.removeEventListener('change', sync);
       reset();
     };
   }, [stacked, items.length]);
@@ -203,14 +204,19 @@ export function MediaSequence({ items }: { items: readonly Item[] }) {
               rowRefs.current[index] = node;
             }}
             style={stacked ? { top: `calc(${STICK_REM}rem + ${index * DECK_REM}rem)` } : undefined}
-            className={cx('mb-14', stacked && 'tablet:sticky tablet:mb-[26svh] tablet:last:mb-0')}
+            className={cx(
+              'mb-10',
+              stacked && 'sticky mb-[16svh] last:mb-0 tablet:mb-[26svh]',
+            )}
           >
             {/* The transform lives on this wrapper, never on the sticky <li>. */}
             <div
               ref={(node) => {
                 cardRefs.current[index] = node;
               }}
-              className="relative mx-auto aspect-[4/5] w-full will-change-transform tablet:aspect-auto tablet:h-[min(66svh,36rem)] tablet:max-w-[58rem]"
+              /* Height, not aspect ratio: a card has to fit the viewport it
+                 parks in, and a 4:5 box on a phone in landscape does not. */
+              className="relative mx-auto h-[min(68svh,32rem)] w-full will-change-transform tablet:h-[min(66svh,36rem)] tablet:max-w-[58rem]"
             >
               <div className="relative h-full w-full overflow-hidden rounded-band bg-surface shadow-[0_40px_90px_-45px_rgba(7,5,3,0.45)]">
                 {/* Overscanned so the parallax never exposes an edge. */}

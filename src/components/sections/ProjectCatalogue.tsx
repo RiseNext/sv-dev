@@ -48,7 +48,7 @@ export function ProjectCatalogue({
           ))}
         </div>
 
-        <ul className="mt-12 grid gap-4 tablet:grid-cols-3">
+        <ul className="mt-12 grid gap-4 mid:grid-cols-2 tablet:grid-cols-3">
           {visible.map((project, index) => (
             <li key={project.slug}>
               <ProjectCard project={project} priority={index < 3} />

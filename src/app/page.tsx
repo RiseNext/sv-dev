@@ -72,7 +72,7 @@ export default function HomePage() {
             </LinkButton>
           </Reveal>
 
-          <ul className="mt-14 grid gap-4 tablet:grid-cols-3">
+          <ul className="mt-14 grid gap-4 mid:grid-cols-2 tablet:grid-cols-3">
             {featuredProjects.map((project, index) => (
               <Reveal as="li" key={project.slug} delay={index * 80}>
                 <ProjectCard project={project} />
