@@ -1,0 +1,36 @@
+.banner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  align-items: flex-start;
+}
+
+.title {
+  font-size: var(--text-3xl);
+  color: var(--color-text-inverse);
+  max-width: 20ch;
+}
+
+.body {
+  max-width: var(--measure-lead);
+  color: var(--color-muted-inverse);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+@media (min-width: 60rem) {
+  .banner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-12);
+  }
+
+  .actions {
+    flex-shrink: 0;
+  }
+}

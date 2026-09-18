@@ -1,0 +1,33 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* 44×44 minimum touch target with ≥8px separation, icons included. */
+.link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-target);
+  height: var(--tap-target);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-inverse);
+  color: inherit;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.link:hover {
+  color: var(--color-accent-ink-inverse);
+  border-color: var(--color-accent);
+  background-color: rgba(255, 255, 255, 0.07);
+}
+
+.link[data-placeholder] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  text-decoration: none;
+}

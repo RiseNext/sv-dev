@@ -1,0 +1,47 @@
+.nav {
+  margin-bottom: var(--space-5);
+}
+
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  letter-spacing: 0.02em;
+  color: var(--color-muted-inverse);
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* 32px tall: comfortably over the 24×24 WCAG 2.5.8 floor without turning a
+   breadcrumb trail into a button bar. */
+.link,
+.current {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+}
+
+.link {
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.link:hover {
+  color: var(--color-accent-ink-inverse);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.separator {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.current {
+  color: var(--color-text-inverse);
+  font-weight: var(--weight-medium);
+}

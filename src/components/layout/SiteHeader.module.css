@@ -1,0 +1,304 @@
+/* =============================================================================
+   SITE HEADER
+   One <nav> in the DOM, repositioned by CSS: an inline bar at ≥64rem, an
+   off-canvas panel below it. Rendering it twice would mean two sources of truth
+   and every link announced twice by a screen reader.
+
+   Social icons live in the panel and the footer, not the bar. Dropping them
+   from the bar is what lets seven top-level items go inline at 1024px instead
+   of overflowing until 1280px.
+   ========================================================================== */
+
+.header {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: var(--z-header);
+  height: var(--header-height);
+  color: var(--color-text-inverse);
+  background-color: transparent;
+  border-bottom: 1px solid transparent;
+  transition:
+    background-color var(--duration-base) var(--ease-in-out),
+    height var(--duration-base) var(--ease-in-out),
+    border-color var(--duration-base) var(--ease-in-out);
+}
+
+.scrolled,
+.open {
+  height: var(--header-height-scrolled);
+  background-color: var(--color-surface-dark);
+  border-bottom-color: var(--color-border-inverse);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: 100%;
+}
+
+/* The bar stays above the backdrop and the sliding panel, which are later
+   siblings in the same stacking context. */
+.brand,
+.toggle,
+.barCta {
+  position: relative;
+  z-index: 2;
+}
+
+/* Full header height: the logo is a primary target and a 32px-tall link is an
+   awkward one to hit on a phone. */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 100%;
+  margin-inline-end: auto;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-target);
+  height: var(--tap-target);
+  margin-inline-end: calc(var(--space-2) * -1);
+  border-radius: var(--radius-sm);
+  color: inherit;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: var(--overlay-scrim);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+
+.backdropOpen {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ---------- Panel (below 64rem) ------------------------------------------- */
+
+.nav {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-panel);
+  display: flex;
+  flex-direction: column;
+  width: min(85vw, 22rem);
+  padding: calc(var(--header-height-scrolled) + var(--space-5)) var(--space-6) var(--space-8);
+  background-color: var(--color-surface-dark);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transform: translateX(100%);
+  visibility: hidden;
+  transition:
+    transform var(--duration-base) var(--ease-out),
+    visibility 0s linear var(--duration-base);
+}
+
+.navOpen {
+  transform: none;
+  visibility: visible;
+  transition:
+    transform var(--duration-base) var(--ease-out),
+    visibility 0s;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  border-bottom: 1px solid var(--color-border-inverse);
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tap-target);
+  padding-block: var(--space-3);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-inverse);
+  text-align: start;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.link:hover,
+.active {
+  color: var(--color-accent-ink-inverse);
+}
+
+.chevron {
+  flex-shrink: 0;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.link[aria-expanded='true'] .chevron {
+  transform: rotate(180deg);
+}
+
+.submenu {
+  display: none;
+  padding-block: 0 var(--space-3);
+  padding-inline-start: var(--space-4);
+}
+
+.submenuOpen {
+  display: block;
+}
+
+.submenuLink {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap-target);
+  font-size: var(--text-base);
+  color: var(--color-muted-inverse);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.submenuLink:hover,
+.submenuActive {
+  color: var(--color-accent-ink-inverse);
+}
+
+.panelFooter {
+  margin-top: auto;
+  padding-top: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.panelCta {
+  width: 100%;
+}
+
+.barCta {
+  display: none;
+}
+
+/* ---------- Inline bar (64rem and up) ------------------------------------- */
+
+@media (min-width: 64rem) {
+  .toggle,
+  .backdrop,
+  .panelFooter {
+    display: none;
+  }
+
+  .nav {
+    position: static;
+    z-index: auto;
+    flex-direction: row;
+    align-items: center;
+    width: auto;
+    padding: 0;
+    background-color: transparent;
+    overflow: visible;
+    transform: none;
+    visibility: visible;
+    transition: none;
+  }
+
+  .list {
+    flex-direction: row;
+    align-items: center;
+    gap: clamp(0.75rem, 0.1rem + 1vw, 1.5rem);
+  }
+
+  .item {
+    position: relative;
+    border-bottom: 0;
+  }
+
+  /* Kept at the 44px touch floor rather than shrunk to the text box: 1024px is
+     iPad-landscape territory, which is a touch device. */
+  .link {
+    min-height: var(--tap-target);
+    padding-block: 0;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-none);
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+
+  .active::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0.4rem;
+    height: 2px;
+    border-radius: 2px;
+    background-color: var(--color-accent);
+  }
+
+  .submenu {
+    position: absolute;
+    top: calc(100% + 0.75rem);
+    inset-inline-start: calc(var(--space-4) * -1);
+    display: block;
+    min-width: 14rem;
+    padding: var(--space-2);
+    background-color: var(--color-surface-dark);
+    border: 1px solid var(--color-border-inverse);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    transform: translateY(-0.4rem);
+    visibility: hidden;
+    transition:
+      opacity var(--duration-fast) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out),
+      visibility 0s linear var(--duration-fast);
+  }
+
+  .submenuOpen {
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+    transition:
+      opacity var(--duration-fast) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out),
+      visibility 0s;
+  }
+
+  .submenuLink {
+    min-height: auto;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    white-space: nowrap;
+  }
+
+  .submenuLink:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+@media (min-width: 80rem) {
+  /* Deliberately compact. A full-size button next to 44px-tall nav links makes
+     the bar look bottom-heavy; the CTA should read as the emphasis in the row,
+     not as a second logo. */
+  .barCta {
+    display: inline-flex;
+    min-height: 2.5rem;
+    padding-inline: var(--space-5);
+    font-size: var(--text-xs);
+    letter-spacing: 0.04em;
+    margin-inline-start: var(--space-6);
+  }
+}

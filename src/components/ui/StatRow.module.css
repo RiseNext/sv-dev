@@ -1,0 +1,48 @@
+.row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  gap: var(--space-5) var(--space-6);
+}
+
+.bordered {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-6);
+}
+
+:global(.on-dark) .bordered {
+  border-top-color: var(--color-border-inverse);
+}
+
+/* column-reverse puts the value above its label visually while the DOM keeps
+   the <dt> → <dd> order a description list requires. */
+.item {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.value {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  color: var(--color-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+:global(.on-dark) .value {
+  color: var(--color-text-inverse);
+}
+
+.label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+:global(.on-dark) .label {
+  color: var(--color-muted-inverse);
+}

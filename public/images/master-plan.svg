@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1000" width="1500" height="1000">
+  <!-- PLACEHOLDER MASTER PLAN — 3:2 landscape, the ratio [VERIFIED] from the
+       reference's published derivative (1024×690).
+
+       §03: the reference's own plan image was a PDF export with a "-rotated"
+       suffix — an unoptimised, post-processed raster. Export the real plan at
+       source resolution, rotate and crop BEFORE upload, and ship a downloadable
+       PDF alongside it (masterPlan.downloadHref in content/site.ts). -->
+  <rect width="1500" height="1000" fill="#FBFAF7" />
+  <rect x="24" y="24" width="1452" height="952" fill="none" stroke="#C9C2B5" stroke-width="2" />
+
+  <!-- road network -->
+  <g stroke="#D7D2C6" stroke-width="42" stroke-linecap="square">
+    <path d="M120 500 H1380" />
+    <path d="M420 120 V880M760 120 V880M1100 120 V880" />
+  </g>
+  <g stroke="#FBFAF7" stroke-width="2" stroke-dasharray="18 16">
+    <path d="M120 500 H1380" />
+    <path d="M420 120 V880M760 120 V880M1100 120 V880" />
+  </g>
+
+  <!-- plots -->
+  <g fill="#EDEAE1" stroke="#B9B2A3" stroke-width="1.5">
+    <rect x="140" y="140" width="120" height="150" /><rect x="272" y="140" width="120" height="150" />
+    <rect x="140" y="302" width="120" height="150" /><rect x="272" y="302" width="120" height="150" />
+    <rect x="452" y="140" width="120" height="150" /><rect x="584" y="140" width="120" height="150" />
+    <rect x="452" y="302" width="120" height="150" /><rect x="584" y="302" width="120" height="150" />
+    <rect x="792" y="140" width="120" height="150" /><rect x="924" y="140" width="120" height="150" />
+    <rect x="792" y="302" width="120" height="150" /><rect x="924" y="302" width="120" height="150" />
+    <rect x="1132" y="140" width="120" height="150" /><rect x="1264" y="140" width="112" height="150" />
+    <rect x="1132" y="302" width="120" height="150" /><rect x="1264" y="302" width="112" height="150" />
+    <rect x="140" y="548" width="120" height="150" /><rect x="272" y="548" width="120" height="150" />
+    <rect x="140" y="710" width="120" height="150" /><rect x="272" y="710" width="120" height="150" />
+    <rect x="792" y="548" width="120" height="150" /><rect x="924" y="548" width="120" height="150" />
+    <rect x="792" y="710" width="120" height="150" /><rect x="924" y="710" width="120" height="150" />
+    <rect x="1132" y="548" width="120" height="150" /><rect x="1264" y="548" width="112" height="150" />
+    <rect x="1132" y="710" width="120" height="150" /><rect x="1264" y="710" width="112" height="150" />
+  </g>
+
+  <!-- open space -->
+  <rect x="452" y="548" width="252" height="312" fill="#DDE7D8" stroke="#A8BCA2" stroke-width="1.5" />
+  <text x="578" y="700" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="22" fill="#5C7A67">PARK / OPEN SPACE</text>
+  <text x="578" y="728" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="16" fill="#8A9C86">[AREA] sq ft</text>
+
+  <!-- entry -->
+  <path d="M760 880 v96" stroke="#B08D3F" stroke-width="8" />
+  <text x="760" y="962" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="20" fill="#B08D3F" letter-spacing="2">MAIN ENTRY</text>
+
+  <text x="60" y="76" font-family="Georgia, serif" font-size="30" fill="#1D2B26">SV Green Meadows — Master Plan</text>
+  <text x="60" y="106" font-family="Inter, system-ui, sans-serif" font-size="16" fill="#6B6B6B">PLACEHOLDER LAYOUT · not to scale · [APPROVAL NO.]</text>
+</svg>

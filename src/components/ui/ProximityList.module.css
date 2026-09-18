@@ -1,0 +1,65 @@
+/* icon → measurement → destination. At ≤26rem the destination wraps under the
+   measurement instead of squeezing, which is what keeps a long list usable at
+   320px. */
+
+.list {
+  display: grid;
+  gap: 0 var(--space-10);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
+}
+
+.item {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  padding-block: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+:global(.on-dark) .item {
+  border-bottom-color: var(--color-border-inverse);
+}
+
+.icon {
+  color: var(--color-accent-ink);
+}
+
+:global(.on-dark) .icon {
+  color: var(--color-accent-ink-inverse);
+}
+
+.measure {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-heading);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+:global(.on-dark) .measure {
+  color: var(--color-text-inverse);
+}
+
+.place {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+
+:global(.on-dark) .place {
+  color: var(--color-muted-inverse);
+}
+
+@media (max-width: 26rem) {
+  .item {
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    row-gap: var(--space-1);
+  }
+
+  .place {
+    grid-column: 2;
+  }
+}

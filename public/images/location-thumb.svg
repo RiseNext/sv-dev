@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 300" width="520" height="300">
+  <!-- PLACEHOLDER footer supporting image — a map thumbnail.
+       §09: the reference used a raw messaging-app screenshot as a site asset.
+       Do not carry that pattern over. -->
+  <rect width="520" height="300" fill="#2A3B34" />
+  <g stroke="#3F564C" stroke-width="10">
+    <path d="M0 110 H520M0 210 H520M150 0 V300M340 0 V300" />
+  </g>
+  <path d="M0 250 L140 180 L300 240 L520 150" stroke="#B08D3F" stroke-width="5" fill="none" />
+  <circle cx="340" cy="110" r="13" fill="#B08D3F" />
+  <circle cx="340" cy="110" r="26" fill="none" stroke="#B08D3F" stroke-width="2" opacity="0.6" />
+  <text x="24" y="42" font-family="Inter, system-ui, sans-serif" font-size="15" fill="#FFFFFF" letter-spacing="2">VIEW ON MAP</text>
+</svg>

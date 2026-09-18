@@ -1,0 +1,121 @@
+.trigger {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-bg);
+  cursor: zoom-in;
+}
+
+.trigger img {
+  width: 100%;
+  height: auto;
+  /* A plan is never cropped — cover would destroy its meaning. */
+  object-fit: contain;
+}
+
+/* Gallery photography, where a consistent card ratio matters more than seeing
+   every edge. Never apply this to a plan or a map. */
+.cover {
+  aspect-ratio: var(--ratio-landscape);
+}
+
+.cover img {
+  height: 100%;
+  object-fit: cover;
+}
+
+.hint {
+  position: absolute;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  background-color: rgba(43, 13, 18, 0.88);
+  color: var(--neutral-0);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+/* ---------- Modal ---------------------------------------------------------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background-color: rgba(26, 8, 11, 0.95);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.barButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: var(--tap-target);
+  height: var(--tap-target);
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--neutral-0);
+  font-size: var(--text-sm);
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.barButton:hover {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+.viewport {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  touch-action: pinch-zoom;
+}
+
+.viewport img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  object-fit: contain;
+}
+
+.zoomed {
+  place-items: start;
+  cursor: grab;
+}
+
+.zoomed img {
+  max-width: none;
+  max-height: none;
+  width: 220%;
+}
+
+@media (min-width: 48rem) {
+  .overlay {
+    padding: var(--space-6);
+  }
+
+  .zoomed img {
+    width: 170%;
+  }
+}

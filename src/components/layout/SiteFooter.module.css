@@ -1,0 +1,193 @@
+/* Links are <nav> + <ul> + <a>. Column titles are the only headings, so the
+   document outline stays navigable. */
+
+.footer {
+  padding-block: var(--section-py) var(--space-8);
+  background-color: var(--color-surface-dark);
+  color: var(--color-muted-inverse);
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-10) var(--gap-grid);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 40rem) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .grid {
+    grid-template-columns: 1.5fr repeat(3, minmax(0, 1fr));
+    gap: var(--space-12);
+  }
+}
+
+/* ---------- Brand column --------------------------------------------------- */
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-5);
+}
+
+.logo {
+  width: auto;
+  height: 2.5rem;
+}
+
+.blurb {
+  max-width: 34ch;
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}
+
+.contact {
+  display: grid;
+  font-size: var(--text-sm);
+}
+
+.contactRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.contactRow svg {
+  flex-shrink: 0;
+  margin-top: 0.25em;
+  color: var(--color-accent-ink-inverse);
+}
+
+/* Email and phone are actions, not prose, so they carry a real target height
+   rather than the 21px of their text box. */
+.contactRow a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  overflow-wrap: anywhere;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.contactRow a:hover {
+  color: var(--color-accent-ink-inverse);
+}
+
+/* ---------- Link columns --------------------------------------------------- */
+
+.column {
+  border-bottom: 1px solid var(--color-border-inverse);
+}
+
+.columnTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--tap-target);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-text-inverse);
+  cursor: pointer;
+  list-style: none;
+}
+
+.columnTitle::-webkit-details-marker {
+  display: none;
+}
+
+.chevron {
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.column[open] .chevron {
+  transform: rotate(180deg);
+}
+
+.links {
+  display: grid;
+  gap: var(--space-1);
+  padding-block: var(--space-2) var(--space-5);
+}
+
+.links a {
+  display: inline-block;
+  padding-block: var(--space-3);
+  font-size: var(--text-sm);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.links a:hover {
+  color: var(--color-accent-ink-inverse);
+}
+
+@media (min-width: 40rem) {
+  .column {
+    border-bottom: 0;
+  }
+
+  /* Columns stop being accordions; the title stays a heading. */
+  .columnTitle {
+    pointer-events: none;
+    cursor: default;
+    min-height: 0;
+    margin-bottom: var(--space-4);
+  }
+
+  .chevron {
+    display: none;
+  }
+
+  .links {
+    padding-block: 0;
+  }
+}
+
+/* ---------- Legal ---------------------------------------------------------- */
+
+.legal {
+  margin-top: var(--space-16);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border-inverse);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+}
+
+.legalRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-6);
+}
+
+.legalLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+}
+
+.legalLinks a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+}
+
+.legalLinks a:hover {
+  color: var(--color-accent-ink-inverse);
+}
+
+.disclaimer {
+  max-width: 90ch;
+  color: rgba(255, 255, 255, 0.55);
+}

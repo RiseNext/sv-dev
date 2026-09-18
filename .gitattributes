@@ -1,0 +1,13 @@
+# Vercel builds on Linux while this repo is authored on Windows. Normalise to
+# LF in the repository so a checkout on either platform produces identical
+# content and diffs never show up as whole-file line-ending churn.
+* text=auto eol=lf
+
+# Binary — never touch these.
+*.woff2 binary
+*.jpg   binary
+*.jpeg  binary
+*.png   binary
+*.ico   binary
+*.webp  binary
+*.avif  binary

@@ -1,0 +1,62 @@
+.layout {
+  display: grid;
+  gap: var(--space-10);
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  .layout {
+    grid-template-columns: 1fr 1.1fr;
+    gap: var(--space-16);
+  }
+}
+
+.details {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.detail {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.detail svg {
+  flex-shrink: 0;
+  margin-top: 0.15em;
+  color: var(--color-accent-ink);
+}
+
+.detailLabel {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-muted);
+  margin-bottom: var(--space-1);
+}
+
+.detailValue {
+  font-size: var(--text-base);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+/* Phone and email are the page's primary actions on a phone — they get a real
+   44px target. The negative margin absorbs the extra height so the label-to-
+   value rhythm matches the non-link rows. */
+.detailValue a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target);
+  margin-block: calc(var(--space-3) * -1);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.detailValue a:hover {
+  color: var(--color-accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}

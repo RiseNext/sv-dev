@@ -1,0 +1,201 @@
+/* =============================================================================
+   DESIGN TOKENS
+   The single file you edit to re-skin the site. Nothing else hard-codes a
+   colour, a size, or a duration.
+
+   COLOUR: every pair below is validated against WCAG 2.1 AA — body text ≥ 4.5:1,
+   non-text UI (input borders, focus rings) ≥ 3:1. The previous palette failed 7
+   pairs, including white-on-gold for the primary button at 3.12:1. Gold is now
+   a FILL and DECORATION colour only; `--color-accent-ink` is the text-safe gold
+   and it is the only gold allowed to carry type on a light surface.
+
+   SIZING: type and spacing are fluid via clamp(), so there are no breakpoint
+   overrides to keep in sync. Every clamp tops out at a 1440px viewport, which
+   is what stops a 2560px monitor from rendering absurd headings.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* ---------- Brand ------------------------------------------------------
+     Deep maroon / burgundy, replacing the previous forest-green ramp. The
+     roles each token plays are unchanged, so the swap is confined to this
+     block plus the overlay/shadow tints below — no component needed editing.
+     Re-validated against WCAG 2.1 AA; ratios are noted where they carry type. */
+  --brand-900: #2b0d12; /* deepest — gold sits on this at 7.43:1 */
+  --brand-800: #3d1119; /* dark surfaces + headings — 16.3:1 on white */
+  --brand-700: #54161f; /* primary button + focus ring — 13.89:1 with white */
+  --brand-600: #6d1f2a; /* primary button hover — 11.17:1 with white */
+  --brand-500: #8c2d3a; /* lightest brand tone — 8.23:1 with white */
+
+  --gold-500: #c9a227; /* fills, rules, filled stars */
+  --gold-600: #a8862b; /* fill hover */
+  --gold-700: #7c5f1f; /* text on light — 5.98:1 on white */
+  --gold-200: #e8d49a; /* text on dark — 11.13:1 on brand-800 */
+
+  /* ---------- Warm neutrals ---------------------------------------------- */
+  --neutral-0: #ffffff;
+  --neutral-50: #faf8f4;
+  --neutral-100: #f2efe8;
+  --neutral-200: #e5e0d5;
+  --neutral-300: #cfc8b8;
+  --neutral-400: #8f8878; /* perceivable borders (inputs) — 3.52:1 on white */
+  --neutral-500: #6a6355; /* muted text — 5.95:1 on white */
+  --neutral-700: #3a362e;
+  --neutral-900: #1a1815;
+
+  /* ---------- Semantic roles --------------------------------------------- */
+  --color-bg: var(--neutral-0);
+  --color-surface: var(--neutral-50);
+  --color-surface-sunken: var(--neutral-100);
+  --color-surface-dark: var(--brand-800);
+  --color-surface-dark-alt: var(--brand-700);
+
+  --color-text: var(--neutral-900);
+  --color-heading: var(--brand-800);
+  --color-muted: var(--neutral-500);
+  --color-text-inverse: var(--neutral-0);
+  --color-muted-inverse: var(--neutral-200);
+
+  --color-accent: var(--gold-500);
+  --color-accent-hover: var(--gold-600);
+  --color-accent-ink: var(--gold-700);
+  --color-accent-ink-inverse: var(--gold-200);
+
+  --color-border: var(--neutral-200);
+  --color-border-strong: var(--neutral-300);
+  --color-border-input: var(--neutral-400);
+  --color-border-inverse: rgba(255, 255, 255, 0.18);
+
+  --color-focus: var(--brand-700);
+  --color-focus-inverse: var(--gold-500);
+  --color-danger: #9b2c1b;
+  --color-success: #1f6e4e;
+
+  /* Tinted with brand-900 (43, 13, 18) so photography sits on the same
+     burgundy as the dark surfaces rather than on a neutral black. */
+  --overlay-hero: linear-gradient(
+    180deg,
+    rgba(43, 13, 18, 0.72) 0%,
+    rgba(43, 13, 18, 0.55) 45%,
+    rgba(43, 13, 18, 0.86) 100%
+  );
+  --overlay-page-hero: linear-gradient(180deg, rgba(43, 13, 18, 0.78), rgba(43, 13, 18, 0.9));
+  --overlay-scrim: rgba(26, 8, 11, 0.6);
+
+  /* ---------- Typography --------------------------------------------------
+     Fraunces (variable serif) for display, Plus Jakarta Sans for body and UI.
+     Both are self-hosted in src/styles/fonts — no network call at build or run
+     time. The --font-*-loaded variables are injected by next/font in layout.tsx. */
+  --font-display: var(--font-display-loaded), 'Iowan Old Style', Georgia, serif;
+  --font-body: var(--font-body-loaded), system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --text-xs: clamp(0.75rem, 0.73rem + 0.08vw, 0.8125rem);
+  --text-sm: clamp(0.8125rem, 0.79rem + 0.12vw, 0.875rem);
+  --text-base: clamp(0.9375rem, 0.91rem + 0.14vw, 1.0625rem);
+  --text-lg: clamp(1.0625rem, 1.02rem + 0.2vw, 1.1875rem);
+  --text-xl: clamp(1.1875rem, 1.12rem + 0.32vw, 1.375rem);
+  /* The upper bounds are held back deliberately. Display type that keeps
+     growing past ~1440px reads as shouting rather than as hierarchy, and on a
+     1920 monitor a 60px h1 pushes the hero's lead and CTA below the fold. */
+  --text-2xl: clamp(1.3125rem, 1.21rem + 0.45vw, 1.5625rem);
+  --text-3xl: clamp(1.5rem, 1.32rem + 0.8vw, 2rem);
+  --text-4xl: clamp(1.75rem, 1.45rem + 1.3vw, 2.5rem);
+  --text-5xl: clamp(2rem, 1.55rem + 2vw, 3.25rem);
+
+  --leading-none: 1;
+  --leading-tight: 1.12;
+  --leading-snug: 1.28;
+  --leading-normal: 1.6;
+  --leading-relaxed: 1.72;
+
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.08em;
+
+  --measure-prose: 68ch;
+  --measure-lead: 56ch;
+  --measure-quote: 46ch;
+
+  /* ---------- Spacing — 4px base ----------------------------------------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* Fluid rhythm. One decision per relationship, applied everywhere. */
+  --section-py: clamp(3.5rem, 2.2rem + 5.2vw, 6rem);
+  --section-py-lg: clamp(4.5rem, 2.8rem + 6.6vw, 7.5rem);
+  --section-py-sm: clamp(2.5rem, 1.8rem + 2.8vw, 4rem);
+  --gap-heading: clamp(1.75rem, 1.3rem + 1.8vw, 3rem);
+  --gap-grid: clamp(1rem, 0.7rem + 1.2vw, 1.75rem);
+  --card-padding: clamp(1.25rem, 0.95rem + 1.2vw, 2rem);
+
+  /* ---------- Layout ------------------------------------------------------ */
+  --container-max: 75rem; /* 1200px */
+  --container-narrow: 46rem; /* 736px — prose */
+  --container-wide: 87.5rem; /* 1400px — media */
+  --gutter: clamp(1.25rem, 0.9rem + 1.6vw, 2rem);
+
+  --header-height: 4rem;
+  --header-height-lg: 5rem;
+  --header-height-scrolled: 4rem;
+
+  --z-header: 100;
+  --z-panel: 110;
+  --z-fab: 90;
+  --z-modal: 200;
+  --z-skip: 300;
+
+  /* ---------- Radius ------------------------------------------------------ */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
+  --radius-full: 999px;
+
+  /* ---------- Elevation — three levels, each with a distinct meaning ------ */
+  --shadow-sm: 0 1px 2px rgba(43, 13, 18, 0.05), 0 1px 3px rgba(43, 13, 18, 0.06);
+  --shadow-md: 0 2px 6px rgba(43, 13, 18, 0.06), 0 10px 24px rgba(43, 13, 18, 0.08);
+  --shadow-lg: 0 6px 16px rgba(43, 13, 18, 0.08), 0 24px 48px rgba(43, 13, 18, 0.12);
+
+  /* ---------- Controls ---------------------------------------------------- */
+  --control-height: 2.75rem; /* 44px — the touch-target floor */
+  --control-height-lg: 3.25rem;
+  --control-padding: var(--space-6);
+  --tap-target: 2.75rem;
+  --focus-width: 2px;
+  --focus-offset: 3px;
+
+  /* ---------- Motion ------------------------------------------------------ */
+  --duration-fast: 150ms;
+  --duration-base: 220ms;
+  --duration-slow: 380ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* ---------- Aspect ratios ---------------------------------------------- */
+  --ratio-hero: 16 / 9;
+  --ratio-landscape: 3 / 2;
+  --ratio-square: 1 / 1;
+  --ratio-card: 4 / 3;
+  --ratio-portrait: 3 / 4;
+}
+
+@media (min-width: 64rem) {
+  :root {
+    --header-height: var(--header-height-lg);
+  }
+}
