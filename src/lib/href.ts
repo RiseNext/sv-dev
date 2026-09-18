@@ -28,3 +28,10 @@ export function anchorProps(href: string): AnchorProps {
   }
   return { href };
 }
+
+/** A `tel:` destination, or the bracketed token itself when the number is
+ *  still a placeholder — so anchorProps() renders it inert instead of
+ *  producing a live link to `tel:[+91 00000 00000]`. */
+export function telHref(phone: string): string {
+  return isPlaceholder(phone) ? phone : `tel:${phone.replace(/\s+/g, '')}`;
+}

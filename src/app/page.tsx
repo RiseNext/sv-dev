@@ -1,15 +1,18 @@
 import { LinkButton } from '@/components/ui/Button';
-import { FeatureGrid } from '@/components/ui/FeatureGrid';
-import { ProximityList } from '@/components/ui/ProximityList';
-import { Section } from '@/components/ui/Section';
-import { SectionHeading } from '@/components/ui/SectionHeading';
-import { CtaBanner } from '@/components/sections/CtaBanner';
-import { HomeHero } from '@/components/sections/HomeHero';
-import { MediaFeature } from '@/components/sections/MediaFeature';
-import { ProjectGrid } from '@/components/sections/ProjectGrid';
+import { Icon } from '@/components/ui/Icon';
+import { Accordion } from '@/components/ui/Accordion';
+import { Reveal } from '@/components/ui/Reveal';
+import { ClosingCta } from '@/components/sections/ClosingCta';
+import { Corridor } from '@/components/sections/Corridor';
+import { Hero } from '@/components/sections/Hero';
+import { MediaSequence } from '@/components/sections/MediaSequence';
+import { PinnedProof } from '@/components/sections/PinnedProof';
+import { ProjectCard } from '@/components/sections/ProjectCard';
+import { Statement } from '@/components/sections/Statement';
+import { StepList } from '@/components/sections/StepList';
 import { Testimonials } from '@/components/sections/Testimonials';
-import { amenities, home, location, masterPlan, media } from '@/content/pages';
-import { featuredProjects } from '@/content/projects';
+import { amenities, contact, home, media } from '@/content/pages';
+import { featuredProjects, projects } from '@/content/projects';
 import { site } from '@/content/site';
 import { pageMetadata } from '@/lib/seo';
 
@@ -23,90 +26,81 @@ export const metadata = pageMetadata({
    site flattened into one scroll. Each block ends in a link to the page that
    carries the detail. */
 
+/* Until site photography exists, the media sequence borrows each project's own
+   card image so the section shows real (if placeholder) artwork rather than an
+   empty frame. Swap these for infrastructure photography when it lands.
+
+   The sequence carries no copy — the titles below are keys and alt-text
+   subjects only. The specifications themselves are listed in full on
+   /amenities, which is where they belong. */
+const sequence = amenities.specifications.slice(0, 3).map((spec, index) => ({
+  title: spec.title,
+  image: projects[index]?.image ?? media.masterPlan,
+}));
+
 export default function HomePage() {
   return (
     <>
-      <HomeHero />
+      <Hero />
 
-      <Section id="why" aria-labelledby="why-title">
-        <SectionHeading
-          eyebrow={home.intro.eyebrow}
-          title={home.intro.title}
-          lead={home.intro.lead}
-          id="why-title"
-          action={<LinkButton href="/about" variant="outline">About SV Developers</LinkButton>}
-        />
-        <FeatureGrid items={home.benefits} />
-      </Section>
+      <Statement
+        id="why"
+        label={home.intro.eyebrow}
+        title={home.intro.title}
+        titleAccent={home.intro.titleAccent}
+        lead={home.intro.lead}
+      />
 
-      {/* Featured projects read from content/projects.ts — the same records the
-          catalogue and the detail pages use. Nothing about a project is
-          restated here, so the homepage can never drift from /projects. */}
-      <Section tone="surface" aria-labelledby="projects-title">
-        <SectionHeading
-          eyebrow="Our projects"
-          title="Featured projects"
-          lead="Premium villa plots, farm villa plots, residential plots and apartments across Aler, Bhongir and Genome Valley."
-          id="projects-title"
-          action={<LinkButton href="/projects" variant="outline">All projects</LinkButton>}
-        />
-        <ProjectGrid items={featuredProjects} />
-      </Section>
+      <MediaSequence items={sequence} />
 
-      <Section aria-labelledby="plan-title">
-        <MediaFeature
-          eyebrow={masterPlan.hero.eyebrow}
-          title="See exactly what you are buying"
-          id="plan-title"
-          paragraphs={[
-            'Every project page carries its own layout plan and location map, opened full screen and zoomable so the plot numbering stays readable.',
-            'Ask for a printed copy at a site visit.',
-          ]}
-          image={media.masterPlan}
-          actions={
-            <>
-              <LinkButton href="/projects">Browse the projects</LinkButton>
-              <LinkButton href="/contact" variant="outline">
-                Ask a question
-              </LinkButton>
-            </>
-          }
-        />
-      </Section>
+      <PinnedProof stats={home.hero.stats} tiles={projects.slice(0, 4).map((p) => p.image)} />
 
-      <Section tone="surface" aria-labelledby="amenities-title">
-        <SectionHeading
-          eyebrow={amenities.hero.eyebrow}
-          title={amenities.hero.title}
-          lead={amenities.hero.lead}
-          id="amenities-title"
-          action={<LinkButton href="/amenities" variant="outline">All amenities</LinkButton>}
-        />
-        <FeatureGrid items={amenities.specifications.slice(0, 6)} />
-      </Section>
+      {/* ---- Featured projects: read from content/projects.ts, the same
+              records the catalogue and the detail pages use. ---- */}
+      <section className="px-gutter pt-section" aria-labelledby="projects-title">
+        <div className="container-page">
+          <Reveal className="flex flex-col items-start gap-6 tablet:flex-row tablet:items-end tablet:justify-between">
+            <div>
+              <p className="label-mono font-mono">Our projects</p>
+              <h2 id="projects-title" className="mt-5 max-w-[18ch] text-heading-lg text-ink">
+                Five layouts. <em>All of them walkable today.</em>
+              </h2>
+            </div>
+            <LinkButton href="/projects" variant="ghost">
+              All projects
+              <Icon name="arrowRight" size={16} />
+            </LinkButton>
+          </Reveal>
 
-      <Section aria-labelledby="location-title">
-        <SectionHeading
-          eyebrow={location.intro.eyebrow}
-          title={location.intro.title}
-          lead={location.intro.lead}
-          id="location-title"
-          action={<LinkButton href="/location" variant="outline">Location detail</LinkButton>}
-        />
-        <ProximityList items={location.proximity.slice(0, 8)} />
-      </Section>
+          <ul className="mt-14 grid gap-4 tablet:grid-cols-3">
+            {featuredProjects.map((project, index) => (
+              <Reveal as="li" key={project.slug} delay={index * 80}>
+                <ProjectCard project={project} />
+              </Reveal>
+            ))}
+          </ul>
+        </div>
+      </section>
 
-      <Section tone="dark" aria-labelledby="reviews-title">
-        <SectionHeading
-          eyebrow="Client reviews"
-          title="What buyers say"
-          id="reviews-title"
-          align="center"
-        />
-        <Testimonials />
-      </Section>
+      <Corridor />
 
-      <CtaBanner />
+      <Testimonials />
+
+      <Statement
+        id="how"
+        label="How buying works"
+        title="Five steps,"
+        titleAccent="no surprises in any of them"
+        lead="The same sequence on every project, whether you are buying one plot or four."
+      />
+      <StepList items={home.steps} />
+
+      <Statement id="faq" label="FAQ" title="The questions" titleAccent="we get asked first" />
+      <div className="container-prose mt-14">
+        <Accordion items={contact.faq} />
+      </div>
+
+      <ClosingCta />
     </>
   );
 }

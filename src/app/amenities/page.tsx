@@ -1,16 +1,13 @@
-import { PageHero } from '@/components/layout/PageHero';
-import { FeatureGrid } from '@/components/ui/FeatureGrid';
-import { Section } from '@/components/ui/Section';
-import { SectionHeading } from '@/components/ui/SectionHeading';
-import { CtaBanner } from '@/components/sections/CtaBanner';
-import { MediaFeature } from '@/components/sections/MediaFeature';
-import { amenities, media } from '@/content/pages';
+import { Reveal } from '@/components/ui/Reveal';
+import { ClosingCta } from '@/components/sections/ClosingCta';
+import { FeatureList } from '@/components/sections/FeatureList';
+import { PageHero } from '@/components/sections/PageHero';
+import { amenities } from '@/content/pages';
 import { pageMetadata } from '@/lib/seo';
 
 export const metadata = pageMetadata({
   title: 'Amenities',
-  description:
-    'Roads, drainage, water, electricity, lighting, landscaping and the boundary wall — all complete before a plot is released for sale.',
+  description: amenities.hero.lead,
   path: '/amenities',
 });
 
@@ -18,34 +15,37 @@ export default function AmenitiesPage() {
   return (
     <>
       <PageHero
-        eyebrow={amenities.hero.eyebrow}
-        title={amenities.hero.title}
+        label={amenities.hero.eyebrow}
+        title="What is already built"
+        titleAccent="before a plot is sold"
         lead={amenities.hero.lead}
-        crumbs={[{ label: 'Home', href: '/' }, { label: 'Amenities' }]}
       />
 
-      <Section aria-labelledby="specs-title">
-        <SectionHeading
-          eyebrow="Specifications"
-          title="Seven pieces of infrastructure"
-          lead="Each one is finished and can be walked before the first plot in a layout goes on sale."
-          id="specs-title"
-        />
-        <FeatureGrid items={amenities.specifications} />
-      </Section>
+      <FeatureList
+        id="specifications"
+        label="Specifications"
+        title="Seven pieces"
+        titleAccent="of infrastructure"
+        items={amenities.specifications}
+      />
 
-      <Section tone="surface" aria-labelledby="maintenance-title">
-        <MediaFeature
-          eyebrow={amenities.maintenance.eyebrow}
-          title={amenities.maintenance.title}
-          id="maintenance-title"
-          paragraphs={amenities.maintenance.body}
-          image={media.locationMap}
-          reversed
-        />
-      </Section>
+      <section className="px-gutter pt-section" aria-labelledby="maintenance-title">
+        <Reveal className="container-prose rounded-media bg-surface p-8 tablet:p-12">
+          <p className="label-mono font-mono">{amenities.maintenance.eyebrow}</p>
+          <h2 id="maintenance-title" className="mt-5 max-w-[18ch] text-heading-md text-ink">
+            {amenities.maintenance.title}
+          </h2>
+          <div className="mt-6 flex flex-col gap-4">
+            {amenities.maintenance.body.map((paragraph) => (
+              <p key={paragraph} className="text-body-md text-ink-soft">
+                {paragraph}
+              </p>
+            ))}
+          </div>
+        </Reveal>
+      </section>
 
-      <CtaBanner />
+      <ClosingCta />
     </>
   );
 }

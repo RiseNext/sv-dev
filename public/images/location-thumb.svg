@@ -1,13 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 300" width="520" height="300">
-  <!-- PLACEHOLDER footer supporting image — a map thumbnail.
-       §09: the reference used a raw messaging-app screenshot as a site asset.
-       Do not carry that pattern over. -->
-  <rect width="520" height="300" fill="#2A3B34" />
-  <g stroke="#3F564C" stroke-width="10">
-    <path d="M0 110 H520M0 210 H520M150 0 V300M340 0 V300" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 300" width="520" height="300" role="img">
+  <!-- PLACEHOLDER location map. Replace with the brochure's own map scan and
+       update `media.locationMap` in src/content/pages.ts. -->
+  <rect width="520" height="300" fill="#f2efe8"/>
+  <g stroke="#1a1613" stroke-opacity=".10" stroke-width="1">
+    <path d="M0 60h520M0 120h520M0 180h520M0 240h520"/>
+    <path d="M80 0v300M180 0v300M280 0v300M380 0v300M480 0v300"/>
   </g>
-  <path d="M0 250 L140 180 L300 240 L520 150" stroke="#B08D3F" stroke-width="5" fill="none" />
-  <circle cx="340" cy="110" r="13" fill="#B08D3F" />
-  <circle cx="340" cy="110" r="26" fill="none" stroke="#B08D3F" stroke-width="2" opacity="0.6" />
-  <text x="24" y="42" font-family="Inter, system-ui, sans-serif" font-size="15" fill="#FFFFFF" letter-spacing="2">VIEW ON MAP</text>
+  <!-- corridor -->
+  <path d="M20 250 C 140 240, 220 150, 380 90 L 505 55" fill="none" stroke="#8a827a" stroke-opacity=".55" stroke-width="6" stroke-linecap="round"/>
+  <path d="M20 250 C 140 240, 220 150, 380 90 L 505 55" fill="none" stroke="#f2efe8" stroke-width="1.5" stroke-dasharray="10 9"/>
+  <!-- site marker -->
+  <circle cx="300" cy="129" r="13" fill="#c9a227"/>
+  <circle cx="300" cy="129" r="26" fill="none" stroke="#c9a227" stroke-opacity=".45" stroke-width="1.5"/>
+  <text x="260" y="286" fill="#8a827a" font-family="ui-monospace,'SF Mono',Menlo,monospace" font-size="11" letter-spacing="4" text-anchor="middle">MAP PENDING</text>
 </svg>

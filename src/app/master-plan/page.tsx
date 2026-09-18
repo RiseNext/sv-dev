@@ -1,18 +1,16 @@
-import { PageHero } from '@/components/layout/PageHero';
-import { LinkButton } from '@/components/ui/Button';
-import { IconList } from '@/components/ui/IconList';
+import { Icon } from '@/components/ui/Icon';
 import { Lightbox } from '@/components/ui/Lightbox';
-import { Section } from '@/components/ui/Section';
-import { SectionHeading } from '@/components/ui/SectionHeading';
-import { CtaBanner } from '@/components/sections/CtaBanner';
-import { MediaFeature } from '@/components/sections/MediaFeature';
+import { Plate } from '@/components/ui/Media';
+import { Reveal } from '@/components/ui/Reveal';
+import { ClosingCta } from '@/components/sections/ClosingCta';
+import { PageHero } from '@/components/sections/PageHero';
+import { Statement } from '@/components/sections/Statement';
 import { masterPlan, media } from '@/content/pages';
 import { pageMetadata } from '@/lib/seo';
 
 export const metadata = pageMetadata({
   title: 'Master plan',
-  description:
-    'The approved layout: plot numbering, internal road network and open-space allocation, with a downloadable PDF.',
+  description: masterPlan.hero.lead,
   path: '/master-plan',
 });
 
@@ -20,44 +18,40 @@ export default function MasterPlanPage() {
   return (
     <>
       <PageHero
-        eyebrow={masterPlan.hero.eyebrow}
-        title={masterPlan.hero.title}
+        label={masterPlan.hero.eyebrow}
+        title="The approved layout,"
+        titleAccent="plot by plot"
         lead={masterPlan.hero.lead}
-        crumbs={[{ label: 'Home', href: '/' }, { label: 'Master plan' }]}
       />
 
-      <Section width="wide" aria-labelledby="plan-title">
-        <SectionHeading
-          eyebrow="Approved drawing"
-          title="The layout in full"
-          lead="Tap to enlarge and pinch to zoom. Ask for a printed copy at any site visit."
-          id="plan-title"
-          action={
-            <LinkButton href={masterPlan.downloadHref} variant="outline">
-              Download PDF
-            </LinkButton>
-          }
-        />
-        <Lightbox image={media.masterPlan} downloadHref={masterPlan.downloadHref} />
-      </Section>
+      <section className="px-gutter pt-16" aria-label="Master plan">
+        <Reveal className="container-page">
+          <Lightbox image={media.masterPlan} downloadHref={masterPlan.downloadHref} />
+        </Reveal>
 
-      <Section tone="surface" aria-labelledby="notes-title">
-        <SectionHeading eyebrow="At a glance" title="Key dimensions" id="notes-title" />
-        <IconList items={masterPlan.notes} />
-      </Section>
+        <ul className="container-page mt-4 grid gap-px overflow-hidden rounded-card bg-line tablet:grid-cols-4">
+          {masterPlan.notes.map((note) => (
+            <li key={note.title} className="flex items-start gap-3 bg-surface p-6">
+              <Icon name={note.icon} size={20} className="mt-0.5 shrink-0 text-gold-ink" />
+              <span className="text-body-sm text-ink">{note.title}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
 
-      <Section id="plot-sizes" aria-labelledby="sizes-title">
-        <MediaFeature
-          eyebrow={masterPlan.plotSizes.eyebrow}
-          title={masterPlan.plotSizes.title}
-          id="sizes-title"
-          paragraphs={[masterPlan.plotSizes.lead]}
-          image={media.plotSizes}
-          actions={<LinkButton href="/contact">Check availability</LinkButton>}
-        />
-      </Section>
+      <Statement
+        id="plot-sizes"
+        label={masterPlan.plotSizes.eyebrow}
+        title="Four standard sizes,"
+        titleAccent="east and north facing"
+        lead={masterPlan.plotSizes.lead}
+      />
 
-      <CtaBanner />
+      <Reveal className="container-page mt-14 px-gutter">
+        <Plate image={media.plotSizes} />
+      </Reveal>
+
+      <ClosingCta />
     </>
   );
 }

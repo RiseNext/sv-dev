@@ -1,94 +1,93 @@
 import Link from 'next/link';
-import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { anchorProps, isExternal, isPlaceholder } from '@/lib/href';
 import { cx } from '@/lib/cx';
-import { isExternal, isPlaceholder } from '@/lib/href';
-import { Icon } from './Icon';
-import styles from './Button.module.css';
 
-type Variant = 'primary' | 'accent' | 'outline' | 'ghost';
+/* Every button on this site is a pill: 12px radius, 44px minimum height — the
+   touch-target floor — and DM Sans at body-sm. Three fills only.
+
+   dark   white on #070503        — 19.6:1, the primary action
+   light  ink on white            — 15.6:1, used over photography and on cards
+   ghost  ink on nothing          — inherits the surface, 1px hairline border
+   gold   near-black on #c9a227   —  7.4:1, one per page at most */
+
+type Variant = 'dark' | 'light' | 'ghost' | 'gold';
 type Size = 'md' | 'lg';
 
-type Shared = {
-  variant?: Variant;
-  size?: Size;
-  block?: boolean;
-  className?: string;
-  children: ReactNode;
+const base =
+  'inline-flex items-center justify-center gap-2 rounded-pill font-medium text-body-sm ' +
+  'whitespace-nowrap transition-colors duration-200 disabled:opacity-55 disabled:cursor-not-allowed';
+
+const variants: Record<Variant, string> = {
+  dark: 'bg-core-black text-white hover:bg-ink',
+  light: 'bg-surface text-ink hover:bg-white',
+  ghost: 'border border-line-strong text-ink hover:bg-surface',
+  gold: 'bg-gold text-core-black hover:bg-gold-ink hover:text-white',
 };
 
-function classes({ variant = 'primary', size = 'md', block, className }: Partial<Shared>) {
-  return cx(
-    styles.btn,
-    styles[variant ?? 'primary'],
-    size === 'lg' && styles.lg,
-    block && styles.block,
-    className,
-  );
+const sizes: Record<Size, string> = {
+  md: 'min-h-11 px-5',
+  lg: 'min-h-13 px-7 text-body-md',
+};
+
+function classes(variant: Variant, size: Size, className?: string) {
+  return cx(base, variants[variant], sizes[size], className);
 }
 
 export function Button({
-  variant,
-  size,
-  block,
+  variant = 'dark',
+  size = 'md',
   className,
-  type = 'button',
   children,
   ...rest
-}: Shared & ButtonHTMLAttributes<HTMLButtonElement>) {
+}: {
+  variant?: Variant;
+  size?: Size;
+  className?: string;
+  children: ReactNode;
+} & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button type={type} className={classes({ variant, size, block, className })} {...rest}>
+    <button type="button" className={classes(variant, size, className)} {...rest}>
       {children}
     </button>
   );
 }
 
-type LinkButtonProps = Shared &
-  Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & { href: string };
-
-/** Internal routes go through next/link for client-side navigation; external
- *  and mailto/tel links fall back to a plain anchor. A bracketed placeholder
- *  renders inert rather than as a dead link. */
 export function LinkButton({
   href,
-  variant,
-  size,
-  block,
+  variant = 'dark',
+  size = 'md',
   className,
   children,
-  ...rest
-}: LinkButtonProps) {
-  const cls = classes({ variant, size, block, className });
+}: {
+  href: string;
+  variant?: Variant;
+  size?: Size;
+  className?: string;
+  children: ReactNode;
+}) {
+  const cls = classes(variant, size, className);
 
+  /* A bracketed destination renders as a visibly inert <span>, never as a
+     live-looking link that goes nowhere. */
   if (isPlaceholder(href)) {
     return (
-      <a className={cls} aria-disabled data-placeholder tabIndex={-1} {...rest}>
+      <span className={cls} {...anchorProps(href)} role="link">
         {children}
-      </a>
+      </span>
     );
   }
 
   if (isExternal(href)) {
-    const newTab = /^https?:\/\//.test(href);
     return (
-      <a
-        className={cls}
-        href={href}
-        {...(newTab ? { target: '_blank', rel: 'noopener noreferrer' } : null)}
-        {...rest}
-      >
+      <a className={cls} {...anchorProps(href)}>
         {children}
-        {newTab ? (
-          <>
-            <Icon name="external" size={16} />
-            <span className="visually-hidden"> (opens in a new tab)</span>
-          </>
-        ) : null}
       </a>
     );
   }
 
   return (
-    <Link className={cls} href={href} {...rest}>
+    <Link href={href} className={cls}>
       {children}
     </Link>
   );

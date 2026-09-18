@@ -1,3 +1,308 @@
-@import './tokens.css';
-@import './base.css';
-@import './utilities.css';
+@import 'tailwindcss';
+
+/* =============================================================================
+   DESIGN TOKENS — the single file you edit to re-skin the site.
+
+   Everything here is declared in Tailwind v4's @theme layer, so each token
+   generates its utility (`text-heading-xl`, `bg-surface`, `rounded-media`) and
+   is also readable as a plain CSS variable inside a component.
+
+   TYPE SIZES ARE RECORDED IN PX IN docs/PRD-redesign.md. The reference site
+   reaches them by running a 10px root font-size and writing rem everywhere; we
+   keep the browser default 16px root — so Tailwind's own spacing scale stays
+   correct — and reproduce the same rendered pixel sizes with one fluid clamp
+   per step instead of three breakpoint overrides.
+
+   COLOUR: warm off-white page, warm near-black type, white cards, gold used
+   once per page. No dark bands: contrast comes from photography and from the
+   white cards sitting on the off-white field. Every pair carrying type is
+   WCAG 2.1 AA — ratios noted.
+   ========================================================================== */
+
+@theme {
+  /* ---------- Breakpoints — two, matching the reference -------------------- */
+  --breakpoint-*: initial;
+  --breakpoint-tablet: 64rem; /* 1024px */
+  --breakpoint-desktop: 80rem; /* 1280px */
+
+  /* ---------- Fonts -------------------------------------------------------
+     Self-hosted in src/styles/fonts, injected by next/font in layout.tsx.
+     Instrument Serif stands in for the reference's ABC Marist: high contrast,
+     light-feeling display serif with a true italic, OFL-licensed. */
+  --font-display: var(--font-display-loaded), 'Iowan Old Style', Georgia, serif;
+  --font-body: var(--font-body-loaded), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: var(--font-mono-loaded), ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* ---------- Colour ------------------------------------------------------ */
+  --color-bg: #f9f8f5; /* page — warm off-white, never pure white */
+  --color-surface: #ffffff; /* cards, pills, FAQ rows */
+  --color-ink: #1a1613; /* headings + body — 15.6:1 on bg */
+  --color-ink-soft: #5f5953; /* secondary copy — 6.9:1 on bg */
+  --color-ink-faint: #8a827a; /* mono labels — 3.6:1, non-body use only */
+  --color-core-black: #070503; /* buttons */
+  --color-gold: #c9a227; /* fills, chips, the footer band */
+  --color-gold-ink: #7c5f1f; /* the only gold allowed to carry type — 5.98:1 on white */
+  --color-band: #f0e8d2; /* the one colour band, at the foot of the page */
+  --color-line: rgba(26, 22, 19, 0.12);
+  --color-line-strong: rgba(26, 22, 19, 0.22);
+  --color-line-invert: rgba(255, 255, 255, 0.18);
+  --color-glass: rgba(227, 221, 207, 0.4); /* nav container over any background */
+  --color-danger: #8a3324;
+  --color-success: #1f6e4e;
+
+  /* ---------- Display type ------------------------------------------------
+     One clamp per step, tuned so 390px and 1440px land on the reference's
+     measured sizes (h1 50px → 87px, h2 38px → 58px) and 1920px stops at the
+     reference's cap rather than growing forever. */
+  --text-heading-xl: clamp(3.125rem, 2.27rem + 3.52vw, 6.5rem); /* 50 → 87 → 104 */
+  --text-heading-xl--line-height: 0.95;
+  --text-heading-xl--letter-spacing: -0.02em;
+
+  --text-heading-lg: clamp(2.25rem, 1.91rem + 1.9vw, 4.375rem); /* 36 → 58 → 70 */
+  --text-heading-lg--line-height: 1.05;
+  --text-heading-lg--letter-spacing: -0.01em;
+
+  --text-heading-md: clamp(1.5rem, 1.46rem + 0.67vw, 2.5rem); /* 24 → 33 → 40 */
+  --text-heading-md--line-height: 1.1;
+
+  --text-heading-sm: clamp(1.3125rem, 1.22rem + 0.38vw, 1.875rem); /* 21 → 25 → 30 */
+  --text-heading-sm--line-height: 1.15;
+
+  --text-heading-xs: clamp(1rem, 0.93rem + 0.28vw, 1.1875rem); /* 16 → 19 */
+  --text-heading-xs--line-height: 1.3;
+
+  /* ---------- Body and UI type -------------------------------------------- */
+  --text-body-lg: clamp(1rem, 0.9rem + 0.28vw, 1.25rem); /* 16 → 20 */
+  --text-body-lg--line-height: 1.5;
+  --text-body-md: clamp(0.875rem, 0.82rem + 0.21vw, 1.0625rem); /* 14 → 17 */
+  --text-body-md--line-height: 1.6;
+  --text-body-sm: clamp(0.8125rem, 0.78rem + 0.14vw, 0.9375rem); /* 13 → 15 */
+  --text-body-sm--line-height: 1.6;
+  --text-body-xs: 0.8125rem; /* 13 */
+  --text-body-xs--line-height: 1.5;
+
+  /* Mono is a label face here: small, tracked out, uppercase at call sites. */
+  --text-label: 0.75rem; /* 12 */
+  --text-label--line-height: 1.2;
+  --text-label--letter-spacing: 0.06em;
+
+  /* ---------- Shape ------------------------------------------------------- */
+  --radius-pill: 0.75rem; /* 12px — buttons and nav pills */
+  --radius-card: 1rem; /* 16px — cards, nav container */
+  --radius-media: 1.5rem; /* 24px — video and image cards */
+  --radius-band: 2.5rem; /* 40px — the page's rounded bottom corners */
+  --radius-full: 999px;
+
+  /* ---------- Rhythm ------------------------------------------------------
+     Section padding is deliberately large and top-heavy, as measured on the
+     reference (270px top on the first content band at desktop). */
+  --spacing-gutter: clamp(1rem, 0.6rem + 2vw, 2rem);
+  --spacing-section: clamp(6rem, 3rem + 12vw, 16.875rem); /* 96 → 270 */
+  --spacing-section-sm: clamp(4rem, 2.5rem + 6vw, 10rem); /* 64 → 160 */
+
+  /* ---------- Motion ------------------------------------------------------ */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-rise: rise 700ms var(--ease-out-soft) backwards;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(1.25rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* =============================================================================
+   BASE
+   ========================================================================== */
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Anchor targets clear the floating nav. */
+    scroll-padding-top: 6rem;
+    background-color: var(--color-ink);
+  }
+
+  body {
+    min-height: 100svh;
+    background-color: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-size: var(--text-body-md);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    /* Long unbroken strings — emails, URLs — must never widen the page. */
+    overflow-wrap: break-word;
+  }
+
+  body[data-scroll-locked] {
+    overflow: hidden;
+  }
+
+  /* Display sizing is set by class, not by tag, so semantic level and visual
+     weight stay independent. Only the family is decided here. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    text-wrap: balance;
+  }
+
+  /* The signature move: an <em> inside a display heading is the italic second
+     line, not emphasis in the middle of a sentence. */
+  :is(h1, h2, h3) em {
+    font-style: italic;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  img,
+  picture,
+  svg,
+  video,
+  canvas {
+    display: block;
+    max-width: 100%;
+  }
+
+  img,
+  video {
+    height: auto;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+    letter-spacing: inherit;
+  }
+
+  ul,
+  ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  address {
+    font-style: normal;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-core-black);
+    outline-offset: 3px;
+    border-radius: 0.25rem;
+  }
+
+  .on-dark :focus-visible {
+    outline-color: #ffffff;
+  }
+
+  ::selection {
+    background-color: var(--color-gold);
+    color: var(--color-core-black);
+  }
+
+  /* Unresolved [BRACKETED] values render visibly inert rather than dead. */
+  [data-placeholder] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+  }
+}
+
+/* =============================================================================
+   UTILITIES
+   ========================================================================== */
+
+@utility container-page {
+  width: 100%;
+  max-width: 87.5rem; /* 1400px */
+  margin-inline: auto;
+  padding-inline: var(--spacing-gutter);
+}
+
+@utility container-prose {
+  width: 100%;
+  max-width: 44rem;
+  margin-inline: auto;
+  padding-inline: var(--spacing-gutter);
+}
+
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-faint);
+}
+
+@utility visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Scroll reveal — progressive enhancement. The <noscript> block in layout.tsx
+   forces everything visible without JS, so a failed script can never leave the
+   page blank. */
+[data-reveal='pending'] {
+  opacity: 0;
+  transform: translateY(1.5rem);
+}
+
+[data-reveal='shown'] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 700ms var(--ease-out-soft),
+    transform 700ms var(--ease-out-soft);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  [data-reveal='pending'] {
+    opacity: 1;
+    transform: none;
+  }
+}

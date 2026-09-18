@@ -5,22 +5,18 @@ import { cx } from '@/lib/cx';
 import { isPlaceholder } from '@/lib/href';
 import type { ImageRef } from '@/types/content';
 import { Icon } from './Icon';
-import styles from './Lightbox.module.css';
 
-type LightboxProps = {
+/* Plans and maps open full screen and zoom, because the plot numbering is the
+   content and it is unreadable at card size. The thumbnail is always contained
+   — cropping a layout plan destroys its meaning. */
+
+export function Lightbox({
+  image,
+  downloadHref,
+}: {
   image: ImageRef;
-  /** PDF of the same document, if there is one. */
   downloadHref?: string;
-  /**
-   * Thumbnail fit. 'contain' (default) keeps the whole image visible and is
-   * the only correct choice for layout plans, master plans and location maps,
-   * where cropping destroys the meaning. 'cover' crops to a fixed ratio and
-   * suits gallery photography. The full-screen view is always contained.
-   */
-  fit?: 'contain' | 'cover';
-};
-
-export function Lightbox({ image, downloadHref, fit = 'contain' }: LightboxProps) {
+}) {
   const [open, setOpen] = useState(false);
   const [zoomed, setZoomed] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -50,13 +46,15 @@ export function Lightbox({ image, downloadHref, fit = 'contain' }: LightboxProps
   };
 
   const downloadable = downloadHref && !isPlaceholder(downloadHref);
+  const barButton =
+    'inline-flex min-h-11 items-center gap-2 rounded-pill bg-white/12 px-4 text-body-sm text-white transition-colors hover:bg-white/20';
 
   return (
     <>
       <button
         ref={triggerRef}
         type="button"
-        className={cx(styles.trigger, fit === 'cover' && styles.cover)}
+        className="group relative block w-full rounded-media bg-surface p-3 text-left tablet:p-5"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
       >
@@ -68,8 +66,9 @@ export function Lightbox({ image, downloadHref, fit = 'contain' }: LightboxProps
           height={image.height}
           loading="lazy"
           decoding="async"
+          className="h-auto w-full rounded-[0.75rem] object-contain"
         />
-        <span className={styles.hint}>
+        <span className="absolute bottom-6 right-6 inline-flex min-h-9 items-center gap-2 rounded-pill bg-core-black px-4 text-body-sm text-white">
           <Icon name="zoomIn" size={15} />
           Enlarge
         </span>
@@ -77,7 +76,7 @@ export function Lightbox({ image, downloadHref, fit = 'contain' }: LightboxProps
 
       {open ? (
         <div
-          className={styles.overlay}
+          className="on-dark fixed inset-0 z-200 flex flex-col gap-4 bg-ink/95 p-4 tablet:p-6"
           role="dialog"
           aria-modal="true"
           aria-label={image.alt}
@@ -85,10 +84,10 @@ export function Lightbox({ image, downloadHref, fit = 'contain' }: LightboxProps
             if (event.target === event.currentTarget) close();
           }}
         >
-          <div className={styles.bar}>
+          <div className="flex shrink-0 justify-end gap-2">
             <button
               type="button"
-              className={styles.barButton}
+              className={barButton}
               onClick={() => setZoomed((value) => !value)}
               aria-pressed={zoomed}
             >
@@ -98,7 +97,7 @@ export function Lightbox({ image, downloadHref, fit = 'contain' }: LightboxProps
 
             {downloadable ? (
               <a
-                className={styles.barButton}
+                className={barButton}
                 href={downloadHref}
                 download
                 target="_blank"
@@ -109,15 +108,24 @@ export function Lightbox({ image, downloadHref, fit = 'contain' }: LightboxProps
               </a>
             ) : null}
 
-            <button ref={closeRef} type="button" className={styles.barButton} onClick={close}>
+            <button ref={closeRef} type="button" className={barButton} onClick={close}>
               <Icon name="close" size={20} />
               <span className="visually-hidden">Close</span>
             </button>
           </div>
 
-          <div className={cx(styles.viewport, zoomed && styles.zoomed)}>
+          <div className={cx('min-h-0 flex-1 overflow-auto', !zoomed && 'grid place-items-center')}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={image.src} alt={image.alt} width={image.width} height={image.height} />
+            <img
+              src={image.src}
+              alt={image.alt}
+              width={image.width}
+              height={image.height}
+              className={cx(
+                'rounded-[0.75rem]',
+                zoomed ? 'max-w-none' : 'max-h-full w-auto max-w-full object-contain',
+              )}
+            />
           </div>
         </div>
       ) : null}

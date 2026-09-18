@@ -1,29 +1,22 @@
 import { LinkButton } from '@/components/ui/Button';
-import { PageHero } from '@/components/layout/PageHero';
-import { Section } from '@/components/ui/Section';
-import { SectionHeading } from '@/components/ui/SectionHeading';
-import { ProjectGrid } from '@/components/sections/ProjectGrid';
-import { projects } from '@/content/projects';
 
 export default function NotFound() {
   return (
-    <>
-      <PageHero
-        eyebrow="404"
-        title="We could not find that page"
-        lead="The link may be out of date, or the page may have moved. Here is where most people are heading."
-        crumbs={[{ label: 'Home', href: '/' }, { label: 'Not found' }]}
-      />
-
-      <Section>
-        <SectionHeading
-          eyebrow="Our projects"
-          title="Browse the layouts"
-          lead="Five layouts, from open for booking through to completed and handed over."
-          action={<LinkButton href="/contact">Book a site visit</LinkButton>}
-        />
-        <ProjectGrid items={projects} />
-      </Section>
-    </>
+    <section className="flex min-h-svh flex-col items-center justify-center px-gutter text-center">
+      <p className="label-mono font-mono">404</p>
+      <h1 className="mt-6 max-w-[18ch] text-heading-lg text-ink">
+        That page has moved <em>or never existed.</em>
+      </h1>
+      <p className="mt-5 max-w-[46ch] text-body-md text-ink-soft">
+        Every live project has a page under Projects. Start there, or tell us what you were looking
+        for and we will send it.
+      </p>
+      <div className="mt-8 flex flex-wrap justify-center gap-2">
+        <LinkButton href="/projects">Browse the projects</LinkButton>
+        <LinkButton href="/" variant="ghost">
+          Back to home
+        </LinkButton>
+      </div>
+    </section>
   );
 }
