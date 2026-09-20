@@ -3,13 +3,23 @@ import { ClosingCta } from '@/components/sections/ClosingCta';
 import { FeatureList } from '@/components/sections/FeatureList';
 import { PageHero } from '@/components/sections/PageHero';
 import { amenities } from '@/content/pages';
+import { getSiteSettings } from '@/lib/api/site';
 import { pageMetadata } from '@/lib/seo';
 
-export const metadata = pageMetadata({
-  title: 'Amenities',
-  description: amenities.hero.lead,
-  path: '/amenities',
-});
+/* A module-level `metadata` constant cannot await, which is why this page used
+   to take `pageMetadata`'s hardcoded site-name default while /, /about,
+   /contact and /projects took the real CMS value. The emitted metadata is
+   unchanged apart from the site name now being CMS-sourced like everywhere
+   else. */
+export async function generateMetadata() {
+  const site = await getSiteSettings();
+  return pageMetadata({
+    title: 'Amenities',
+    description: amenities.hero.lead,
+    path: '/amenities',
+    siteName: site.name,
+  });
+}
 
 export default function AmenitiesPage() {
   return (

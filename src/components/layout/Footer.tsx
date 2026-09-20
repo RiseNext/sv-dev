@@ -41,7 +41,7 @@ export async function Footer() {
           <div className="grid gap-8 tablet:grid-cols-[minmax(0,1fr)_auto] tablet:gap-16">
             {/* ---------- Brand and the two live contact routes ---------- */}
             <div>
-              <Logo size="xs" siteName={site.name} />
+              <Logo size="xs" siteName={site.name} logo={site.logo} />
               <address className="mt-3 font-mono text-body-xs leading-normal text-ink-faint">
                 {site.address.map((line) => (
                   <span key={line} className="block">

@@ -1,5 +1,18 @@
 import Image from 'next/image';
+import type { ImageRef } from '@/types/content';
 import { cx } from '@/lib/cx';
+
+/* The committed emblem, used when Site Settings has no logo uploaded.
+   It is a FALLBACK, not the logo: `site-settings.logo` is a CMS upload field
+   (CONTENT-MANAGEMENT-MATRIX §5, "Logo file — ADMIN, T2") and the public API has
+   always emitted it. Until now nothing rendered it, so uploading a logo in the
+   Admin Panel changed nothing on the site — the one failure mode a CMS field
+   must not have. */
+const FALLBACK = {
+  src: '/images/logo/sv-developers-mark.jpg',
+  width: 160,
+  height: 160,
+} as const;
 
 /* alt="" on purpose: the wrapping link carries the accessible name, so the
    emblem is decorative and must not be announced a second time. */
@@ -17,19 +30,28 @@ export function Logo({
   size = 'sm',
   className,
   siteName,
+  logo,
 }: {
   size?: 'xs' | 'sm' | 'lg';
   className?: string;
   siteName: string;
+  /** From `site-settings.logo`. Absent -> the committed emblem above. */
+  logo?: ImageRef;
 }) {
+  const mark = logo ?? FALLBACK;
+
   return (
     <span className={cx('inline-flex items-center', size === 'xs' ? 'gap-2' : 'gap-2.5', className)}>
       <span className={cx('overflow-hidden rounded-full bg-white', BADGE[size])}>
         <Image
-          src="/images/logo/sv-developers-mark.jpg"
+          src={mark.src}
+          /* Still alt="" even when the CMS supplies alt text: the wrapping link
+             carries the accessible name, so announcing the emblem again is a
+             duplicate, not an improvement. This is a component-level a11y
+             decision and is not the CMS's to override. */
           alt=""
-          width={160}
-          height={160}
+          width={mark.width}
+          height={mark.height}
           quality={90}
           priority={size !== 'lg'}
           className="size-full object-cover"

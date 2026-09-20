@@ -109,7 +109,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body suppressHydrationWarning>
         <SmoothScroll />
         <SkipLink />
-        <PillNav nav={nav} siteName={site.name} phone={site.phone} />
+        <PillNav nav={nav} siteName={site.name} phone={site.phone} logo={site.logo} />
         <main id="main">{children}</main>
         <Footer />
       </body>

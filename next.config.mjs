@@ -11,15 +11,22 @@
    tight as the storage layout allows. */
 const remotePatterns = [];
 
-const addPattern = (rawUrl, pathname) => {
+/* `suffix` is appended to whatever PATH the base URL already carries. That
+   detail is load-bearing for Cloudinary: NEXT_PUBLIC_MEDIA_BASE_URL is
+   `https://res.cloudinary.com/<cloud name>`, so the cloud name is part of the
+   PATHNAME, not the hostname. Hardcoding `pathname: '/media/**'` — which is what
+   the S3 layout needed — matches nothing on Cloudinary, and every remote image
+   throws. */
+const addPattern = (rawUrl, suffix) => {
   if (!rawUrl) return;
   try {
     const url = new URL(rawUrl);
+    const base = url.pathname.replace(/\/+$/, '');
     remotePatterns.push({
       protocol: url.protocol.replace(':', ''),
       hostname: url.hostname,
       ...(url.port ? { port: url.port } : {}),
-      pathname,
+      pathname: `${base}${suffix}`,
     });
   } catch {
     // An unparseable URL is a configuration error, but it must not crash the
@@ -27,9 +34,16 @@ const addPattern = (rawUrl, pathname) => {
   }
 };
 
-// The CDN origin that serves uploaded media in production.
-addPattern(process.env.NEXT_PUBLIC_MEDIA_BASE_URL, '/media/**');
-addPattern(process.env.NEXT_PUBLIC_MEDIA_BASE_URL, '/documents/**');
+/* The Cloudinary delivery origin (owner decision, 20 Sep 2026).
+
+   These two suffixes mirror `cloudinaryFileUrl()` in the backend exactly:
+   images are delivered as `<base>/image/upload/media/<uuid>.<ext>` and PDFs as
+   `<base>/raw/upload/documents/<uuid>.pdf`. Both sides derive from the SAME
+   configured base, so a private-CDN or custom-hostname deployment stays
+   consistent without a second code change — but the two env vars must agree.
+   RUNBOOK.md §1 step 12 is the check that proves they do. */
+addPattern(process.env.NEXT_PUBLIC_MEDIA_BASE_URL, '/image/upload/media/**');
+addPattern(process.env.NEXT_PUBLIC_MEDIA_BASE_URL, '/raw/upload/documents/**');
 
 // The CMS origin itself, which serves uploads directly in local development
 // (S3_BUCKET empty => local disk => /payload-api/media/file/<uuid>).

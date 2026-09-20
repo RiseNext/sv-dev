@@ -18,15 +18,25 @@ export function pageMetadata({
   description,
   path = '/',
   image,
-  siteName = 'SV Developers',
+  siteName,
 }: {
   title: string;
   description: string;
   path?: string;
   image?: { url: string; alt: string; width: number; height: number };
-  /** From the CMS. Defaulted only so a metadata call during an outage still
-   *  produces a valid document rather than throwing. */
-  siteName?: string;
+  /* 🔴 REQUIRED, AND IT USED TO BE OPTIONAL WITH A HARDCODED DEFAULT.
+     The default was `'SV Developers'`, and three pages — /amenities, /location
+     and /master-plan — silently took it, because they were plain `export const
+     metadata` and had no way to await the CMS. The company name is CMS data, so
+     those three would have kept the old name the day it was changed in Admin,
+     while the other four updated. Nothing would have reported it.
+
+     Making this required turns that into a compile error. The claimed
+     justification for the default — "so a metadata call during an outage still
+     produces a valid document" — never held: every caller awaits
+     getSiteSettings() on the line above, so an outage throws before this is
+     reached. */
+  siteName: string;
 }): Metadata {
   return {
     title,
@@ -52,7 +62,7 @@ export function pageMetadata({
    ("best plots", "No.1 developer", "guaranteed returns") are absent by
    construction: there is no field they could come from.
    ========================================================================== */
-export function projectMetadata(project: Project, siteName?: string): Metadata {
+export function projectMetadata(project: Project, siteName: string): Metadata {
   const title = project.seo?.title ?? `${project.name} | ${project.category}`;
 
   /* Falls back to the summary, which is itself brochure-derived. The assembled

@@ -8,7 +8,7 @@ import { Logo } from '@/components/layout/Logo';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cx } from '@/lib/cx';
 import { anchorProps, telHref } from '@/lib/href';
-import type { NavLink } from '@/types/content';
+import type { ImageRef, NavLink } from '@/types/content';
 
 /* =============================================================================
    FLOATING PILL NAVIGATION
@@ -73,10 +73,12 @@ export function PillNav({
   nav,
   siteName,
   phone,
+  logo,
 }: {
   nav: readonly NavLink[];
   siteName: string;
   phone: string;
+  logo?: ImageRef;
 }) {
   const pathname = usePathname();
   const isInline = useMediaQuery(INLINE_NAV);
@@ -166,7 +168,7 @@ export function PillNav({
             aria-label={`${siteName} — home`}
             className={cx(PILL, 'bg-surface pl-1 pr-3 text-ink')}
           >
-            <Logo siteName={siteName} size="xs" />
+            <Logo siteName={siteName} logo={logo} size="xs" />
           </Link>
 
           {/* Links inline from 1024px up; the Menu pill below it. */}
