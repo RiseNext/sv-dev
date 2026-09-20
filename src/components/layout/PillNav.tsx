@@ -8,7 +8,7 @@ import { Logo } from '@/components/layout/Logo';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cx } from '@/lib/cx';
 import { anchorProps, telHref } from '@/lib/href';
-import { nav, site } from '@/content/site';
+import type { NavLink } from '@/types/content';
 
 /* =============================================================================
    FLOATING PILL NAVIGATION
@@ -62,7 +62,22 @@ const PILL =
 
 const slug = (label: string) => label.toLowerCase().replace(/\s+/g, '-');
 
-export function PillNav() {
+/* 🔴 A 'use client' MODULE CANNOT FETCH. Everything it needs is threaded
+   down from the root layout, which is a Server Component.
+
+   `nav` in particular is now DERIVED from the published project list
+   rather than being a hardcoded array of five slugs — so a project added
+   in the CMS actually appears in the dropdown, which the README
+   incorrectly claimed was already true. */
+export function PillNav({
+  nav,
+  siteName,
+  phone,
+}: {
+  nav: readonly NavLink[];
+  siteName: string;
+  phone: string;
+}) {
   const pathname = usePathname();
   const isInline = useMediaQuery(INLINE_NAV);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -148,10 +163,10 @@ export function PillNav() {
         <nav aria-label="Primary" className={cx(PLATE, 'flex items-center gap-0.5')}>
           <Link
             href="/"
-            aria-label={`${site.name} — home`}
+            aria-label={`${siteName} — home`}
             className={cx(PILL, 'bg-surface pl-1 pr-3 text-ink')}
           >
-            <Logo size="xs" />
+            <Logo siteName={siteName} size="xs" />
           </Link>
 
           {/* Links inline from 1024px up; the Menu pill below it. */}
@@ -244,7 +259,7 @@ export function PillNav() {
       {/* ---------- Right group: the two conversion actions ---------- */}
       <div className="fixed right-3 top-3 z-100 hidden tablet:block">
         <div className={cx(PLATE, 'flex items-center gap-0.5')}>
-          <a {...anchorProps(telHref(site.phone))} className={cx(PILL, 'text-ink hover:bg-white/50')}>
+          <a {...anchorProps(telHref(phone))} className={cx(PILL, 'text-ink hover:bg-white/50')}>
             <Icon name="phone" size={15} />
             Call
           </a>
@@ -366,11 +381,11 @@ export function PillNav() {
             Book a site visit
           </Link>
           <a
-            {...anchorProps(telHref(site.phone))}
+            {...anchorProps(telHref(phone))}
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-pill border border-line-strong px-5 text-body-sm font-medium text-ink"
           >
             <Icon name="phone" size={16} />
-            {site.phone}
+            {phone}
           </a>
         </div>
       </div>

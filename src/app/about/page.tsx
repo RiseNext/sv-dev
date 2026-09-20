@@ -3,16 +3,23 @@ import { ClosingCta } from '@/components/sections/ClosingCta';
 import { FeatureList } from '@/components/sections/FeatureList';
 import { PageHero } from '@/components/sections/PageHero';
 import { about, home } from '@/content/pages';
-import { site } from '@/content/site';
+import { getSiteSettings } from '@/lib/api/site';
+import { getStatistics } from '@/lib/api/content';
 import { pageMetadata } from '@/lib/seo';
 
-export const metadata = pageMetadata({
-  title: 'About us',
-  description: about.hero.lead,
-  path: '/about',
-});
+export async function generateMetadata() {
+  const site = await getSiteSettings();
+  return pageMetadata({
+    title: 'About us',
+    description: about.hero.lead,
+    path: '/about',
+    siteName: site.name,
+  });
+}
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const [site, statistics] = await Promise.all([getSiteSettings(), getStatistics()]);
+
   return (
     <>
       <PageHero
@@ -24,7 +31,10 @@ export default function AboutPage() {
 
       <section className="px-gutter pt-section-sm" aria-label="Track record">
         <dl className="container-page grid gap-px overflow-hidden rounded-card bg-line mid:grid-cols-2 tablet:grid-cols-4">
-          {home.hero.stats.map((stat) => (
+          {(statistics.length
+            ? statistics.map((s) => ({ value: s.value, label: s.label }))
+            : home.hero.stats
+          ).map((stat) => (
             <div key={stat.label} className="flex flex-col-reverse gap-1 bg-bg p-6 tablet:p-8">
               <dt className="label-mono font-mono">{stat.label}</dt>
               <dd className="font-display text-heading-md text-ink">{stat.value}</dd>
@@ -73,7 +83,7 @@ export default function AboutPage() {
         <Reveal className="container-prose rounded-card bg-surface p-8 text-center tablet:p-12">
           <p className="label-mono font-mono">Office</p>
           <address className="mt-5 font-display text-heading-sm not-italic text-ink">
-            {site.address.map((line) => (
+            {site.address.map((line: string) => (
               <span key={line} className="block">
                 {line}
               </span>

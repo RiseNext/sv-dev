@@ -1,5 +1,5 @@
 import { Reveal } from '@/components/ui/Reveal';
-import { testimonials } from '@/content/pages';
+import type { Testimonial } from '@/types/content';
 import { isPlaceholder } from '@/lib/href';
 
 /* White card, serif quote, mono attribution — the reference's story card
@@ -11,8 +11,13 @@ import { isPlaceholder } from '@/lib/href';
    and must be replaced with real, consented quotes — or deleted — before the
    site is indexed. */
 
-export function Testimonials() {
-  if (!testimonials.length) return null;
+/* ⚠️ Items arrive as a PROP and the CMS returns only PUBLISHED AND CONSENTED
+   quotes. The three testimonials that used to be hardcoded here were INVENTED
+   placeholders with bracketed names — publishing them would be a fabricated
+   record — so this section correctly renders NOTHING until real, consented
+   quotes exist. An absent section is better than an invented one. */
+export function Testimonials({ items }: { items: readonly Testimonial[] }) {
+  if (!items.length) return null;
 
   return (
     <section className="px-gutter pt-section" aria-labelledby="reviews-title">
@@ -25,7 +30,7 @@ export function Testimonials() {
         </Reveal>
 
         <ul className="mt-14 grid gap-4 mid:grid-cols-2 tablet:grid-cols-3">
-          {testimonials.map((item, index) => (
+          {items.map((item, index) => (
             <Reveal as="li" key={item.id} delay={index * 80}>
               <figure className="flex h-full flex-col rounded-media bg-surface p-6 tablet:p-8">
                 <blockquote className="flex-1">

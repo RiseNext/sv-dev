@@ -6,7 +6,7 @@ import { Frame } from '@/components/ui/Media';
 import { Reveal } from '@/components/ui/Reveal';
 import { ClosingCta } from '@/components/sections/ClosingCta';
 import { FeatureList } from '@/components/sections/FeatureList';
-import { site } from '@/content/site';
+import { getSiteSettings } from '@/lib/api/site';
 import { telHref } from '@/lib/href';
 import type { Project } from '@/types/content';
 
@@ -15,7 +15,10 @@ import type { Project } from '@/types/content';
    rendering an empty shell — a project with no location map simply does not
    have that band, which is what keeps the page honest when a brochure is thin. */
 
-export function ProjectDetail({ project }: { project: Project }) {
+export async function ProjectDetail({ project }: { project: Project }) {
+  // A Server Component, so it reads the CMS directly. `getSiteSettings` is
+  // React-cached, so the whole render tree makes ONE request for this.
+  const site = await getSiteSettings();
   return (
     <>
       <header className="px-gutter pt-40 tablet:pt-52">

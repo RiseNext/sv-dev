@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import { useId, useState, type FormEvent } from 'react';
 import { Icon } from '@/components/ui/Icon';
-import { site } from '@/content/site';
 import { isPlaceholder } from '@/lib/href';
 
 /* The reference captures an email here. A plot buyer gives a phone number, so
@@ -14,13 +13,28 @@ import { isPlaceholder } from '@/lib/href';
    send it, so the pill routes to /contact with the number prefilled instead of
    opening a dead deep link. */
 
-export function EnquiryPill() {
+/* 🔴 A 'use client' module, so `siteName` and `whatsapp` arrive as props.
+
+   ⚠️ THE CONSEQUENCE OF A REAL WHATSAPP NUMBER, STATED PLAINLY:
+   the moment an admin types one into the CMS, `whatsappReady` flips and this
+   pill STOPS routing to /contact — so the enquiry goes straight to WhatsApp and
+   NO LEAD ROW IS EVER CREATED. That is a deliberate, documented trade-off in the
+   backend (the `whatsapp` field's admin help text says so in three sentences),
+   not an accident. Until a WhatsApp hand-off endpoint exists, a real number here
+   means those enquiries are not recorded anywhere. */
+export function EnquiryPill({
+  siteName,
+  whatsapp,
+}: {
+  siteName: string;
+  whatsapp: string;
+}) {
   const router = useRouter();
   const inputId = useId();
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const whatsappReady = !isPlaceholder(site.whatsapp);
+  const whatsappReady = !isPlaceholder(whatsapp);
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -32,11 +46,11 @@ export function EnquiryPill() {
     }
     setError(null);
 
-    const message = `Hi ${site.name}, please call me about a site visit. My number is ${digits}.`;
+    const message = `Hi ${siteName}, please call me about a site visit. My number is ${digits}.`;
 
     if (whatsappReady) {
       window.open(
-        `https://wa.me/${site.whatsapp}?text=${encodeURIComponent(message)}`,
+        `https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`,
         '_blank',
         'noopener,noreferrer',
       );

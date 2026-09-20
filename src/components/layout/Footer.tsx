@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
 import { Logo } from '@/components/layout/Logo';
-import { footerNav, legal, site, social } from '@/content/site';
-import { anchorProps, telHref } from '@/lib/href';
+import { buildFooterNav, legal } from '@/content/site';
+import { getSiteSettings } from '@/lib/api/site';
+import { getProjects } from '@/lib/api/projects';
+import { anchorProps, mailHref, telHref } from '@/lib/href';
 
 /* The page ends on a colour band with the wordmark set large enough to be
    clipped by it. Above the band the content block keeps the page background
@@ -21,7 +23,17 @@ import { anchorProps, telHref } from '@/lib/href';
 const LINK = 'text-body-sm text-ink-soft transition-colors hover:text-ink';
 const META = 'font-mono text-body-xs text-ink-faint';
 
-export function Footer() {
+export async function Footer() {
+  // A Server Component: it reads the CMS directly. Both calls are React-cached,
+  // so rendering the footer on every page costs one request per build, not one
+  // per page.
+  const site = await getSiteSettings();
+  const projects = await getProjects();
+
+  // DERIVED, not a hand-maintained list of five slugs.
+  const footerNav = buildFooterNav(projects);
+  const social = site.social ?? [];
+
   return (
     <footer className="bg-band">
       <div className="rounded-b-band bg-bg pb-8 pt-12 tablet:pb-10 tablet:pt-16">
@@ -29,7 +41,7 @@ export function Footer() {
           <div className="grid gap-8 tablet:grid-cols-[minmax(0,1fr)_auto] tablet:gap-16">
             {/* ---------- Brand and the two live contact routes ---------- */}
             <div>
-              <Logo size="xs" />
+              <Logo size="xs" siteName={site.name} />
               <address className="mt-3 font-mono text-body-xs leading-normal text-ink-faint">
                 {site.address.map((line) => (
                   <span key={line} className="block">
@@ -48,7 +60,7 @@ export function Footer() {
                   {site.phone}
                 </a>
                 <a
-                  {...anchorProps(`mailto:${site.email}`)}
+                  {...anchorProps(mailHref(site.email))}
                   className={`${LINK} inline-flex items-center gap-1.5`}
                 >
                   <Icon name="mail" size={15} />
@@ -99,10 +111,10 @@ export function Footer() {
 
             <div className="max-w-[68ch]">
               <p className={`${META} leading-relaxed`}>
-                {legal.copyright} {legal.disclaimer}
+                {site.copyrightText} {legal.disclaimer}
               </p>
               <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5">
-                {legal.links.map((link) => (
+                {(site.legalLinks ?? []).map((link) => (
                   <li key={link.label}>
                     <a
                       {...anchorProps(link.href)}
