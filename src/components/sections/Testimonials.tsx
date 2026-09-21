@@ -5,11 +5,9 @@ import { isPlaceholder } from '@/lib/href';
 /* White card, serif quote, mono attribution — the reference's story card
    without the video, which we do not have.
 
-   ⚠️  The quotes in content/pages.ts are WRITTEN PLACEHOLDERS with bracketed
-   names. Publishing invented reviews under real-sounding names is a fabricated
-   record, so this section renders the placeholder attribution visibly inert
-   and must be replaced with real, consented quotes — or deleted — before the
-   site is indexed. */
+   `isPlaceholder` still guards the attribution: a CMS row may legitimately be
+   saved with a `[BRACKETED]` name while an admin is mid-edit, and that must
+   render visibly inert rather than looking like a real person. */
 
 /* ⚠️ Items arrive as a PROP and the CMS returns only PUBLISHED AND CONSENTED
    quotes. The three testimonials that used to be hardcoded here were INVENTED

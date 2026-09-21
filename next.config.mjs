@@ -46,7 +46,8 @@ addPattern(process.env.NEXT_PUBLIC_MEDIA_BASE_URL, '/image/upload/media/**');
 addPattern(process.env.NEXT_PUBLIC_MEDIA_BASE_URL, '/raw/upload/documents/**');
 
 // The CMS origin itself, which serves uploads directly in local development
-// (S3_BUCKET empty => local disk => /payload-api/media/file/<uuid>).
+// (CLOUDINARY_CLOUD_NAME empty => the storage plugin goes inert => local disk
+// => /payload-api/media/file/<uuid>).
 if (process.env.NEXT_PUBLIC_API_BASE_URL) {
   addPattern(
     process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/api\/v1\/?$/, ''),
