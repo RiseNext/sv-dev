@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { ProjectCard } from '@/components/sections/ProjectCard';
-import type { Project, ProjectCategory } from '@/types/content';
+import { ProjectCard, type ProjectCardData } from '@/components/sections/ProjectCard';
+import type { ProjectCategory } from '@/types/content';
 import { cx } from '@/lib/cx';
 
 /* Filter pills in the nav's own idiom. Client-side because the catalogue is
@@ -14,7 +14,7 @@ export function ProjectCatalogue({
   projects,
   categories,
 }: {
-  projects: readonly Project[];
+  projects: readonly ProjectCardData[];
   categories: readonly ProjectCategory[];
 }) {
   const [active, setActive] = useState<ProjectCategory | 'all'>('all');

@@ -1,15 +1,16 @@
-import type { FeatureItem, ImageRef, ProximityItem, Testimonial } from '@/types/content';
+import type { FeatureItem, ImageRef, ProximityItem } from '@/types/content';
 
 /* =============================================================================
    PAGE COPY — placeholder throughout.
 
-   ⚠️  Three categories must be replaced by someone who can verify them:
+   ⚠️  Two categories must be replaced by someone who can verify them:
    1. [BRACKETED] values — approval numbers, dimensions, addresses, URLs.
    2. Drive times in `proximity` — illustrative. Measure them; proximity is the
       claim most likely to be challenged on a land page.
-   3. `testimonials` — written placeholders with bracketed attributions.
-      Publishing invented reviews under real-sounding names is a fabricated
-      record. Replace with real, consented quotes or delete the section.
+
+   `testimonials` used to be a third category and is GONE — see the note where
+   it stood. Reviews are CMS data now, and no invented review exists anywhere in
+   this repository.
    ========================================================================== */
 
 /* ---------- Shared media -------------------------------------------------- */
@@ -307,29 +308,16 @@ export const location = {
 
 /* ---------- Testimonials --------------------------------------------------- */
 
-export const testimonials: readonly Testimonial[] = [
-  {
-    id: 'client-1',
-    name: '[CLIENT NAME 1]',
-    role: '[PROFESSION], [CITY]',
-    rating: 5,
-    body: 'The paperwork was the part I was dreading and it turned out to be the easiest. Every document I asked for arrived the same day, and registration was done inside two weeks of the booking.',
-  },
-  {
-    id: 'client-2',
-    name: '[CLIENT NAME 2]',
-    role: '[PROFESSION], [CITY]',
-    rating: 5,
-    body: 'I visited three layouts on the same corridor before this one. It was the only site where the roads, drains and compound wall were finished rather than promised, which is what decided it.',
-  },
-  {
-    id: 'client-3',
-    name: '[CLIENT NAME 3]',
-    role: '[PROFESSION], [CITY]',
-    rating: 5,
-    body: 'We bought two adjoining plots for the family. Two years on, the street lighting and the park are maintained exactly as they were shown to us at the site visit. That is rarer than it should be.',
-  },
-];
+/* 🔴 DELETED, NOT MOVED. Three invented reviews with `[CLIENT NAME n]`
+   attributions used to live here. They were already unreachable — `app/page.tsx`
+   reads testimonials from the CMS via `getTestimonials()` — so they were
+   fabricated review text sitting in the repository with nothing but an import
+   away from being published.
+
+   Testimonials are entered through Payload Admin, and the CMS returns only rows
+   that are BOTH published AND consented (enforced at the form, at the API and
+   by a database CHECK constraint). Until a real, consented review exists the
+   section renders nothing, which is the correct outcome. */
 
 /* ---------- Contact -------------------------------------------------------- */
 

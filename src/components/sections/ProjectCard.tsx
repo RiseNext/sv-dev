@@ -8,7 +8,23 @@ import { cx } from '@/lib/cx';
    tagline in sans. The whole card is one link — a card with three separate
    links in it gives a screen-reader user three stops for one destination. */
 
-export function ProjectCard({ project, priority = false }: { project: Project; priority?: boolean }) {
+/* The prop is the CARD SHAPE, not the whole record — these are exactly the
+   fields this component reads. A full `Project` still satisfies it, so nothing
+   that passed before stops passing; the list endpoint can now feed it directly
+   without over-fetching every paragraph and every feature array. */
+export type ProjectCardData = Pick<
+  Project,
+  'slug' | 'name' | 'category' | 'locality' | 'image'
+> &
+  Partial<Pick<Project, 'status' | 'tagline' | 'featured'>>;
+
+export function ProjectCard({
+  project,
+  priority = false,
+}: {
+  project: ProjectCardData;
+  priority?: boolean;
+}) {
   return (
     <Link
       href={`/projects/${project.slug}`}

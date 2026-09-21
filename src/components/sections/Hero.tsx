@@ -22,10 +22,21 @@ import { cx } from '@/lib/cx';
 
 export function Hero({
   media,
+  siteName,
+  whatsapp,
+  ticker: tickerOverride,
 }: {
   media?: { src: string; poster: string };
+  /* Threaded down from the page, because EnquiryPill is a 'use client' module
+     and cannot read the CMS itself. */
+  siteName: string;
+  whatsapp: string;
+  /* The scrolling claims, now CMS-managed. Falls back to the static copy so
+     the hero is never empty during an outage. */
+  ticker?: readonly { icon: IconName; text: string }[];
 }) {
-  const { eyebrow, title, titleAccent, ticker } = home.hero;
+  const { eyebrow, title, titleAccent } = home.hero;
+  const ticker = tickerOverride?.length ? tickerOverride : home.hero.ticker;
   const onMedia = Boolean(media);
 
   return (
@@ -92,7 +103,7 @@ export function Hero({
         className={cx('w-full', onMedia ? 'mt-auto pt-16' : 'mt-12')}
         style={{ animation: 'rise 700ms var(--ease-out-soft) 380ms backwards' }}
       >
-        <EnquiryPill />
+        <EnquiryPill siteName={siteName} whatsapp={whatsapp} />
       </div>
 
       <p

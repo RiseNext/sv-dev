@@ -6,23 +6,50 @@ import { ContactForm } from '@/components/sections/ContactForm';
 import { PageHero } from '@/components/sections/PageHero';
 import { Statement } from '@/components/sections/Statement';
 import { contact } from '@/content/pages';
-import { site } from '@/content/site';
-import { anchorProps, telHref } from '@/lib/href';
+import { getSiteSettings } from '@/lib/api/site';
+import { getProjects } from '@/lib/api/projects';
+import { getFaqs } from '@/lib/api/content';
+import { anchorProps, mailHref, telHref, whatsappHref } from '@/lib/href';
 import { pageMetadata } from '@/lib/seo';
 
-export const metadata = pageMetadata({
-  title: 'Contact',
-  description: contact.hero.lead,
-  path: '/contact',
-});
+export async function generateMetadata() {
+  const site = await getSiteSettings();
+  return pageMetadata({
+    title: 'Contact',
+    description: contact.hero.lead,
+    path: '/contact',
+    siteName: site.name,
+  });
+}
 
-const channels = [
-  { icon: 'phone' as const, label: 'Phone', value: site.phone, href: telHref(site.phone) },
-  { icon: 'whatsapp' as const, label: 'WhatsApp', value: site.whatsapp, href: site.whatsapp },
-  { icon: 'mail' as const, label: 'Email', value: site.email, href: `mailto:${site.email}` },
-];
+export default async function ContactPage() {
+  const [site, projects, faqs] = await Promise.all([
+    getSiteSettings(),
+    getProjects(),
+    getFaqs(),
+  ]);
 
-export default function ContactPage() {
+  /* 🔴 TWO LIVE BUGS FIXED HERE.
+     · `mailto:` was built by hand, so `[EMAIL@DOMAIN]` produced the string
+       `mailto:[EMAIL@DOMAIN]` — which `isPlaceholder()` cannot detect, because
+       it requires the WHOLE string to be bracketed. A live, focusable, dead
+       mailto shipped on this page.
+     · WhatsApp was passed as the RAW DIGIT STRING, so it was inert only BY
+       ACCIDENT. The moment a real number is entered in the CMS it becomes a
+       RELATIVE link to /919XXXXXXXXX and 404s.
+     Both now go through helpers in lib/href.ts that render a placeholder inert
+     and a real value correctly. */
+  const channels = [
+    { icon: 'phone' as const, label: 'Phone', value: site.phone, href: telHref(site.phone) },
+    {
+      icon: 'whatsapp' as const,
+      label: 'WhatsApp',
+      value: site.whatsapp,
+      href: whatsappHref(site.whatsapp),
+    },
+    { icon: 'mail' as const, label: 'Email', value: site.email, href: mailHref(site.email) },
+  ];
+
   return (
     <>
       <PageHero
@@ -45,7 +72,14 @@ export default function ContactPage() {
             />
             <div className="rounded-media bg-surface p-6 tablet:p-10">
               <Suspense fallback={null}>
-                <ContactForm />
+                <ContactForm
+                  projects={projects.map((p) => ({
+                    slug: p.slug,
+                    name: p.name,
+                    locality: p.locality,
+                  }))}
+                  formNote={site.formNote}
+                />
               </Suspense>
             </div>
           </Reveal>
@@ -75,7 +109,7 @@ export default function ContactPage() {
                 Site office
               </p>
               <address className="mt-3 text-body-sm text-ink">
-                {site.address.map((line) => (
+                {site.address.map((line: string) => (
                   <span key={line} className="block">
                     {line}
                   </span>
@@ -83,7 +117,7 @@ export default function ContactPage() {
               </address>
               <p className="mt-4 text-body-sm text-ink-soft">{site.officeHours}</p>
               <a
-                {...anchorProps(site.mapUrl)}
+                {...anchorProps(site.mapUrl ?? '[GOOGLE_MAPS_URL]')}
                 className="mt-4 inline-flex items-center gap-2 text-body-sm font-medium text-ink"
               >
                 <Icon name="mapPin" size={16} />
@@ -96,7 +130,9 @@ export default function ContactPage() {
 
       <Statement id="faq" label="FAQ" title="Before you come," titleAccent="the usual questions" />
       <div className="container-prose mt-14">
-        <Accordion items={contact.faq} />
+        <Accordion
+          items={faqs.length ? faqs.map((f) => ({ q: f.question, a: f.answer })) : contact.faq}
+        />
       </div>
 
       <div className="pb-section-sm" />

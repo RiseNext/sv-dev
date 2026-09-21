@@ -4,7 +4,9 @@ import { Footer } from '@/components/layout/Footer';
 import { PillNav } from '@/components/layout/PillNav';
 import { SkipLink } from '@/components/layout/SkipLink';
 import { SmoothScroll } from '@/components/layout/SmoothScroll';
-import { site } from '@/content/site';
+import { buildNav } from '@/content/site';
+import { getSiteSettings } from '@/lib/api/site';
+import { getProjects } from '@/lib/api/projects';
 import '@/styles/globals.css';
 
 /* Fonts are SELF-HOSTED from src/styles/fonts. next/font/google fetches over
@@ -42,16 +44,40 @@ const mono = localFont({
   adjustFontFallback: false,
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(site.url),
-  title: {
-    default: `${site.name} — ${site.tagline}`,
-    template: `%s | ${site.name}`,
-  },
-  description: site.description,
-  // Placeholder content must not be indexed. Remove this once real copy lands.
-  robots: { index: false, follow: false },
-};
+/* A module-level `metadata` constant cannot await, so this became a function.
+   The SHAPE is unchanged.
+
+   🔴 `metadataBase` now comes from NEXT_PUBLIC_SITE_URL, not from content.
+   It used to be `site.url = 'https://www.example.com'` — the ONE UNBRACKETED
+   placeholder in the entire repository, which `isPlaceholder()` could never
+   catch, and which fed every canonical URL, every OpenGraph url and all 12
+   sitemap entries. Getting it wrong is now a deployment misconfiguration rather
+   than a silently-shipped lie. */
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await getSiteSettings();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: site.tagline ? `${site.name} — ${site.tagline}` : site.name,
+      template: `%s | ${site.name}`,
+    },
+    description: site.description,
+    /* 🔴 ONE OF TWO INDEPENDENT INDEXING BLOCKS. The other is in robots.ts.
+       BOTH must be lifted together at launch — lifting only one leaves the site
+       unindexed with a cause nobody will find. This is the single most
+       consequential launch action in the project, and it now has a switch. */
+    robots: allowIndexing()
+      ? { index: true, follow: true }
+      : { index: false, follow: false },
+  };
+}
+
+/** Shared by this file and robots.ts, so the two blocks cannot drift apart. */
+export function allowIndexing(): boolean {
+  return process.env.NEXT_PUBLIC_ALLOW_INDEXING === 'true';
+}
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -59,7 +85,13 @@ export const viewport: Viewport = {
   themeColor: '#f9f8f5', // keep in sync with --color-bg in globals.css
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const site = await getSiteSettings();
+  const projects = await getProjects();
+
+  // DERIVED from the published set — see content/site.ts for why this matters.
+  const nav = buildNav(projects);
+
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <head>
@@ -77,7 +109,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning>
         <SmoothScroll />
         <SkipLink />
-        <PillNav />
+        <PillNav nav={nav} siteName={site.name} phone={site.phone} logo={site.logo} />
         <main id="main">{children}</main>
         <Footer />
       </body>
