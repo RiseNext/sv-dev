@@ -2,11 +2,37 @@
    These helpers guarantee such a destination can never ship as a live-looking
    but dead link: it renders inert, unfocusable, and visibly struck through. */
 
+/* 🔴 AN ABSENT DESTINATION IS TREATED AS A PLACEHOLDER, NOT AS A CRASH.
+
+   These helpers are typed `href: string`, and the CMS contract types agree —
+   `site.phone`, `site.email` and `site.whatsapp` are all declared `string`. But
+   a TYPE IS NOT A RUNTIME GUARANTEE when the value crosses the network: a
+   site-settings global that has never been saved serialises with those keys
+   missing, and `undefined` arrives where the compiler promised a string.
+
+   ⚠️ THIS FAILED THE PRODUCTION BUILD, it did not merely render oddly:
+     TypeError: Cannot read properties of undefined (reading 'startsWith')
+     Export encountered an error on /projects/page, exiting the build.
+   A freshly migrated database is exactly that state, so a first deploy made
+   before the owner had entered any content could not build at all.
+
+   The backend now also emits `''` rather than omitting those keys, which fixes
+   the contract violation at source. This guard stays regardless — it is one
+   `typeof` check standing between a missing CMS value and a failed deploy, and
+   rendering an unfilled destination INERT is the stated purpose of this whole
+   module. An empty string is handled identically for the same reason: `tel:`
+   with no number is exactly the live-looking dead link described above. */
+function isBlank(href: string): boolean {
+  return typeof href !== 'string' || href.trim() === '';
+}
+
 export function isPlaceholder(href: string): boolean {
+  if (isBlank(href)) return true;
   return href.startsWith('[') && href.endsWith(']');
 }
 
 export function isExternal(href: string): boolean {
+  if (isBlank(href)) return false;
   return /^(https?:)?\/\//.test(href) || href.startsWith('mailto:') || href.startsWith('tel:');
 }
 
