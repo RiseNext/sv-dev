@@ -7,7 +7,7 @@ import { Reveal } from '@/components/ui/Reveal';
 import { ClosingCta } from '@/components/sections/ClosingCta';
 import { FeatureList } from '@/components/sections/FeatureList';
 import { getSiteSettings } from '@/lib/api/site';
-import { telHref } from '@/lib/href';
+import { isPlaceholder, telHref } from '@/lib/href';
 import type { Project } from '@/types/content';
 
 /* One template for every project, driven entirely by the record in
@@ -19,6 +19,17 @@ export async function ProjectDetail({ project }: { project: Project }) {
   // A Server Component, so it reads the CMS directly. `getSiteSettings` is
   // React-cached, so the whole render tree makes ONE request for this.
   const site = await getSiteSettings();
+
+  /* The brochure button appears ONLY for a project that actually has one, and
+     only for a real destination. Same discipline as the optional sections
+     below: a project without a brochure has no third button at all, rather than
+     a disabled or empty one. The `href` is whatever the CMS returned — never
+     constructed here, so no Cloudinary URL shape is assumed. */
+  const brochure =
+    project.brochure && project.brochure.href.trim() && !isPlaceholder(project.brochure.href)
+      ? project.brochure
+      : null;
+
   return (
     <>
       <header className="px-gutter pt-40 tablet:pt-52">
@@ -79,6 +90,22 @@ export async function ProjectDetail({ project }: { project: Project }) {
                 <Icon name="phone" size={16} />
                 Call about this project
               </LinkButton>
+              {brochure ? (
+                /* Third button in the SAME row, reusing the SAME ghost variant
+                   and size as the call button beside it — no new styling, and it
+                   inherits the row's existing flex-wrap, so it drops onto its own
+                   line on narrow screens like the other two already do.
+                   `LinkButton` sends an absolute URL through `anchorProps`, which
+                   adds target="_blank" rel="noopener noreferrer". */
+                <LinkButton href={brochure.href} variant="ghost" size="lg">
+                  <Icon name="download" size={16} />
+                  Download brochure
+                  {/* The visible label stays short and predictable; the actual
+                      document name is exposed to assistive tech instead of
+                      stretching the button. */}
+                  <span className="sr-only">: {brochure.title}</span>
+                </LinkButton>
+              ) : null}
             </div>
           </div>
 
