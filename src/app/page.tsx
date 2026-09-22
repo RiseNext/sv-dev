@@ -9,12 +9,13 @@ import { MediaSequence } from '@/components/sections/MediaSequence';
 import { PinnedProof } from '@/components/sections/PinnedProof';
 import { ProjectCard } from '@/components/sections/ProjectCard';
 import { Statement } from '@/components/sections/Statement';
-import { StepList } from '@/components/sections/StepList';
 import { Testimonials } from '@/components/sections/Testimonials';
 import { amenities, contact, home, media } from '@/content/pages';
 import { getFeaturedProjects, getProjects } from '@/lib/api/projects';
 import { getSiteSettings } from '@/lib/api/site';
 import { getFaqs, getStatistics, getTestimonials } from '@/lib/api/content';
+/* 🔶 TEMPORARY — delete with the `??` below when the CMS ships `heroVideos`. */
+import { previewHeroVideos } from '@/lib/dev/previewHeroVideos';
 import { pageMetadata } from '@/lib/seo';
 
 export async function generateMetadata() {
@@ -66,7 +67,18 @@ export default async function HomePage() {
 
   return (
     <>
-      <Hero siteName={site.name} whatsapp={site.whatsapp} ticker={site.heroTicker} />
+      {/* `heroVideos` is absent from the API today, so the `??` falls through to
+          the local preview folder (public/media/hero) — DEVELOPMENT ONLY, see
+          lib/dev/previewHeroVideos.ts.
+
+          🔶 THE `??` IS THE TEMPORARY HALF, not the prop. The CMS wins the
+          moment it returns anything, so nothing here needs unpicking when the
+          backend ships: delete `?? previewHeroVideos()` and its import. */}
+      <Hero
+        siteName={site.name}
+        whatsapp={site.whatsapp}
+        videos={site.heroVideos ?? previewHeroVideos()}
+      />
 
       <Statement
         id="why"
@@ -115,14 +127,9 @@ export default async function HomePage() {
 
       <Testimonials items={testimonials} />
 
-      <Statement
-        id="how"
-        label="How buying works"
-        title="Five steps,"
-        titleAccent="no surprises in any of them"
-        lead="The same sequence on every project, whether you are buying one plot or four."
-      />
-      <StepList items={home.steps} />
+      {/* The "How buying works" Statement and its StepList were removed on
+          request — the whole area, heading and steps together. Nothing linked
+          to its `#how` anchor, so no navigation broke. */}
 
       <Statement id="faq" label="FAQ" title="The questions" titleAccent="we get asked first" />
       <div className="container-prose mt-14">

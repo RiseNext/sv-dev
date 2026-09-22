@@ -47,23 +47,21 @@ export const media = {
 
 export const home = {
   hero: {
-    eyebrow: 'Approved plots · [LOCALITY]',
-    /* Split so the hero can set the second half in italic. Read together they
+    /* No `eyebrow` here, unlike every other page's hero: the home hero's
+       eyebrow ("Approved plots · [LOCALITY]") was removed on request, and it
+       was an unresolved [LOCALITY] placeholder that had never been filled.
+
+       Split so the hero can set the second half in italic. Read together they
        are one sentence; nothing else depends on the halves. */
     title: 'Land you can build on',
     titleAccent: 'the week you buy it.',
     lead: 'Every SV Developers plot is clear-titled, fully developed and ready to register — roads laid, water and power at the boundary, compound wall standing before the first sale.',
     primaryCta: { label: 'Book a site visit', href: '/contact' },
     secondaryCta: { label: 'See the master plan', href: '/master-plan' },
-    /* Cycled one at a time under the headline. Each line restates something
-       the project brochures already claim — nothing new is asserted here. */
-    ticker: [
-      { icon: 'shield', text: 'DTCP and RERA approved layouts' },
-      { icon: 'document', text: 'Clear, single-owner title' },
-      { icon: 'key', text: 'Spot registration' },
-      { icon: 'road', text: 'BT roads, drains and street lighting complete' },
-      { icon: 'bank', text: 'Bank plot loans available' },
-    ],
+    /* The rotating `ticker` that used to live here was removed with the Ticker
+       itself. It was the STATIC FALLBACK for the CMS's `site.heroTicker`, so
+       the two only made sense together — keeping it would have left dead copy
+       standing in for a field that no longer renders. */
     stats: [
       { label: 'Years building', value: '[00]+' },
       { label: 'Plots handed over', value: '[000]+' },
@@ -77,30 +75,10 @@ export const home = {
     titleAccent: 'not a promise of it',
     lead: 'Most layouts on this corridor sell a drawing. We release plots only once the work in that drawing is on the ground and can be walked.',
   },
-  /* How a purchase actually runs, start to finish. Bracketed figures are
-     unverified and must be confirmed before this page is indexed. */
-  steps: [
-    {
-      title: 'Tell us what you are looking for',
-      body: 'Plot size, budget and which corridor. We send back what is actually available, not a brochure.',
-    },
-    {
-      title: 'Walk the layout',
-      body: 'Site visits run seven days a week. You see the roads, drains, lighting and boundary wall as they stand that day.',
-    },
-    {
-      title: 'Take the documents to your own lawyer',
-      body: 'The full set at booking: approved layout plan, title deed and parent documents, encumbrance certificate, conversion order.',
-    },
-    {
-      title: 'Book the plot',
-      body: 'One price per square yard, with development, corner and maintenance charges quoted upfront. Plot loans arranged in-house where needed.',
-    },
-    {
-      title: 'Register',
-      body: 'Sub-registrar appointments are typically completed within [00] working days of booking.',
-    },
-  ],
+  /* The `steps` array that used to sit here — the five-stage purchase walkthrough
+     — was removed with the "How buying works" section it fed. It had exactly one
+     reader, and leaving it would have stranded five paragraphs of copy (including
+     an unverified `[00] working days` placeholder) that nothing rendered. */
   benefits: [
     {
       icon: 'document',

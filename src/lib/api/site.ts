@@ -36,15 +36,32 @@ export type SiteSettings = {
   logo?: { src: string; alt: string; width: number; height: number };
   masterPlan?: { title: string; href: string };
   /**
-   * The site's ACTIVE video, when one is configured in the CMS. Absent
-   * otherwise — the key is omitted from the response, never null.
+   * 🔴 NOT EMITTED BY THE BACKEND YET — THIS IS THE SPEC TO IMPLEMENT.
    *
-   * ⚠️ NOTHING RENDERS THIS YET, AND THAT IS INTENTIONAL. The CMS deliberately
-   * does not say where a video belongs; that is this repository's call. `Hero`
-   * already accepts a `media={{ src, poster }}` prop, so wiring it is a
-   * one-expression change in `app/page.tsx` — see VideoRef in types/content.ts.
+   * The hero reads this and needs nothing else: absent or empty renders the
+   * current type-only hero, one entry renders the single-video layout, more
+   * than one renders the carousel. So the section goes live purely by the API
+   * starting to return the field — no frontend deploy required.
+   *
+   * WHAT THE BACKEND MUST ADD, on `/api/v1/site-settings`:
+   *   heroVideos: [{ src, poster?, title? }]   // ORDERED — admin sort order is
+   *                                            // the carousel order
+   *
+   *   · `src` — Cloudinary delivery URL for the encoded video. It MUST share
+   *     the origin configured as NEXT_PUBLIC_MEDIA_BASE_URL. `<video>` ignores
+   *     next/image's host allowlist, so a mismatched host is a silent black
+   *     box in production, not a build error.
+   *   · `poster` — a still frame. Please always emit one; it is what the user
+   *     sees while the video loads, and on a metered connection it may be all
+   *     they ever see.
+   *   · Encode for autoplay: H.264/MP4, no audio track (the element is muted
+   *     and `playsInline`, which browsers require for autoplay), and keep each
+   *     file small enough to stream on an Indian mobile connection.
+   *   · Omit the field entirely rather than returning `[]` with placeholder
+   *     rows — the hero treats empty and absent identically, so there is no
+   *     need for filler.
    */
-  video?: VideoRef;
+  heroVideos?: VideoRef[];
 };
 
 export const getSiteSettings = cache(async (): Promise<SiteSettings> => {

@@ -30,8 +30,10 @@ export type IconName =
   | 'mail'
   | 'mapPin'
   | 'menu'
+  | 'pause'
   | 'phone'
   | 'plane'
+  | 'play'
   | 'road'
   | 'route'
   | 'ruler'
@@ -158,12 +160,17 @@ const shapes: Record<IconName, ReactNode> = {
     </>
   ),
   menu: <path d="M3.5 7h17M3.5 12h17M3.5 17h17" />,
+  /* Media transport pair, added for the hero video carousel's pause control
+     (WCAG 2.2.2). Stroked bars and a filled triangle so both read at the 14px
+     the control renders them at. */
+  pause: <path d="M9.5 5v14M14.5 5v14" />,
   phone: (
     <path d="M7 3.5 9.5 4l1.2 3.4-1.7 1.4a12 12 0 0 0 5.2 5.2l1.4-1.7 3.4 1.2.5 2.5A2 2 0 0 1 17.4 18 14.4 14.4 0 0 1 5 5.6 2 2 0 0 1 7 3.5Z" />
   ),
   plane: (
     <path d="M21.5 12c0-.7-.5-1.2-1.2-1.2h-4.9L10.9 3H9l2.6 7.8H6.4L4.6 8.4H3l1.4 3.6L3 15.6h1.6l1.8-2.4h5.2L9 21h1.9l4.5-7.8h4.9c.7 0 1.2-.5 1.2-1.2Z" />
   ),
+  play: <path fill="currentColor" stroke="none" d="M8.5 5.2 19 12 8.5 18.8V5.2Z" />,
   road: (
     <>
       <path d="M4.5 21 8 3M19.5 21 16 3" />
