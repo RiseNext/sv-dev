@@ -1,6 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import type { IconName } from '@/components/ui/Icon';
+import type { VideoRef } from '@/types/content';
 import { getJson } from './client';
 
 /* =============================================================================
@@ -34,6 +35,16 @@ export type SiteSettings = {
   heroTicker?: { icon: IconName; text: string }[];
   logo?: { src: string; alt: string; width: number; height: number };
   masterPlan?: { title: string; href: string };
+  /**
+   * The site's ACTIVE video, when one is configured in the CMS. Absent
+   * otherwise — the key is omitted from the response, never null.
+   *
+   * ⚠️ NOTHING RENDERS THIS YET, AND THAT IS INTENTIONAL. The CMS deliberately
+   * does not say where a video belongs; that is this repository's call. `Hero`
+   * already accepts a `media={{ src, poster }}` prop, so wiring it is a
+   * one-expression change in `app/page.tsx` — see VideoRef in types/content.ts.
+   */
+  video?: VideoRef;
 };
 
 export const getSiteSettings = cache(async (): Promise<SiteSettings> => {
