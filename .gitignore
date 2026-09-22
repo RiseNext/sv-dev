@@ -20,6 +20,13 @@ next-env.d.ts
 # vercel CLI link + local pulled env
 .vercel
 
+# hero video preview — LOCAL TEST FOOTAGE ONLY. The real source is the CMS's
+# site-settings.heroVideos field; this folder exists so the layout can be judged
+# before that ships. Ignored because the files are large binaries AND because
+# public/ is served in production, so a committed clip is one that could ship.
+public/media/hero/*
+!public/media/hero/README.md
+
 # misc
 .DS_Store
 Thumbs.db

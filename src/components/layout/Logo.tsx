@@ -17,10 +17,16 @@ const FALLBACK = {
 /* alt="" on purpose: the wrapping link carries the accessible name, so the
    emblem is decorative and must not be announced a second time. */
 
-/* `xs` is the navigation size: the bar is deliberately short, so the emblem
-   and wordmark are stepped down to sit inside a 36px pill without crowding. */
-const BADGE = { xs: 'size-7', sm: 'size-8', lg: 'size-12' } as const;
-const WORDMARK = { xs: 'text-body-md', sm: 'text-heading-xs', lg: 'text-heading-sm' } as const;
+/* `sm` is the NAVIGATION size and the only one the top bar uses; `xs` is the
+   footer's. They are the only two call sites, so changing `sm` moves the navbar
+   brand alone — which is why the bump below did not need a new step.
+
+   Sized up from 32px/text-heading-xs: the mark was reading as small against a
+   64/80px bar. 40px is the ceiling that bar allows — the phone bar is 64px, so
+   a 40px badge keeps 12px of air above and below, and the next step up (48px,
+   `lg`) would leave 8px and read as cramped rather than confident. */
+const BADGE = { xs: 'size-7', sm: 'size-10', lg: 'size-12' } as const;
+const WORDMARK = { xs: 'text-body-md', sm: 'text-heading-sm', lg: 'text-heading-sm' } as const;
 
 /* `siteName` arrives as a PROP rather than being imported.
    Logo is rendered inside PillNav, which is a 'use client' module — so it

@@ -1,120 +1,115 @@
-import { Icon, type IconName } from '@/components/ui/Icon';
 import { EnquiryPill } from '@/components/sections/EnquiryPill';
-import { Ticker } from '@/components/sections/Ticker';
+import { HeroVideoStage } from '@/components/sections/HeroVideoStage';
 import { home } from '@/content/pages';
 import { cx } from '@/lib/cx';
+import type { VideoRef } from '@/types/content';
 
 /* =============================================================================
    HERO
 
-   Two modes, one component.
+   Two states, decided entirely by how many videos the CMS returns:
 
-   `media` — a silent looping video (or a single photograph) running full-bleed
-   behind white type. This is the design as specified, and it needs footage:
-   drone approach over a finished layout, roads and boundary wall visible.
+     none  → type on the off-white field. Not a broken state: the reference site
+             runs the same treatment on its company page, and it is what the
+             hero renders until the backend ships `site-settings.heroVideos`.
+     one +  → the same type, set on a bordered video pane (HeroVideoStage,
+             which also handles the crossfade when there is more than one).
 
-   Type-only — the fallback while there is no footage. The reference site runs
-   the same treatment on its company page, so this is a designed state rather
-   than a broken one: black type on the off-white field, nothing else.
+   🔴 THE OLD `media` PROP IS GONE, and deliberately. It took a single
+   `{ src, poster }` that nothing ever passed. `heroVideos` supersedes it —
+   two mechanisms for one job, one of them never used, was worse than either.
 
-   Pass `media` when real footage lands in public/media and the mode switches.
+   THE HEADLINE'S COLOUR IS THE ONE THING THAT DIFFERS between the two states,
+   and it is forced rather than chosen: the video pane dims the footage with a
+   dark scrim so the footage still reads, and near-black type on darkened
+   footage is unreadable at any scrim strength worth having. So it is
+   `text-white` over video and `text-ink` on the off-white field, driven from
+   one place below so the two cannot drift apart.
+
+   The EnquiryPill needs no such switch: it is already a light frosted pill
+   with dark type inside it, which reads correctly on both — and over video it
+   becomes the brightest object in the frame, which is where the CTA belongs.
+
+   ─── WHAT IS DELIBERATELY NOT HERE ────────────────────────────────────────
+   The eyebrow, the supporting claim line, the rotating Ticker and the locality
+   strip were all removed on request. The hero is the headline and the enquiry
+   capture, so those two carry the whole fold and the rise stagger is a
+   two-step rather than a five-step.
    ========================================================================== */
 
 export function Hero({
-  media,
   siteName,
   whatsapp,
-  ticker: tickerOverride,
+  videos,
 }: {
-  media?: { src: string; poster: string };
   /* Threaded down from the page, because EnquiryPill is a 'use client' module
      and cannot read the CMS itself. */
   siteName: string;
   whatsapp: string;
-  /* The scrolling claims, now CMS-managed. Falls back to the static copy so
-     the hero is never empty during an outage. */
-  ticker?: readonly { icon: IconName; text: string }[];
+  /** From `site-settings.heroVideos`. Absent or empty → the type-only state. */
+  videos?: readonly VideoRef[];
 }) {
-  const { eyebrow, title, titleAccent } = home.hero;
-  const ticker = tickerOverride?.length ? tickerOverride : home.hero.ticker;
-  const onMedia = Boolean(media);
+  const { title, titleAccent } = home.hero;
 
-  return (
-    <section
-      className={cx(
-        'relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-gutter pb-8 pt-28',
-        onMedia && 'on-dark',
-      )}
-      aria-labelledby="hero-title"
-    >
-      {media ? (
-        <>
-          <video
-            className="absolute inset-0 -z-20 h-full w-full object-cover"
-            src={media.src}
-            poster={media.poster}
-            autoPlay
-            muted
-            loop
-            playsInline
-          />
-          {/* Just enough scrim to hold AA on white type over moving footage. */}
-          <div className="absolute inset-0 -z-10 bg-ink/35" aria-hidden="true" />
-        </>
-      ) : null}
+  /* Absent and empty are treated identically, so the backend can omit the
+     field, return `[]`, or return rows — all three are valid and none of them
+     needs a frontend change. */
+  const hasVideo = (videos?.length ?? 0) > 0;
 
-      <p
-        className={cx(
-          'label-mono animate-rise font-mono',
-          onMedia ? 'text-white/80' : 'text-ink-faint',
-        )}
-      >
-        {eyebrow}
-      </p>
-
+  /* One definition of the type block, used in both states. The alternative —
+     duplicating the headline into each branch — is how the two states quietly
+     drift apart. */
+  const type = (
+    <>
+      {/* No `mt-*`: the headline leads the fold now that the eyebrow above it
+          is gone, and it leads the rise stagger at 0ms for the same reason. */}
       <h1
         id="hero-title"
         className={cx(
-          'mt-6 max-w-[16ch] text-balance text-center text-heading-xl',
-          onMedia ? 'text-white' : 'text-ink',
+          'max-w-[16ch] text-balance text-center text-heading-xl',
+          /* See the header note: white over the dimmed footage, ink on the
+             off-white field. The pane's dark scrim makes this a legibility
+             requirement, not a preference. */
+          hasVideo ? 'text-white' : 'text-ink',
         )}
-        style={{ animation: 'rise 700ms var(--ease-out-soft) 120ms backwards' }}
+        style={{ animation: 'rise 700ms var(--ease-out-soft) backwards' }}
       >
         {title} <em>{titleAccent}</em>
       </h1>
 
+      {/* 160ms, not 380ms: it follows the headline directly now that the claim
+          line and Ticker that used to sit between them are gone. A delay tuned
+          for fifth place reads as a stall in second. */}
       <div
-        className="mt-8 flex flex-col items-center gap-4"
-        style={{ animation: 'rise 700ms var(--ease-out-soft) 260ms backwards' }}
-      >
-        <p className={cx('text-body-md font-medium', onMedia ? 'text-white' : 'text-ink')}>
-          What you are buying is already on the ground
-        </p>
-        <Ticker
-          items={ticker.map((item) => ({ icon: item.icon as IconName, text: item.text }))}
-          tone={onMedia ? 'invert' : 'default'}
-        />
-      </div>
-
-      {/* With footage behind it the capture pill is pinned to the bottom edge,
-          as on the reference. Without, it sits with the type — a 90svh column
-          of empty off-white reads as a broken page, not as restraint. */}
-      <div
-        className={cx('w-full', onMedia ? 'mt-auto pt-16' : 'mt-12')}
-        style={{ animation: 'rise 700ms var(--ease-out-soft) 380ms backwards' }}
+        className="mt-10 w-full tablet:mt-12"
+        style={{ animation: 'rise 700ms var(--ease-out-soft) 160ms backwards' }}
       >
         <EnquiryPill siteName={siteName} whatsapp={whatsapp} />
       </div>
+    </>
+  );
 
-      <p
-        className={cx(
-          'mt-5 inline-flex items-center gap-2 text-body-xs',
-          onMedia ? 'text-white/75' : 'text-ink-faint',
-        )}
+  if (!hasVideo) {
+    return (
+      <section
+        className="relative flex min-h-svh flex-col items-center justify-center px-gutter pb-8 pt-28"
+        aria-labelledby="hero-title"
       >
-        <Icon name="mapPin" size={14} />
-        Aler · Bhongir · Genome Valley
-      </p>
+        {type}
+      </section>
+    );
+  }
+
+  /* `pt-24 tablet:pt-28` (96/112px) clears the fixed bar (64/80px) with air to
+     spare, so the pane's top edge and its rounded corners are never tucked
+     under the nav. The pane is inside `container-page`, which is what gives it
+     a margin from the viewport edge at every width — the "boundary" the video
+     runs inside rather than bleeding to the screen edge. */
+  return (
+    <section className="px-gutter pb-12 pt-24 tablet:pb-16 tablet:pt-28" aria-labelledby="hero-title">
+      <div className="container-page">
+        <HeroVideoStage videos={videos ?? []}>{type}</HeroVideoStage>
+      </div>
     </section>
   );
 }

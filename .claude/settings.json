@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Write-Output \"=== local PillNav: lines referencing site/nav imports ===\"; Select-String -Path 'src/components/layout/PillNav.tsx' -Pattern 'site\\\\.|nav\\\\b|from ''@/content/site''' | Select-Object -First 40 | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" })",
+      "PowerShell(git show origin/main:src/content/site.ts | Select-String -Pattern '^export' | ForEach-Object { $_.Line.Trim\\(\\) }; Write-Output \"=== layout.tsx usage ===\"; git show origin/main:src/app/layout.tsx)",
+      "PowerShell(Select-String -Path 'src/components/layout/PillNav.tsx' -Pattern '<Logo' -Context 0,2 | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" }; Write-Output \"=== remote cms branch vs main ===\"; git log --oneline origin/main..origin/feat/cms-integration | Select-Object -First 10; Write-Output \"=== new dep ===\"; git diff HEAD origin/main -- package.json)",
+      "PowerShell(git pull 2>&1)",
+      "PowerShell(Write-Output \"=== CI/deploy config ===\"; @\\('.github/workflows','vercel.json','netlify.toml','Dockerfile','.github'\\) | ForEach-Object { if \\(Test-Path $_\\) { \"FOUND: $_\" } }; if \\(Test-Path '.github/workflows'\\) { Get-ChildItem -Recurse '.github/workflows' | ForEach-Object { $_.FullName } }; Write-Output \"=== branch protection / remote ===\"; git remote -v)",
+      "PowerShell(gh pr list --state all --limit 5 2>&1)",
+      "PowerShell(gh api repos/RiseNext/sv-dev --jq '{default_branch, private, visibility}' 2>&1)"
+    ]
+  }
+}

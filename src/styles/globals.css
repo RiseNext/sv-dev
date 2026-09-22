@@ -49,11 +49,25 @@
   --color-core-black: #070503; /* buttons */
   --color-gold: #c9a227; /* fills, chips, the footer band */
   --color-gold-ink: #7c5f1f; /* the only gold allowed to carry type — 5.98:1 on white */
-  --color-band: #f0e8d2; /* the one colour band, at the foot of the page */
+  --color-band: #f0e8d2; /* the pale band behind the closing CTA */
+  /* The footer's band, deliberately a SEPARATE token from `--color-band`.
+     They were one value until this colour arrived; recolouring the shared token
+     would have dragged <ClosingCta> with it, and that band carries `text-ink`
+     headings and two buttons which would have lost their contrast against a
+     mid-dark terracotta. Two names because there are now two jobs. */
+  --color-footer-band: #a36031;
   --color-line: rgba(26, 22, 19, 0.12);
   --color-line-strong: rgba(26, 22, 19, 0.22);
   --color-line-invert: rgba(255, 255, 255, 0.18);
-  --color-glass: rgba(227, 221, 207, 0.4); /* nav container over any background */
+  /* ---------- Glass -------------------------------------------------------
+     The top bar's material, split into three parts so it can be re-skinned
+     without touching the component: the body of the plate, the lit top edge
+     that makes it read as glossy rather than as a flat wash, and the hairline
+     it ends on. The body is deliberately under 60% opaque — the blur, not the
+     fill, is what stops the page showing through as legible text. */
+  --color-glass: rgba(252, 251, 249, 0.46); /* nav bar over any background */
+  --color-glass-sheen: rgba(255, 255, 255, 0.55); /* the lit top edge */
+  --color-glass-edge: rgba(26, 22, 19, 0.1); /* the hairline it ends on */
   --color-danger: #8a3324;
   --color-success: #1f6e4e;
 
@@ -109,6 +123,10 @@
 
   /* ---------- Motion ------------------------------------------------------ */
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Overshoots past 1 and settles back. This is what makes a hover read as a
+     POP rather than a fade — the label passes its final size and returns. Use
+     it on transform only; on opacity or colour an overshoot is invisible. */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --animate-rise: rise 700ms var(--ease-out-soft) backwards;
 
   @keyframes rise {
@@ -132,8 +150,9 @@
     color-scheme: light;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    /* Anchor targets clear the floating nav (12px offset + a 42px plate). */
-    scroll-padding-top: 4.5rem;
+    /* Anchor targets clear the fixed top bar (80px at desktop) with a little
+       air to spare. */
+    scroll-padding-top: 6rem;
     background-color: var(--color-ink);
   }
 
@@ -261,6 +280,149 @@
   padding-inline: var(--spacing-gutter);
 }
 
+/* The top navigation bar's material. Real glass, not a tinted plate: the
+   backdrop is blurred AND saturated, so whatever scrolls underneath the bar
+   goes soft and its colour lifts rather than going grey. The gloss is the
+   gradient plus the inset white top edge — a lit rim along the top, falling
+   away to nothing at the bottom, which is what a pane catching the light
+   actually does.
+
+   THE BLUR RADIUS IS SMALLER ON A PHONE (18px vs 26px). A blurred bar fixed
+   over scrolling content forces the compositor to re-sample and re-blur its
+   backdrop every frame, and the cost scales with the radius; 18px over a 64px
+   bar is indistinguishable from 26px at arm's length and measurably cheaper on
+   a phone GPU. Desktop, which has the headroom and the taller bar, gets the
+   full radius. */
+@utility glass-bar {
+  --glass-blur: 18px;
+
+  background-color: var(--color-glass);
+  background-image: linear-gradient(
+    to bottom,
+    var(--color-glass-sheen) 0%,
+    rgba(255, 255, 255, 0.14) 55%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  /* PREFIXED FIRST, STANDARD LAST — not a style choice. Lightning CSS treats
+     the two as one property and keeps whichever is written last, then re-adds
+     prefixes from the browser targets. Written the other way round the build
+     emits ONLY `-webkit-backdrop-filter`, which Firefox does not implement, and
+     the bar silently loses its blur there. */
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border-bottom: 1px solid var(--color-glass-edge);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 10px 30px -24px rgba(26, 22, 19, 0.6);
+
+  @media (min-width: 64rem) {
+    --glass-blur: 26px;
+  }
+}
+
+/* The raised chip behind a hovered nav pill — the iOS control-centre button.
+   Same family as `glass-bar`, one step brighter and one step more lit, because
+   it has to read as a piece of glass sitting ON the bar rather than a hole cut
+   into it. Four things do that, and all four are needed:
+
+     · a brighter gradient fill, top-lit, so it is lighter than the bar it is on
+     · `brightness` on top of `saturate`, which lifts whatever is behind it
+       instead of only softening it — the iOS chip glows slightly
+     · a specular white rim: full-strength inset line along the top, half
+       strength along the bottom, plus a light border all the way round
+     · a cast shadow, which is the only cue that says "above the surface"
+
+   NESTED BACKDROP-FILTER IS INTENTIONAL. `glass-bar` is itself a backdrop root,
+   so this chip re-filters the bar's already-blurred output. That is what makes
+   the hover state read as two panes of glass stacked rather than one — and it
+   costs nothing extra in practice because only one chip is ever hovered, over
+   an area of a few hundred square pixels. */
+@utility glass-chip {
+  -webkit-backdrop-filter: blur(10px) saturate(190%) brightness(1.06);
+  backdrop-filter: blur(10px) saturate(190%) brightness(1.06);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(255, 255, 255, 0.46) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.4),
+    0 6px 16px -8px rgba(26, 22, 19, 0.28),
+    0 1px 2px rgba(26, 22, 19, 0.05);
+}
+
+/* The recess the four nav links sit in — the iOS segmented-control track. It
+   does two jobs: it groups the links into one object instead of four loose
+   words, and it gives the sliding capsule somewhere to live, so the capsule
+   reads as a control being moved rather than a highlight being redrawn.
+
+   Darker than the bar, not lighter. A recess is a hole: the inset shadow at the
+   top is the bar's edge casting into it, and the white inset line at the bottom
+   is the far wall catching light. Reverse those two and it inflates into a
+   bump. */
+@utility glass-rail {
+  background-color: rgba(26, 22, 19, 0.045);
+  box-shadow:
+    inset 0 1px 2px rgba(26, 22, 19, 0.07),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* The capsule that slides between the links. Brightest thing on the bar by a
+   clear margin — it has to win against glass that is already pale, which is
+   exactly what the earlier per-item chip failed to do.
+
+   `inset 0 0 0 1px` FOR THE RIM, NOT `border`. The capsule's width and height
+   are set from measured layout pixels; a border would add to its box and land
+   it a pixel wider than the link it is tracking. An inset shadow paints inside
+   the box and changes no geometry.
+
+   NESTED BACKDROP-FILTER IS INTENTIONAL. `glass-bar` is itself a backdrop root,
+   so this re-filters the bar's already-blurred output — two panes of glass
+   stacked, which is the layered iOS look. Only one capsule exists in the DOM,
+   so the cost does not scale with the number of links. */
+@utility glass-capsule {
+  -webkit-backdrop-filter: blur(14px) saturate(200%) brightness(1.12);
+  backdrop-filter: blur(14px) saturate(200%) brightness(1.12);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.62) 100%
+  );
+  /* 🔴 THE CAST SHADOW IS BUDGETED TO THE TRACK'S PADDING, and that is the
+     whole constraint on these two numbers.
+
+     The capsule lives INSIDE the rail's recess. Its box is measured from the
+     link at runtime, so it is always exactly `p-1.5` (6px) inside the track —
+     but a shadow is not clipped by that. The old `0 8px 20px -6px` reached
+     8 + 20 - 6 = 22px below the capsule's bottom edge with only 6px of track
+     beneath it, so 16px of shadow fell OUTSIDE the recess and the capsule read
+     as bursting out of the groove it is supposed to be seated in.
+
+     Both layers now stay within 6px: 1+2 = 3px and 2+5-2 = 5px. Deeper shadow
+     is not available here without either widening the track's padding or
+     accepting the spill — a capsule in a recess simply cannot cast far.
+
+     The two inset layers are unchanged: they paint inside the box, so the
+     specular rim that makes it read as glass costs nothing in bleed. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.75),
+    0 1px 2px rgba(26, 22, 19, 0.16),
+    0 2px 5px -2px rgba(26, 22, 19, 0.22);
+}
+
+/* Without backdrop-filter there is no blur to hide the page behind the bar, so
+   the fill has to carry legibility on its own. The chip is already opaque
+   enough at the top to read without help; it only loses its frost. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-bar {
+    background-color: var(--color-surface);
+    background-image: none;
+  }
+}
+
 @utility label-mono {
   font-family: var(--font-mono);
   font-size: var(--text-label);
@@ -298,6 +460,30 @@
   transition-delay: var(--reveal-delay, 0ms);
 }
 
+/* THE FOOTER WORDMARK'S RISE — a variant of the reveal above, not a second
+   mechanism. It overrides the TRANSFORM only, and inherits the opacity fade,
+   the easing, and the <noscript> guard in layout.tsx that keeps the name
+   visible if the script never runs.
+
+   `translateY(100%)` rather than the shared 1.5rem: its wrapper clips it, so a
+   full 100% puts the name entirely below the mask and letting it back to 0
+   reads as the whole word being drawn up out of the band's edge. A 1.5rem
+   nudge on type this large is barely perceptible.
+
+   Slower than the shared 700ms, because the distance is the name's own height
+   rather than a few pixels — at 700ms a 5.5rem wordmark travelling its full
+   height looks flung rather than drawn. */
+.wordmark-rise[data-reveal='pending'] {
+  transform: translateY(100%);
+}
+
+.wordmark-rise[data-reveal='shown'] {
+  transform: none;
+  transition:
+    opacity 600ms var(--ease-out-soft),
+    transform 1000ms var(--ease-out-soft);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -314,6 +500,17 @@
 
   [data-reveal='pending'] {
     opacity: 1;
+    transform: none;
+  }
+
+  /* 🔴 REQUIRED, not belt-and-braces. The reset above is `[data-reveal=…]`
+     at specificity (0,1,0); `.wordmark-rise[data-reveal=…]` is (0,2,0), so it
+     WINS even inside this media query — and being a transform, not an
+     animation, the `transition-duration: 0.01ms` override above does nothing
+     to it. Without this rule the wordmark stays translated a full 100% below
+     its clipping wrapper, i.e. permanently invisible, for every visitor who
+     has reduced motion switched on. */
+  .wordmark-rise[data-reveal='pending'] {
     transform: none;
   }
 }

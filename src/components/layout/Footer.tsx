@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
+import { FooterWordmark } from '@/components/layout/FooterWordmark';
 import { Logo } from '@/components/layout/Logo';
 import { buildFooterNav, legal } from '@/content/site';
 import { getSiteSettings } from '@/lib/api/site';
@@ -35,7 +36,7 @@ export async function Footer() {
   const social = site.social ?? [];
 
   return (
-    <footer className="bg-band">
+    <footer className="bg-footer-band">
       <div className="rounded-b-band bg-bg pb-8 pt-12 tablet:pb-10 tablet:pt-16">
         <div className="container-page">
           <div className="grid gap-8 tablet:grid-cols-[minmax(0,1fr)_auto] tablet:gap-16">
@@ -130,15 +131,11 @@ export async function Footer() {
         </div>
       </div>
 
-      {/* Oversized wordmark, clipped by the band. Decorative: the name is
-          already announced by the logo above, so this is aria-hidden. Capped
-          rather than pure vw — unbounded it alone ran past 200px of band on a
-          desktop, which is most of what made the footer feel tall. */}
-      <div className="overflow-hidden" aria-hidden="true">
-        <p className="-mb-[0.14em] mt-4 whitespace-nowrap px-4 text-center font-display text-[clamp(2.25rem,9vw,5.5rem)] leading-[0.8] text-white/70 select-none">
-          {site.name}
-        </p>
-      </div>
+      {/* Oversized wordmark, clipped by the band, and now drawn up out of it as
+          the band scrolls into view. A client component because the reveal
+          needs an IntersectionObserver — see FooterWordmark for why it cannot
+          reuse the shared <Reveal>. */}
+      <FooterWordmark name={site.name} />
     </footer>
   );
 }

@@ -33,6 +33,34 @@ export type ImageRef = {
   height: number;
 };
 
+/**
+ * One hero background video.
+ *
+ * 🔴 THE BACKEND DOES NOT EMIT THIS YET. `/api/v1/site-settings` currently
+ * returns ten fields and none of them is a video; `/media` and `/videos` both
+ * 404. This type is the CONTRACT the hero consumes, written so the section
+ * works the moment the field appears and renders its type-only state until
+ * then. See the note on `SiteSettings.heroVideos` for the backend spec.
+ *
+ * `src` MUST be served from a host already listed in `next.config.mjs`
+ * `images.remotePatterns` reasoning — i.e. the Cloudinary delivery origin in
+ * `NEXT_PUBLIC_MEDIA_BASE_URL`. `<video>` is not subject to next/image's host
+ * allowlist, so a wrong host here fails silently at runtime rather than loudly
+ * at build time. That makes it MORE dangerous than an image, not less.
+ */
+export type VideoRef = {
+  /** Encoded delivery URL, e.g. `<cloudinary base>/video/upload/media/<id>.mp4`. */
+  src: string;
+  /** Still frame shown before the first byte of video arrives, and the only
+   *  thing a user on a metered connection may ever see. Strongly preferred:
+   *  without it the container is empty until playback starts. */
+  poster?: string;
+  /** Admin-supplied label. Not rendered as body copy — it names the slide for
+   *  the carousel's controls, so screen-reader users get "Aerial approach"
+   *  rather than "Slide 2". */
+  title?: string;
+};
+
 export type ProjectStatus = 'Open for booking' | 'Nearing sell-out' | 'Completed' | 'Coming soon';
 
 /** The four catalogue categories. A project carries one only when the
