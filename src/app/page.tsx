@@ -5,15 +5,15 @@ import { Reveal } from '@/components/ui/Reveal';
 import { ClosingCta } from '@/components/sections/ClosingCta';
 import { Corridor } from '@/components/sections/Corridor';
 import { Hero } from '@/components/sections/Hero';
-import { MediaSequence } from '@/components/sections/MediaSequence';
-import { PinnedProof } from '@/components/sections/PinnedProof';
-import { ProjectCard } from '@/components/sections/ProjectCard';
+import { ProjectCarousel } from '@/components/sections/ProjectCarousel';
+import { ProjectRows } from '@/components/sections/ProjectRows';
 import { Statement } from '@/components/sections/Statement';
 import { Testimonials } from '@/components/sections/Testimonials';
-import { amenities, contact, home, media } from '@/content/pages';
+import { WhyChooseUs } from '@/components/sections/WhyChooseUs';
+import { contact, home } from '@/content/pages';
 import { getFeaturedProjects, getProjects } from '@/lib/api/projects';
 import { getSiteSettings } from '@/lib/api/site';
-import { getFaqs, getStatistics, getTestimonials } from '@/lib/api/content';
+import { getFaqs, getTestimonials } from '@/lib/api/content';
 /* 🔶 TEMPORARY — delete with the `??` below when the CMS ships `heroVideos`. */
 import { previewHeroVideos } from '@/lib/dev/previewHeroVideos';
 import { pageMetadata } from '@/lib/seo';
@@ -31,30 +31,29 @@ export async function generateMetadata() {
 /* The home page is a summary with a route behind each section, not the whole
    site flattened into one scroll. Each block ends in a link to the page that
    carries the detail. */
-
-/* Until site photography exists, the media sequence borrows each project's own
-   card image so the section shows real (if placeholder) artwork rather than an
-   empty frame. Swap these for infrastructure photography when it lands.
-
-   The sequence carries no copy — the titles below are keys and alt-text
-   subjects only. The specifications themselves are listed in full on
-   /amenities, which is where they belong. */
 export default async function HomePage() {
-  const [site, projects, featured, statistics, faqs, testimonials] = await Promise.all([
+  /* No `getStatistics()` here any more: its only reader on this page was the
+     "Built, walked and handed over" stats band, which was removed on request.
+     /about still reads the same endpoint. */
+  const [site, projects, featured, faqs, testimonials] = await Promise.all([
     getSiteSettings(),
     getProjects(),
     getFeaturedProjects(),
-    getStatistics(),
     getFaqs(),
     getTestimonials(),
   ]);
 
-  /* Until site photography exists, the media sequence borrows each project's own
-     card image so the section shows real (if placeholder) artwork rather than an
-     empty frame. Swap these for infrastructure photography when it lands. */
-  const sequence = amenities.specifications.slice(0, 3).map((spec, index) => ({
-    title: spec.title,
-    image: projects[index]?.image ?? media.masterPlan,
+  /* The project rows under "Why SV Developers": the first three projects in
+     admin order, each with its picture, name, place and summary and a link
+     through to its page. Straight from the `getProjects()` call above; nothing
+     extra is fetched. With no projects published the section renders nothing. */
+  const rows = projects.slice(0, 3).map((p) => ({
+    slug: p.slug,
+    name: p.name,
+    category: p.category,
+    locality: p.locality,
+    summary: p.summary,
+    image: p.image,
   }));
 
   /* ⚠️ COUNT-COUPLED COPY, now derived. This read "Five layouts." — a hardcoded
@@ -74,12 +73,18 @@ export default async function HomePage() {
           🔶 THE `??` IS THE TEMPORARY HALF, not the prop. The CMS wins the
           moment it returns anything, so nothing here needs unpicking when the
           backend ships: delete `?? previewHeroVideos()` and its import. */}
+      {/* The page follows the design template's order: hero (with the
+          category strip), the "Why SV Developers" image-and-text rows, the dark
+          "Why choose us" band, the project carousel, then the site's own
+          Connectivity and FAQ, and the closing image-and-text ask. */}
       <Hero
         siteName={site.name}
         whatsapp={site.whatsapp}
         videos={site.heroVideos ?? previewHeroVideos()}
       />
 
+      {/* ---- "Why SV Developers": the statement, then one row per project —
+              picture left, text right, no scroll-driven motion. ---- */}
       <Statement
         id="why"
         label={home.intro.eyebrow}
@@ -88,38 +93,46 @@ export default async function HomePage() {
         lead={home.intro.lead}
       />
 
-      <MediaSequence items={sequence} />
+      <ProjectRows items={rows} />
 
-      <PinnedProof
-        stats={statistics.length ? statistics.map((s) => ({ value: s.value, label: s.label })) : home.hero.stats}
-        tiles={projects.slice(0, 4).map((p) => p.image)}
-      />
+      <WhyChooseUs />
 
-      {/* ---- Featured projects: read from content/projects.ts, the same
-              records the catalogue and the detail pages use. ---- */}
+      {/* ---- Featured projects: a centred heading over the looping
+              carousel, as in the template. ---- */}
       <section className="px-gutter pt-section" aria-labelledby="projects-title">
         <div className="container-page">
-          <Reveal className="flex flex-col items-start gap-6 tablet:flex-row tablet:items-end tablet:justify-between">
-            <div>
-              <p className="label-mono font-mono">Our projects</p>
-              <h2 id="projects-title" className="mt-5 max-w-[18ch] text-heading-lg text-ink">
-                {spelled} layout{projects.length === 1 ? '' : 's'}.{' '}
-                <em>All of them walkable today.</em>
-              </h2>
-            </div>
+          <Reveal className="flex flex-col items-center text-center">
+            <p className="eyebrow">Our projects</p>
+            <h2 id="projects-title" className="mt-5 max-w-[22ch] text-heading-lg text-ink">
+              {spelled} layout{projects.length === 1 ? '' : 's'}.{' '}
+              <em>All of them walkable today.</em>
+            </h2>
+          </Reveal>
+
+          {/* A looping carousel: 1 → 2 → … → last → 1. Count-agnostic — every
+              project marked "featured" in the CMS is in the loop. Only the
+              fields a card reads cross to the browser (ProjectCarousel is a
+              client component; see contact/page.tsx for the same pattern). */}
+          <Reveal className="mt-12">
+            <ProjectCarousel
+              projects={featured.map((p) => ({
+                slug: p.slug,
+                name: p.name,
+                category: p.category,
+                locality: p.locality,
+                image: p.image,
+                status: p.status,
+                tagline: p.tagline,
+              }))}
+            />
+          </Reveal>
+
+          <div className="mt-6 flex justify-center">
             <LinkButton href="/projects" variant="ghost">
               All projects
               <Icon name="arrowRight" size={16} />
             </LinkButton>
-          </Reveal>
-
-          <ul className="mt-14 grid gap-4 mid:grid-cols-2 tablet:grid-cols-3">
-            {featured.map((project, index) => (
-              <Reveal as="li" key={project.slug} delay={index * 80}>
-                <ProjectCard project={project} />
-              </Reveal>
-            ))}
-          </ul>
+          </div>
         </div>
       </section>
 

@@ -1,26 +1,28 @@
 import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
-import { FooterWordmark } from '@/components/layout/FooterWordmark';
+import { Wave } from '@/components/ui/Wave';
 import { Logo } from '@/components/layout/Logo';
 import { buildFooterNav, legal } from '@/content/site';
 import { getSiteSettings } from '@/lib/api/site';
 import { getProjects } from '@/lib/api/projects';
-import { anchorProps, mailHref, telHref } from '@/lib/href';
+import { anchorProps, isPlaceholder, mailHref, telHref, whatsappHref } from '@/lib/href';
 
-/* The page ends on a colour band with the wordmark set large enough to be
-   clipped by it. Above the band the content block keeps the page background
-   and rounds its bottom corners, so the band shows through the corners —
-   which is what makes the whole page read as one card rather than a stack of
-   sections.
+/* =============================================================================
+   FOOTER — the design template's closing dark band.
 
-   A sign-off, not a second homepage. Every page already closes on <ClosingCta>
-   — a full band with a heading and two buttons — directly above this, so the
-   footer no longer repeats that ask: it carries the brand, the directory, the
-   two ways to reach the office and the legal line, and nothing else. One
-   compact rhythm serves every width rather than a phone layout that unfolds
-   into four columns.
+   Deep forest green, cut into the cream page by a wave, with the name set as
+   the band's heading and four tiles beneath it: the brand and office, the
+   pages, the projects, and the ways to get in touch. The legal line runs
+   along the bottom. `theme-dark` flips every text token inside to its light
+   value.
+
+   A sign-off, not a second homepage: every page already closes on
+   <ClosingCta> directly above this, so the footer carries the brand, the
+   directory, the contact routes and the legal line, and nothing else.
    ========================================================================== */
 
+const TILE = 'rounded-2xl border border-line bg-white/[0.06] p-6 tablet:p-7';
+const TITLE = 'label-mono font-mono';
 const LINK = 'text-body-sm text-ink-soft transition-colors hover:text-ink';
 const META = 'font-mono text-body-xs text-ink-faint';
 
@@ -31,111 +33,121 @@ export async function Footer() {
   const site = await getSiteSettings();
   const projects = await getProjects();
 
-  // DERIVED, not a hand-maintained list of five slugs.
+  // DERIVED, not a hand-maintained list of slugs.
   const footerNav = buildFooterNav(projects);
   const social = site.social ?? [];
+  const hasWhatsapp = typeof site.whatsapp === 'string' && !isPlaceholder(site.whatsapp);
 
   return (
-    <footer className="bg-footer-band">
-      <div className="rounded-b-band bg-bg pb-8 pt-12 tablet:pb-10 tablet:pt-16">
-        <div className="container-page">
-          <div className="grid gap-8 tablet:grid-cols-[minmax(0,1fr)_auto] tablet:gap-16">
-            {/* ---------- Brand and the two live contact routes ---------- */}
-            <div>
-              <Logo size="xs" siteName={site.name} logo={site.logo} />
-              <address className="mt-3 font-mono text-body-xs leading-normal text-ink-faint">
-                {site.address.map((line) => (
-                  <span key={line} className="block">
-                    {line}
-                  </span>
-                ))}
-              </address>
-              <p className="mt-3 text-body-sm text-ink-soft">{site.officeHours}</p>
+    <footer className="theme-dark relative mt-section bg-forest px-gutter pb-8 pt-24 tablet:pt-32">
+      {/* `footer-wave`: recoloured to sand when the page ends on the sand CTA
+          band — see globals.css. */}
+      <Wave edge="top" className="footer-wave" />
 
-              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5">
-                <a
-                  {...anchorProps(telHref(site.phone))}
-                  className={`${LINK} inline-flex items-center gap-1.5`}
-                >
-                  <Icon name="phone" size={15} />
-                  {site.phone}
-                </a>
-                <a
-                  {...anchorProps(mailHref(site.email))}
-                  className={`${LINK} inline-flex items-center gap-1.5`}
-                >
-                  <Icon name="mail" size={15} />
-                  {site.email}
-                </a>
-              </div>
-            </div>
+      <div className="container-page relative">
+        <div className="flex flex-col items-center text-center">
+          <span
+            aria-hidden="true"
+            className="block h-0.5 w-14 rounded-full bg-linear-to-r from-gold-from to-gold-to"
+          />
+          <p className="mt-5 font-display text-heading-lg text-ink">{site.name}</p>
+        </div>
 
-            {/* Two columns from the narrowest phone up — stacked, the groups
-                ran to roughly twenty rows, on their own more scrolling than
-                the rest of the footer put together. */}
-            <div className="grid grid-cols-2 gap-x-6 gap-y-6 tablet:gap-x-16">
-              {footerNav.map((group) => (
-                <nav key={group.title} aria-label={group.title}>
-                  <h2 className="label-mono font-mono">{group.title}</h2>
-                  <ul className="mt-3 flex flex-col gap-1.5">
-                    {group.links.map((link) => (
-                      <li key={link.label}>
-                        <Link href={link.href} className={LINK}>
-                          {link.label}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </nav>
+        <div className="mt-12 grid gap-4 mid:grid-cols-2 tablet:grid-cols-4">
+          {/* ---------- Brand and office ---------- */}
+          <div className={TILE}>
+            <Logo size="xs" siteName={site.name} logo={site.logo} onDark />
+            <address className="mt-4 font-mono text-body-xs leading-relaxed text-ink-faint">
+              {site.address.map((line) => (
+                <span key={line} className="block">
+                  {line}
+                </span>
               ))}
-            </div>
+            </address>
+            {site.officeHours ? <p className="mt-3 text-body-sm text-ink-soft">{site.officeHours}</p> : null}
           </div>
 
-          {/* ---------- Legal line ----------
-              Social is three icons here rather than a labelled column: the
-              names added four rows and told a visitor nothing the mark does
-              not. Each keeps its accessible name. */}
-          <div className="mt-8 flex flex-col gap-4 border-t border-line pt-5 tablet:flex-row-reverse tablet:items-start tablet:justify-between tablet:gap-8">
-            <ul className="flex items-center gap-1">
-              {social.map((item) => (
-                <li key={item.label}>
-                  <a
-                    {...anchorProps(item.href)}
-                    aria-label={item.label}
-                    className="flex size-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface hover:text-ink"
-                  >
-                    <Icon name={item.icon} size={17} />
+          {/* ---------- The two directories ---------- */}
+          {footerNav.map((group) => (
+            <nav key={group.title} aria-label={group.title} className={TILE}>
+              <h2 className={TITLE}>{group.title}</h2>
+              <ul className="mt-4 flex flex-col gap-2">
+                {group.links.map((link) => (
+                  <li key={link.label}>
+                    <Link href={link.href} className={LINK}>
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
+
+          {/* ---------- Getting in touch ---------- */}
+          <div className={TILE}>
+            <h2 className={TITLE}>Get in touch</h2>
+            <ul className="mt-4 flex flex-col gap-2.5">
+              <li>
+                <a {...anchorProps(telHref(site.phone))} className={`${LINK} inline-flex items-center gap-2`}>
+                  <Icon name="phone" size={15} className="text-gold-ink" />
+                  {site.phone}
+                </a>
+              </li>
+              {hasWhatsapp ? (
+                <li>
+                  <a {...anchorProps(whatsappHref(site.whatsapp))} className={`${LINK} inline-flex items-center gap-2`}>
+                    <Icon name="whatsapp" size={15} className="text-gold-ink" />
+                    WhatsApp
                   </a>
                 </li>
-              ))}
+              ) : null}
+              <li>
+                <a {...anchorProps(mailHref(site.email))} className={`${LINK} inline-flex items-center gap-2 break-all`}>
+                  <Icon name="mail" size={15} className="shrink-0 text-gold-ink" />
+                  {site.email}
+                </a>
+              </li>
             </ul>
 
-            <div className="max-w-[68ch]">
-              <p className={`${META} leading-relaxed`}>
-                {site.copyrightText} {legal.disclaimer}
-              </p>
-              <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5">
-                {(site.legalLinks ?? []).map((link) => (
-                  <li key={link.label}>
+            {social.length ? (
+              <ul className="mt-5 flex items-center gap-1">
+                {social.map((item) => (
+                  <li key={item.label}>
                     <a
-                      {...anchorProps(link.href)}
-                      className={`${META} underline-offset-4 hover:text-ink hover:underline`}
+                      {...anchorProps(item.href)}
+                      aria-label={item.label}
+                      className="flex size-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/10 hover:text-ink"
                     >
-                      {link.label}
+                      <Icon name={item.icon} size={17} />
                     </a>
                   </li>
                 ))}
               </ul>
-            </div>
+            ) : null}
           </div>
         </div>
-      </div>
 
-      {/* Oversized wordmark, clipped by the band, and now drawn up out of it as
-          the band scrolls into view. A client component because the reveal
-          needs an IntersectionObserver — see FooterWordmark for why it cannot
-          reuse the shared <Reveal>. */}
-      <FooterWordmark name={site.name} />
+        {/* ---------- Legal line ---------- */}
+        <div className="mt-10 flex flex-col gap-3 border-t border-line pt-6">
+          <p className={`${META} max-w-[90ch] leading-relaxed`}>
+            {site.copyrightText} {legal.disclaimer}
+          </p>
+          {(site.legalLinks ?? []).length ? (
+            <ul className="flex flex-wrap gap-x-5 gap-y-1.5">
+              {(site.legalLinks ?? []).map((link) => (
+                <li key={link.label}>
+                  <a
+                    {...anchorProps(link.href)}
+                    className={`${META} underline-offset-4 hover:text-ink hover:underline`}
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      </div>
     </footer>
   );
 }

@@ -13,9 +13,14 @@ import { Icon } from './Icon';
 export function Lightbox({
   image,
   downloadHref,
+  maxThumbHeight,
 }: {
   image: ImageRef;
   downloadHref?: string;
+  /** Caps the thumbnail's height (a CSS length). A portrait floor plan at full
+   *  column width is taller than the screen; capped, it stays whole and
+   *  centred, and "Enlarge" still opens it full size. */
+  maxThumbHeight?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [zoomed, setZoomed] = useState(false);
@@ -54,7 +59,7 @@ export function Lightbox({
       <button
         ref={triggerRef}
         type="button"
-        className="group relative block w-full rounded-media bg-surface p-3 text-left tablet:p-5"
+        className="theme-light group relative block w-full rounded-media bg-surface p-3 text-left tablet:p-5"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
       >
@@ -66,7 +71,11 @@ export function Lightbox({
           height={image.height}
           loading="lazy"
           decoding="async"
-          className="h-auto w-full rounded-[0.75rem] object-contain"
+          className={cx(
+            'h-auto rounded-[0.75rem] object-contain',
+            maxThumbHeight ? 'mx-auto w-auto max-w-full' : 'w-full',
+          )}
+          style={maxThumbHeight ? { maxHeight: maxThumbHeight } : undefined}
         />
         <span className="absolute bottom-6 right-6 inline-flex min-h-9 items-center gap-2 rounded-pill bg-core-black px-4 text-body-sm text-white">
           <Icon name="zoomIn" size={15} />
@@ -76,7 +85,10 @@ export function Lightbox({
 
       {open ? (
         <div
-          className="on-dark fixed inset-0 z-200 flex flex-col gap-4 bg-ink/95 p-4 tablet:p-6"
+          /* `theme-light` keeps `bg-ink` the near-black it was written as — on
+             a dark band it would otherwise resolve to cream. `on-dark`
+             still turns the focus ring white for the controls inside. */
+          className="theme-light on-dark fixed inset-0 z-200 flex flex-col gap-4 bg-ink/95 p-4 tablet:p-6"
           role="dialog"
           aria-modal="true"
           aria-label={image.alt}

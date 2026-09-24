@@ -25,7 +25,7 @@ export function Accordion({
         const buttonId = `faq-button-${index}`;
 
         return (
-          <div key={item.q} className="overflow-hidden rounded-card bg-surface">
+          <div key={item.q} className="theme-light overflow-hidden rounded-card bg-surface">
             <h3>
               <button
                 id={buttonId}

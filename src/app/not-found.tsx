@@ -3,7 +3,7 @@ import { LinkButton } from '@/components/ui/Button';
 export default function NotFound() {
   return (
     <section className="flex min-h-svh flex-col items-center justify-center px-gutter text-center">
-      <p className="label-mono font-mono">404</p>
+      <p className="eyebrow">404</p>
       <h1 className="mt-6 max-w-[18ch] text-heading-lg text-ink">
         That page has moved <em>or never existed.</em>
       </h1>

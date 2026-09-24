@@ -9,6 +9,7 @@ export type IconName =
   | 'bank'
   | 'bolt'
   | 'briefcase'
+  | 'building'
   | 'bus'
   | 'check'
   | 'chevronDown'
@@ -25,8 +26,10 @@ export type IconName =
   | 'fence'
   | 'hospital'
   | 'instagram'
+  | 'home'
   | 'key'
   | 'lamp'
+  | 'leaf'
   | 'mail'
   | 'mapPin'
   | 'menu'
@@ -55,6 +58,25 @@ const shapes: Record<IconName, ReactNode> = {
     <>
       <path d="M3 10 12 4l9 6" />
       <path d="M5 10v9M9.5 10v9M14.5 10v9M19 10v9M3 20h18" />
+    </>
+  ),
+  building: (
+    <>
+      <path d="M4.5 20.5V6.5L12 3.5v17M12 9.5h7.5v11M3 20.5h18" />
+      <path d="M7.5 8.5h1.5M7.5 12h1.5M7.5 15.5h1.5M15 13h1.5M15 16.5h1.5" />
+    </>
+  ),
+  home: (
+    <>
+      <path d="M3.5 11 12 4l8.5 7" />
+      <path d="M5.5 9.5v10.5h13V9.5" />
+      <path d="M10 20v-5.5h4V20" />
+    </>
+  ),
+  leaf: (
+    <>
+      <path d="M5 19.5c-.5-8 4.5-14.5 15-15 .5 9.5-5 15-12.5 15H5Z" />
+      <path d="M5 19.5 14 10.5" />
     </>
   ),
   bolt: <path d="M13 2 5 13h5l-1 9 8-11h-5l1-9Z" />,

@@ -52,9 +52,15 @@ type Status =
 export function ContactForm({
   projects,
   formNote,
+  defaultProject,
 }: {
   projects: ContactFormProject[];
   formNote?: string;
+  /** Pre-selects "Project of interest" — the project pages pass their own
+   *  slug. PRESENTATION ONLY: the select still posts whatever it holds, through
+   *  the unchanged submit below, and must be one of `projects` (the set the
+   *  server validates against, FR-LEAD-03). Absent → "No preference". */
+  defaultProject?: string;
 }) {
   const id = useId();
   const params = useSearchParams();
@@ -195,8 +201,12 @@ export function ContactForm({
     ) : null;
 
   return (
-    <form className="flex flex-col gap-5" onSubmit={onSubmit} noValidate>
-      <div className="grid gap-5 min-[30rem]:grid-cols-2">
+    /* `@container`: Name and Phone go side by side when the FORM is 30rem
+       wide, not the window. On /contact it is wide either way; in the project
+       pages' hero card it is narrower than the window, and a window query put
+       the two fields side by side in a card too small to hold them. */
+    <form className="@container flex flex-col gap-5" onSubmit={onSubmit} noValidate>
+      <div className="grid gap-5 @min-[30rem]:grid-cols-2">
         <div>
           <label className={label} htmlFor={`${id}-name`}>
             Name
@@ -225,7 +235,14 @@ export function ContactForm({
         <label className={label} htmlFor={`${id}-project`}>
           Project of interest (optional)
         </label>
-        <select {...describe('project')} defaultValue="">
+        <select
+          {...describe('project')}
+          defaultValue={
+            defaultProject && projects.some((project) => project.slug === defaultProject)
+              ? defaultProject
+              : ''
+          }
+        >
           <option value="">No preference</option>
           {projects.map((project) => (
             <option key={project.slug} value={project.slug}>

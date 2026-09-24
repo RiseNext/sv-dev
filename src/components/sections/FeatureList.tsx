@@ -27,7 +27,7 @@ export function FeatureList({
     <section id={id} className="px-gutter pt-section" aria-labelledby={`${id}-title`}>
       <div className="container-page grid gap-10 tablet:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] tablet:gap-16">
         <Reveal className="tablet:sticky tablet:top-28 tablet:self-start">
-          <p className="label-mono font-mono">{label}</p>
+          <p className="eyebrow">{label}</p>
           <h2 id={`${id}-title`} className="mt-5 max-w-[14ch] text-heading-lg text-ink">
             {title} {titleAccent ? <em>{titleAccent}</em> : null}
           </h2>
@@ -40,7 +40,7 @@ export function FeatureList({
               as="li"
               key={item.title}
               delay={index * 50}
-              className="flex flex-col gap-3 rounded-card bg-surface p-6"
+              className="theme-light flex flex-col gap-3 rounded-card bg-surface p-6"
             >
               <Icon name={item.icon} size={22} className="text-gold-ink" />
               <h3 className="font-body text-heading-xs font-medium text-ink">{item.title}</h3>
