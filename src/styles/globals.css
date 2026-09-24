@@ -13,10 +13,11 @@
    correct — and reproduce the same rendered pixel sizes with one fluid clamp
    per step instead of three breakpoint overrides.
 
-   COLOUR: warm off-white page, warm near-black type, white cards, gold used
-   once per page. No dark bands: contrast comes from photography and from the
-   white cards sitting on the off-white field. Every pair carrying type is
-   WCAG 2.1 AA — ratios noted.
+   COLOUR follows the redesign template: a warm cream page, deep green-black
+   for headings and for the dark bands ("Why choose us", the footer), warm
+   white cards, and a bronze gold for eyebrows, icons and the main buttons.
+   The dark bands re-map the text tokens with `theme-dark` (see UTILITIES).
+   Every pair carrying type is WCAG 2.1 AA — ratios noted.
    ========================================================================== */
 
 @theme {
@@ -40,15 +41,43 @@
   --font-body: var(--font-body-loaded), system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: var(--font-mono-loaded), ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /* ---------- Colour ------------------------------------------------------ */
-  --color-bg: #f9f8f5; /* page — warm off-white, never pure white */
-  --color-surface: #ffffff; /* cards, pills, FAQ rows */
-  --color-ink: #1a1613; /* headings + body — 15.6:1 on bg */
-  --color-ink-soft: #5f5953; /* secondary copy — 6.9:1 on bg */
-  --color-ink-faint: #8a827a; /* mono labels — 3.6:1, non-body use only */
-  --color-core-black: #070503; /* buttons */
-  --color-gold: #c9a227; /* fills, chips, the footer band */
-  --color-gold-ink: #7c5f1f; /* the only gold allowed to carry type — 5.98:1 on white */
+  /* ---------- Colour ------------------------------------------------------
+     The redesign palette, sampled from the design template: a warm cream page,
+     a deep green-black for the dark bands AND the headings (the template sets
+     both in the same ink), and a bronze gold for accents and buttons. Ratios
+     are against the cream page unless stated. */
+  --color-bg: #f9f3e9; /* page — warm cream */
+  --color-surface: #fffcf6; /* cards, pills, FAQ rows — a step lighter than the page */
+  --color-ink: #1a2b28; /* headings + body — 13.4:1 */
+  --color-ink-soft: #5b605a; /* secondary copy — 5.8:1 */
+  --color-ink-faint: #6f6a62; /* mono labels — 4.9:1, AA even at 12px */
+  --color-core-black: #13211e; /* dark buttons — white on it is 16.6:1 */
+  --color-forest: #1a2b28; /* the dark bands ("Why choose us", the footer) */
+  /* The page cream by a name no theme overrides — `bg` means the band's own
+     colour inside a dark band, so the wave edges that cut the cream back into
+     a band paint with this instead. Keep equal to `--color-bg`. */
+  --color-cream: #f9f3e9;
+  /* The pale beige band the project page's closing ask sits on (the project
+     template's last band before the footer). Ink on it is 12.0:1, soft 5.2:1. */
+  --color-sand: #efe6d8;
+  --color-gold: #b08a55; /* fills, chips — near-black on it is 5.2:1 */
+  --color-gold-ink: #7a5b33; /* the gold allowed to carry type on cream — 5.6:1 */
+  /* The gold button's fill, dark end → light end. Dark type on the darker end
+     is 4.9:1; the template's own #A47C47 was 3.9:1, which fails for 14px type. */
+  --color-gold-from: #b38e5a;
+  --color-gold-to: #d4b98c;
+  /* The wordmark's two colours, used by <Logo> alone: its first word ("SV") in
+     the brand green, the rest ("Developers") in a green-black. Both sit on the
+     light field — nav bar and footer brand block — at 10.4:1 and 16.5:1 on bg.
+     🔶 NOT for the footer band (#a36031): the green is 2.25:1 there, which fails
+     even the 3:1 large-type floor. */
+  --color-brand: #06452e;
+  --color-brand-ink: #171a17;
+  /* The floating WhatsApp button. A step deeper than WhatsApp's own #25D366,
+     because that is 1.98:1 under a white glyph and 1.87:1 against the light
+     footer — both under the 3:1 a control needs. This is 3.57:1 and 3.36:1;
+     on the dark green field a white ring carries the edge instead (8.9:1). */
+  --color-whatsapp: #169c47;
   --color-band: #f0e8d2; /* the pale band behind the closing CTA */
   /* The footer's band, deliberately a SEPARATE token from `--color-band`.
      They were one value until this colour arrived; recolouring the shared token
@@ -56,8 +85,8 @@
      headings and two buttons which would have lost their contrast against a
      mid-dark terracotta. Two names because there are now two jobs. */
   --color-footer-band: #a36031;
-  --color-line: rgba(26, 22, 19, 0.12);
-  --color-line-strong: rgba(26, 22, 19, 0.22);
+  --color-line: rgba(26, 43, 40, 0.12);
+  --color-line-strong: rgba(26, 43, 40, 0.22);
   --color-line-invert: rgba(255, 255, 255, 0.18);
   /* ---------- Glass -------------------------------------------------------
      The top bar's material, split into three parts so it can be re-skinned
@@ -115,11 +144,17 @@
   --radius-full: 999px;
 
   /* ---------- Rhythm ------------------------------------------------------
-     Section padding is deliberately large and top-heavy, as measured on the
-     reference (270px top on the first content band at desktop). */
+     The space between sections. These two values set every band's top
+     padding on every page, so they are the one place to tighten or loosen
+     the whole site's rhythm.
+
+     Roughly HALVED from the reference's measured 270px (96 → 270 and
+     64 → 160), on request: on a wide screen the old values left a band of
+     bare field taller than most sections' content between one section and
+     the next. */
   --spacing-gutter: clamp(1rem, 0.6rem + 2vw, 2rem);
-  --spacing-section: clamp(6rem, 3rem + 12vw, 16.875rem); /* 96 → 270 */
-  --spacing-section-sm: clamp(4rem, 2.5rem + 6vw, 10rem); /* 64 → 160 */
+  --spacing-section: clamp(4rem, 2rem + 6vw, 8.5rem); /* 64 → 136 */
+  --spacing-section-sm: clamp(3rem, 1.5rem + 3vw, 5rem); /* 48 → 80 */
 
   /* ---------- Motion ------------------------------------------------------ */
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
@@ -238,8 +273,16 @@
     font-style: normal;
   }
 
+  /* The focus ring follows the surface it sits on: near-black on the light
+     field and white cards, white on the green field. A variable rather than a
+     second rule, so a white card inside the green field (which resets it — see
+     `theme-light`) gets the dark ring back without a specificity fight. */
+  :root {
+    --focus-ring: var(--color-core-black);
+  }
+
   :focus-visible {
-    outline: 2px solid var(--color-core-black);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 3px;
     border-radius: 0.25rem;
   }
@@ -265,6 +308,66 @@
 /* =============================================================================
    UTILITIES
    ========================================================================== */
+
+/* ---------- Colour themes for a subtree -----------------------------------
+   These work by REDEFINING the colour tokens for everything inside, not by
+   re-colouring components: every `text-ink`, `bg-bg`, `border-line` beneath
+   resolves to the values here.
+
+   `theme-dark` — the deep green bands ("Why choose us", the footer). Type goes
+   light on #1A2B28:
+       ink        #f9f3e9  13.4:1
+       ink-soft   #c9cfc8   9.3:1
+       ink-faint  #a5b0a9   6.6:1
+       gold-ink   #c9a978   6.6:1  (gold type and icons on the dark)
+   It sets tokens only; the band paints itself with `bg-bg` or `bg-forest`.
+
+   `theme-light` — puts a subtree back on the LIGHT tokens: white cards, pale
+   panels, pills and buttons that carry their own light fill and need dark type
+   on it even when they sit on a dark band. These restate the @theme values
+   above: if a light-theme colour changes there, change it here too. */
+@utility theme-dark {
+  --color-bg: #1a2b28;
+  --color-ink: #f9f3e9;
+  --color-ink-soft: #c9cfc8;
+  --color-ink-faint: #a5b0a9;
+  --color-gold-ink: #c9a978;
+  --color-line: rgba(249, 243, 233, 0.14);
+  --color-line-strong: rgba(249, 243, 233, 0.3);
+  --focus-ring: #ffffff;
+}
+
+@utility theme-light {
+  --color-bg: #f9f3e9;
+  --color-ink: #1a2b28;
+  --color-ink-soft: #5b605a;
+  --color-ink-faint: #6f6a62;
+  --color-gold-ink: #7a5b33;
+  --color-line: rgba(26, 43, 40, 0.12);
+  --color-line-strong: rgba(26, 43, 40, 0.22);
+  --focus-ring: var(--color-core-black);
+}
+
+/* The template's eyebrow: a short gold rule, then the label. Used above every
+   section heading. `justify-center` variants come from the caller. */
+@utility eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-gold-ink);
+
+  &::before {
+    content: '';
+    width: 2.25rem;
+    height: 2px;
+    border-radius: 1px;
+    background: linear-gradient(90deg, var(--color-gold-from), var(--color-gold-to));
+  }
+}
 
 @utility container-page {
   width: 100%;
@@ -512,5 +615,304 @@
      has reduced motion switched on. */
   .wordmark-rise[data-reveal='pending'] {
     transform: none;
+  }
+}
+
+/* =============================================================================
+   PAGE-END JOIN — deliberately UNLAYERED.
+   When a page ENDS on the sand CTA band (the project page), the band flows
+   straight into the footer, as in the project template: no cream gap between
+   them, and the footer's top wave is drawn in sand instead of cream so the
+   band curves down into the dark. Every other page keeps the cream gap and
+   cream wave.
+
+   Outside every @layer on purpose: the footer's `mt-section` and the wave's
+   `text-cream` are utilities, and a rule in a LOWER layer never beats a
+   utility whatever its specificity. Unlayered styles outrank all layers.
+   ========================================================================== */
+main:has(> .cta-band:last-child) + footer {
+  margin-top: 0;
+}
+
+main:has(> .cta-band:last-child) + footer .footer-wave {
+  color: var(--color-sand);
+}
+
+/* =============================================================================
+   SPLASH — the first-load screen (components/layout/SplashScreen.tsx; the
+   timings there and the keyframes here are one design).
+
+   Drawn from the logo: its emerald for the field, its gold ring redrawn round
+   the emblem, its sun as a burst of rays the ring lights as it passes, and
+   the rule-and-diamond from under "DEVELOPERS". Every element's resting style
+   is its FINAL state and the animations only run in from `backwards`, so a
+   browser that skips an animation still shows the finished composition.
+   ========================================================================== */
+.splash {
+  /* The field's edge colour, and the curved hem below the screen that lifts
+     with it — matched, so the wave reads as the same sheet. */
+  --splash-edge: #03281b;
+  --splash-wave: 14svh;
+  position: fixed;
+  inset: 0;
+  /* Above the bar (100), the menu (95), the lightbox (200); below the skip
+     link (300), which a keyboard user can still reach. */
+  z-index: 250;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--splash-edge);
+  background-image: radial-gradient(
+    ellipse 60% 55% at 50% 46%,
+    #0b5a3d 0%,
+    var(--color-brand) 40%,
+    var(--splash-edge) 85%
+  );
+  /* THE FAILSAFE. Runs from first paint; the script replaces it long before
+     it fires. If the script never gets that far, the splash fades out on its
+     own and can never sit over the page. */
+  animation: splash-failsafe 600ms ease 7s forwards;
+}
+
+.splash::after {
+  content: '';
+  position: absolute;
+  top: calc(100% - 1px);
+  left: -10%;
+  width: 120%;
+  height: var(--splash-wave);
+  background-color: var(--splash-edge);
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+}
+
+.splash-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.splash-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  /* Emblem (60% of this) ~144px on a phone, 250px on a laptop. */
+  width: clamp(15rem, 50vmin, 26rem);
+  aspect-ratio: 1;
+}
+
+/* The sunrise behind the emblem. */
+.splash-stage::before {
+  content: '';
+  position: absolute;
+  inset: -8%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgb(212 185 140 / 0.3) 0%,
+    rgb(212 185 140 / 0.1) 38%,
+    transparent 66%
+  );
+  animation:
+    splash-glow 1400ms var(--ease-out-soft) backwards,
+    splash-breathe 3200ms ease-in-out 1400ms infinite alternate;
+}
+
+.splash-halo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.splash-track {
+  fill: none;
+  stroke: rgb(212 185 140 / 0.14);
+  stroke-width: 0.6;
+}
+
+/* 428 = the circumference at r=68, rounded up. Explicit lengths rather than
+   `pathLength`, which Safari does not honour on every shape. */
+.splash-ring {
+  --len: 428;
+  fill: none;
+  stroke: url(#splash-gold);
+  stroke-width: 0.9;
+  stroke-dasharray: var(--len);
+  animation: splash-draw 1000ms cubic-bezier(0.37, 0, 0.63, 1) 300ms backwards;
+}
+
+.splash-ray {
+  stroke: rgb(212 185 140 / 0.6);
+  stroke-width: 1.1;
+  stroke-dasharray: var(--len);
+  animation:
+    splash-draw 420ms var(--ease-out-soft) var(--draw) backwards,
+    splash-glint 2160ms ease-in-out var(--glint) infinite;
+}
+
+.splash-medallion {
+  position: relative;
+  width: 60%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  background-color: #fff;
+  box-shadow:
+    0 0 0 3px rgb(212 185 140 / 0.18),
+    0 24px 60px -18px rgb(0 0 0 / 0.55),
+    0 0 70px -10px rgb(212 185 140 / 0.35);
+  animation: splash-medallion 900ms var(--ease-out-soft) 100ms backwards;
+}
+
+.splash-rule {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: clamp(1rem, 3vmin, 1.75rem);
+}
+
+.splash-rule-line {
+  width: clamp(3rem, 11vmin, 5rem);
+  height: 1px;
+  background-image: linear-gradient(to right, transparent, var(--color-gold-to));
+  transform-origin: right;
+  animation: splash-grow 600ms var(--ease-out-soft) 1000ms backwards;
+}
+
+.splash-rule-line:last-child {
+  background-image: linear-gradient(to left, transparent, var(--color-gold-to));
+  transform-origin: left;
+}
+
+.splash-rule-diamond {
+  width: 0.4rem;
+  height: 0.4rem;
+  background-color: var(--color-gold-to);
+  transform: rotate(45deg);
+  animation: splash-diamond 500ms var(--ease-spring) 900ms backwards;
+}
+
+/* Gold #d4b98c on the emerald is 5.8:1. */
+.splash-tagline {
+  margin-top: 1rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-body-xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-gold-to);
+  animation: splash-fade 700ms var(--ease-out-soft) 1150ms backwards;
+}
+
+/* THE EXIT: the emblem lifts and fades, then the whole screen rises off the
+   page on its curved hem. `pointer-events: none` hands the page back the
+   moment it starts. */
+.splash[data-phase='leaving'] {
+  pointer-events: none;
+  will-change: transform;
+  animation: splash-lift 950ms cubic-bezier(0.76, 0, 0.24, 1) 120ms forwards;
+}
+
+.splash[data-phase='leaving'] .splash-content {
+  animation: splash-content-out 500ms var(--ease-out-soft) forwards;
+}
+
+/* The page's own entrance animations (the hero's rise) would play out unseen
+   behind the splash. While it holds they wait, and they start as it lifts, so
+   the headline rises into view as it is uncovered. Keyed to 'hold', which
+   only the running script sets: if the script never runs, nothing is paused.
+   `!important` because those animations are inline styles, whose shorthand
+   restates `running`. */
+body:has(> .splash[data-phase='hold']) > :not(.splash),
+body:has(> .splash[data-phase='hold']) > :not(.splash) * {
+  animation-play-state: paused !important;
+}
+
+@keyframes splash-failsafe {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes splash-glow {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+@keyframes splash-breathe {
+  to {
+    opacity: 0.6;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes splash-draw {
+  from {
+    stroke-dashoffset: var(--len);
+  }
+}
+
+/* A glint that runs round the rays: bright for a moment, then back. */
+@keyframes splash-glint {
+  0%,
+  30%,
+  100% {
+    stroke: rgb(212 185 140 / 0.6);
+  }
+  10% {
+    stroke: #f7e9c6;
+  }
+}
+
+@keyframes splash-medallion {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+}
+
+@keyframes splash-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes splash-diamond {
+  from {
+    opacity: 0;
+    transform: rotate(45deg) scale(0);
+  }
+}
+
+@keyframes splash-fade {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+@keyframes splash-lift {
+  to {
+    transform: translate3d(0, calc(-100% - var(--splash-wave)), 0);
+  }
+}
+
+@keyframes splash-content-out {
+  to {
+    opacity: 0;
+    transform: translateY(-2rem) scale(0.97);
+  }
+}
+
+/* Reduced motion: the global rule above already cuts every animation to an
+   instant; dropping the delays too shows the finished emblem at once instead
+   of popping its parts in one by one. The splash itself keeps its delay — it
+   is the failsafe's. */
+@media (prefers-reduced-motion: reduce) {
+  .splash * {
+    animation-delay: 0s !important;
   }
 }

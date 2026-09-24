@@ -30,23 +30,28 @@ export default async function AboutPage() {
       />
 
       <section className="px-gutter pt-section-sm" aria-label="Track record">
-        <dl className="container-page grid gap-px overflow-hidden rounded-card bg-line mid:grid-cols-2 tablet:grid-cols-4">
-          {(statistics.length
-            ? statistics.map((s) => ({ value: s.value, label: s.label }))
-            : home.hero.stats
-          ).map((stat) => (
-            <div key={stat.label} className="flex flex-col-reverse gap-1 bg-bg p-6 tablet:p-8">
-              <dt className="label-mono font-mono">{stat.label}</dt>
-              <dd className="font-display text-heading-md text-ink">{stat.value}</dd>
-            </div>
-          ))}
-        </dl>
+        {/* The page width is on the wrapper, not the list: the list's `bg-line`
+            is what shows through the 1px gaps as dividers, and on the list
+            itself it also painted the page gutters as grey slabs. */}
+        <div className="container-page">
+          <dl className="grid gap-px overflow-hidden rounded-card bg-line mid:grid-cols-2 tablet:grid-cols-4">
+            {(statistics.length
+              ? statistics.map((s) => ({ value: s.value, label: s.label }))
+              : home.hero.stats
+            ).map((stat) => (
+              <div key={stat.label} className="flex flex-col-reverse gap-1 bg-bg p-6 tablet:p-8">
+                <dt className="label-mono font-mono">{stat.label}</dt>
+                <dd className="font-display text-heading-md text-ink">{stat.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       </section>
 
       <section className="px-gutter pt-section" aria-labelledby="story-title">
         <div className="container-page grid gap-10 tablet:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] tablet:gap-16">
           <Reveal className="tablet:sticky tablet:top-28 tablet:self-start">
-            <p className="label-mono font-mono">{about.story.eyebrow}</p>
+            <p className="eyebrow">{about.story.eyebrow}</p>
             <h2 id="story-title" className="mt-5 max-w-[14ch] text-heading-lg text-ink">
               We sell <em>what is already built</em>
             </h2>
@@ -80,7 +85,7 @@ export default async function AboutPage() {
       />
 
       <section className="px-gutter pt-section-sm">
-        <Reveal className="container-prose rounded-card bg-surface p-8 text-center tablet:p-12">
+        <Reveal className="theme-light container-prose rounded-card bg-surface p-8 text-center tablet:p-12">
           <p className="label-mono font-mono">Office</p>
           <address className="mt-5 font-display text-heading-sm not-italic text-ink">
             {site.address.map((line: string) => (

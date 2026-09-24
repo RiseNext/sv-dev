@@ -111,6 +111,16 @@ export const home = {
       body: 'Sub-registrar appointments are typically completed within [00] working days of booking.',
     },
   ] satisfies readonly FeatureItem[],
+  /* The dark "Why choose us" band on the home page. Its cards are FOUR OF THE
+     `benefits` ABOVE, picked by title — so a card's wording lives in one place.
+     Only the titles show on the cards, which is also why none of the bracketed
+     placeholders in the bodies can surface there. */
+  whyChoose: {
+    eyebrow: 'Why choose us',
+    title: 'What every layout comes with',
+    lead: 'Four things you can check for yourself on a site visit.',
+    picks: ['Clear, single-owner title', 'Approved layouts', 'Gated and walled first', 'Registration in days'],
+  },
 } as const;
 
 /* ---------- About --------------------------------------------------------- */
