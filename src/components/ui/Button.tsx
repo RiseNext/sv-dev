@@ -6,11 +6,10 @@ import { cx } from '@/lib/cx';
 /* Every button on this site is a pill: 12px radius, 44px minimum height — the
    touch-target floor — and DM Sans at body-sm. Three fills only.
 
-   gold   ink on the bronze gradient — 4.9:1 at its darker end; the design
-          template's call to action, used for the main ask on each section
-   dark   white on #13211e        — 16.6:1
-   light  ink on warm white       — 14.4:1, used over photography and on cards
-   ghost  ink on nothing          — inherits the surface, 1px hairline border */
+   dark   white on #070503        — 19.6:1, the primary action
+   light  ink on white            — 15.6:1, used over photography and on cards
+   ghost  ink on nothing          — inherits the surface, 1px hairline border
+   gold   near-black on #c9a227   —  7.4:1, one per page at most */
 
 type Variant = 'dark' | 'light' | 'ghost' | 'gold';
 type Size = 'md' | 'lg';
@@ -19,21 +18,11 @@ const base =
   'inline-flex items-center justify-center gap-2 rounded-pill font-medium text-body-sm ' +
   'whitespace-nowrap transition-colors duration-200 disabled:opacity-55 disabled:cursor-not-allowed';
 
-/* `theme-light` on the filled variants: they carry their own fill, so they must
-   not pick up the green field's light `ink` — on the field, `hover:bg-ink`
-   would otherwise turn the dark pill off-white under white text, and the light
-   pill's `text-ink` would go off-white on white.
-
-   The ghost pill is the one that DOES inherit its surface — light type and a
-   pale hairline on the green field, dark on a white card — and switches to the
-   light tokens only on hover, where it fills white. */
 const variants: Record<Variant, string> = {
-  dark: 'theme-light bg-core-black text-white hover:bg-ink',
-  light: 'theme-light bg-surface text-ink hover:bg-white',
-  ghost: 'border border-line-strong text-ink hover:theme-light hover:bg-surface',
-  gold:
-    'theme-light bg-linear-to-r from-gold-from to-gold-to text-ink ' +
-    'shadow-[0_8px_20px_-10px_rgba(122,91,51,0.6)] hover:brightness-[1.05]',
+  dark: 'bg-core-black text-white hover:bg-ink',
+  light: 'bg-surface text-ink hover:bg-white',
+  ghost: 'border border-line-strong text-ink hover:bg-surface',
+  gold: 'bg-gold text-core-black hover:bg-gold-ink hover:text-white',
 };
 
 const sizes: Record<Size, string> = {

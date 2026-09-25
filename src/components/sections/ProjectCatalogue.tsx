@@ -20,11 +20,8 @@ export function ProjectCatalogue({
   const [active, setActive] = useState<ProjectCategory | 'all'>('all');
   const visible = active === 'all' ? projects : projects.filter((p) => p.category === active);
 
-  /* `theme-light`: the pills carry their own fills (dark when active, white
-     when not), so they read their colours from the light tokens even on the
-     green field. */
   const pill =
-    'theme-light inline-flex min-h-11 items-center rounded-pill px-4 text-body-sm font-medium transition-colors';
+    'inline-flex min-h-11 items-center rounded-pill px-4 text-body-sm font-medium transition-colors';
 
   return (
     <section className="px-gutter pt-16" aria-label="Project catalogue">

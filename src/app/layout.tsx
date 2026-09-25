@@ -4,8 +4,6 @@ import { Footer } from '@/components/layout/Footer';
 import { PillNav } from '@/components/layout/PillNav';
 import { SkipLink } from '@/components/layout/SkipLink';
 import { SmoothScroll } from '@/components/layout/SmoothScroll';
-import { SplashScreen } from '@/components/layout/SplashScreen';
-import { WhatsAppFloat } from '@/components/layout/WhatsAppFloat';
 import { buildNav } from '@/content/site';
 import { getSiteSettings } from '@/lib/api/site';
 import { getProjects } from '@/lib/api/projects';
@@ -84,7 +82,7 @@ export function allowIndexing(): boolean {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#f9f3e9', // keep in sync with --color-bg in globals.css
+  themeColor: '#f9f8f5', // keep in sync with --color-bg in globals.css
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -98,10 +96,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <head>
         {/* Scroll reveals are progressive enhancement: without JS every section
-            stays visible rather than fading in and never arriving. The splash
-            is too: without JS nothing could lift it, so it is never shown. */}
+            stays visible rather than fading in and never arriving. */}
         <noscript>
-          <style>{`[data-reveal]{opacity:1 !important;transform:none !important}.splash{display:none !important}`}</style>
+          <style>{`[data-reveal]{opacity:1 !important;transform:none !important}`}</style>
         </noscript>
       </head>
       {/* Extensions (ad blockers, Bitdefender's `bis_skin_checked`, password
@@ -110,18 +107,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           here silences the extension noise only — mismatches inside the tree
           are still reported. */}
       <body suppressHydrationWarning>
-        {/* First in the body so it is the first thing painted. It must stay a
-            DIRECT child of <body>: globals.css keys the paused entrance
-            animations off `body:has(> .splash)`. */}
-        <SplashScreen logo={site.logo} tagline={site.tagline} />
         <SmoothScroll />
         <SkipLink />
         <PillNav nav={nav} siteName={site.name} phone={site.phone} logo={site.logo} />
         <main id="main">{children}</main>
         <Footer />
-        {/* Fixed to the viewport, so where it sits in the tree only decides
-            focus order: last, after the footer, out of the reading flow. */}
-        <WhatsAppFloat whatsapp={site.whatsapp} siteName={site.name} />
       </body>
     </html>
   );

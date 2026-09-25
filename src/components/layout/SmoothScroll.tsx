@@ -38,18 +38,9 @@ export function SmoothScroll() {
     const start = () => {
       if (teardown) return;
 
-      /* SENSITIVITY AND FEEL ARE TWO SEPARATE KNOBS, and only one was turned.
-         `wheelMultiplier` is how far one wheel notch travels: 1.2 is 20% more
-         ground per notch than the browser's own step (100px → 120px on a
-         standard Windows detent), so the page no longer feels heavy on a long
-         read. `duration` + `easing` are the glide — how that distance is
-         covered — and are left exactly as they were, so it moves further per
-         notch without moving any less smoothly. Past ~1.4 a single notch starts
-         to skip whole blocks of copy; keep it modest. */
       const lenis = new Lenis({
         duration: 1.1,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-        wheelMultiplier: 1.2,
       });
 
       let frame = requestAnimationFrame(function raf(time: number) {

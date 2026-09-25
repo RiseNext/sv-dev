@@ -86,20 +86,9 @@ export function mailHref(email: string): string {
  *  number into the CMS it becomes a RELATIVE link to `/919XXXXXXXXX` and 404s.
  *
  *  The correct construction already existed at `EnquiryPill.tsx:39`; it was
- *  simply never applied here.
- *
- *  🔴 AND IT NEEDS A COUNTRY CODE. wa.me takes the FULL international number;
- *  given a bare national number it reads the leading digits as one. The
- *  number in site-settings is stored as `9306432399` — so `wa.me/9306432399`
- *  opened a chat with +93 (Afghanistan), not with the business. Every number on
- *  this site is an Indian mobile, so a bare 10-digit mobile (6–9 first digit),
- *  or the same with a trunk `0`, gets `91` in front. Anything else — a number
- *  already carrying its country code, like `+91 93064 32399` — passes through
- *  untouched, so fixing the value in the CMS later needs no code change. */
+ *  simply never applied here. */
 export function whatsappHref(whatsapp: string): string {
   if (isPlaceholder(whatsapp)) return whatsapp;
-  let digits = whatsapp.replace(/\D/g, '');
-  if (/^0[6-9]\d{9}$/.test(digits)) digits = digits.slice(1);
-  if (/^[6-9]\d{9}$/.test(digits)) digits = `91${digits}`;
+  const digits = whatsapp.replace(/\D/g, '');
   return digits ? `https://wa.me/${digits}` : whatsapp;
 }

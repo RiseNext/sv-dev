@@ -21,7 +21,7 @@ export function Testimonials({ items }: { items: readonly Testimonial[] }) {
     <section className="px-gutter pt-section" aria-labelledby="reviews-title">
       <div className="container-page">
         <Reveal className="mx-auto max-w-[44rem] text-center">
-          <p className="eyebrow">What buyers say</p>
+          <p className="label-mono font-mono">What buyers say</p>
           <h2 id="reviews-title" className="mt-5 text-heading-lg text-ink">
             Bought here, <em>and still here.</em>
           </h2>
@@ -30,7 +30,7 @@ export function Testimonials({ items }: { items: readonly Testimonial[] }) {
         <ul className="mt-14 grid gap-4 mid:grid-cols-2 tablet:grid-cols-3">
           {items.map((item, index) => (
             <Reveal as="li" key={item.id} delay={index * 80}>
-              <figure className="theme-light flex h-full flex-col rounded-media bg-surface p-6 tablet:p-8">
+              <figure className="flex h-full flex-col rounded-media bg-surface p-6 tablet:p-8">
                 <blockquote className="flex-1">
                   <p className="text-heading-xs leading-relaxed text-ink">“{item.body}”</p>
                 </blockquote>

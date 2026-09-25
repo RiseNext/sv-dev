@@ -26,7 +26,7 @@ export function Statement({
   return (
     <section id={id} className={cx('px-gutter pt-section', className)} aria-labelledby={id && `${id}-title`}>
       <Reveal className="mx-auto flex max-w-[52rem] flex-col items-center text-center">
-        {label ? <p className="eyebrow">{label}</p> : null}
+        {label ? <p className="label-mono font-mono">{label}</p> : null}
         <h2 id={id && `${id}-title`} className="mt-5 max-w-[20ch] text-heading-lg text-ink">
           {title} {titleAccent ? <em>{titleAccent}</em> : null}
         </h2>

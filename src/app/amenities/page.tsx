@@ -40,8 +40,8 @@ export default function AmenitiesPage() {
       />
 
       <section className="px-gutter pt-section" aria-labelledby="maintenance-title">
-        <Reveal className="theme-light container-prose rounded-media bg-surface p-8 tablet:p-12">
-          <p className="eyebrow">{amenities.maintenance.eyebrow}</p>
+        <Reveal className="container-prose rounded-media bg-surface p-8 tablet:p-12">
+          <p className="label-mono font-mono">{amenities.maintenance.eyebrow}</p>
           <h2 id="maintenance-title" className="mt-5 max-w-[18ch] text-heading-md text-ink">
             {amenities.maintenance.title}
           </h2>

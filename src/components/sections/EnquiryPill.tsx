@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useId, useState, type FormEvent } from 'react';
 import { Icon } from '@/components/ui/Icon';
-import { isPlaceholder, whatsappHref } from '@/lib/href';
+import { isPlaceholder } from '@/lib/href';
 
 /* The reference captures an email here. A plot buyer gives a phone number, so
    this captures a number and hands it to WhatsApp — the channel this market
@@ -25,12 +25,9 @@ import { isPlaceholder, whatsappHref } from '@/lib/href';
 export function EnquiryPill({
   siteName,
   whatsapp,
-  align = 'center',
 }: {
   siteName: string;
   whatsapp: string;
-  /** `start` for a left-aligned column, like the redesigned hero. */
-  align?: 'center' | 'start';
 }) {
   const router = useRouter();
   const inputId = useId();
@@ -52,11 +49,8 @@ export function EnquiryPill({
     const message = `Hi ${siteName}, please call me about a site visit. My number is ${digits}.`;
 
     if (whatsappReady) {
-      /* Through `whatsappHref` so the number gets its country code — see the
-         note there; the hand-built `wa.me/<digits>` sent a bare 10-digit
-         number to the wrong country. */
       window.open(
-        `${whatsappHref(whatsapp)}?text=${encodeURIComponent(message)}`,
+        `https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`,
         '_blank',
         'noopener,noreferrer',
       );
@@ -67,10 +61,10 @@ export function EnquiryPill({
   };
 
   return (
-    <div className={align === 'center' ? 'mx-auto w-full max-w-[30rem]' : 'w-full max-w-[30rem]'}>
+    <div className="mx-auto w-full max-w-[30rem]">
       <form
         onSubmit={onSubmit}
-        className="theme-light flex items-center gap-1 rounded-card border border-white/40 bg-surface/90 p-1.5 shadow-[0_10px_40px_rgba(26,22,19,0.1)] backdrop-blur-[13px]"
+        className="flex items-center gap-1 rounded-card border border-white/40 bg-surface/90 p-1.5 shadow-[0_10px_40px_rgba(26,22,19,0.1)] backdrop-blur-[13px]"
       >
         <label htmlFor={inputId} className="visually-hidden">
           Your mobile number
@@ -90,7 +84,7 @@ export function EnquiryPill({
         />
         <button
           type="submit"
-          className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-pill bg-linear-to-r from-gold-from to-gold-to px-5 text-body-sm font-medium text-ink transition-[filter] hover:brightness-[1.05]"
+          className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-pill bg-core-black px-5 text-body-sm font-medium text-white transition-colors hover:bg-ink"
         >
           {whatsappReady ? <Icon name="whatsapp" size={16} /> : null}
           Book a site visit
@@ -98,11 +92,7 @@ export function EnquiryPill({
       </form>
 
       {error ? (
-        <p
-          id={`${inputId}-error`}
-          role="alert"
-          className={align === 'center' ? 'mt-2 text-center text-body-xs text-danger' : 'mt-2 text-body-xs text-danger'}
-        >
+        <p id={`${inputId}-error`} role="alert" className="mt-2 text-center text-body-xs text-danger">
           {error}
         </p>
       ) : null}

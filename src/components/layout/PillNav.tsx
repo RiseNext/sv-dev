@@ -626,15 +626,11 @@ export function PillNav({
               </PillFace>
             </a>
             {/* The CTA is the one pill that is already a solid object, so it
-                lifts on hover but takes no glass — a chip over it would only
-                mute it. Gold, per the design template's call to action. */}
+                lifts on hover but takes no glass — a chip over black would only
+                mute it. */}
             <Link
               href="/contact"
-              className={cx(
-                PILL,
-                PILL_LIFT,
-                'bg-linear-to-r from-gold-from to-gold-to text-ink hover:brightness-[1.05]',
-              )}
+              className={cx(PILL, PILL_LIFT, 'bg-core-black text-white hover:opacity-90')}
             >
               Book a site visit
             </Link>
@@ -766,7 +762,7 @@ export function PillNav({
         >
           <Link
             href="/contact"
-            className="inline-flex min-h-12 items-center justify-center rounded-pill bg-linear-to-r from-gold-from to-gold-to px-5 text-body-sm font-medium text-ink"
+            className="inline-flex min-h-12 items-center justify-center rounded-pill bg-core-black px-5 text-body-sm font-medium text-white"
           >
             Book a site visit
           </Link>

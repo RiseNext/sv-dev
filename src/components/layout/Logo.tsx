@@ -7,8 +7,8 @@ import { cx } from '@/lib/cx';
    (CONTENT-MANAGEMENT-MATRIX §5, "Logo file — ADMIN, T2") and the public API has
    always emitted it. Until now nothing rendered it, so uploading a logo in the
    Admin Panel changed nothing on the site — the one failure mode a CMS field
-   must not have. Exported for the splash screen, which shows the same mark. */
-export const LOGO_FALLBACK = {
+   must not have. */
+const FALLBACK = {
   src: '/images/logo/sv-developers-mark.jpg',
   width: 160,
   height: 160,
@@ -37,26 +37,14 @@ export function Logo({
   className,
   siteName,
   logo,
-  onDark = false,
 }: {
   size?: 'xs' | 'sm' | 'lg';
   className?: string;
   siteName: string;
   /** From `site-settings.logo`. Absent -> the committed emblem above. */
   logo?: ImageRef;
-  /** On a dark band (the footer): the wordmark's own green and green-black
-   *  are 1.25:1 and 2.0:1 there, so it switches to gold and cream. */
-  onDark?: boolean;
 }) {
-  const mark = logo ?? LOGO_FALLBACK;
-
-  /* The wordmark is two colours: the first word in the brand green, the rest
-     in the green-black (tokens in globals.css). Split on whitespace rather than
-     matching "SV", because the name comes from the CMS — a renamed business
-     keeps the treatment, and a one-word name is simply all green. The `?? ''`
-     is for a site-settings global that has never been saved, where the name
-     arrives missing despite its type. */
-  const [lead = '', ...rest] = (siteName ?? '').trim().split(/\s+/);
+  const mark = logo ?? FALLBACK;
 
   return (
     <span className={cx('inline-flex items-center', size === 'xs' ? 'gap-2' : 'gap-2.5', className)}>
@@ -76,13 +64,7 @@ export function Logo({
         />
       </span>
       <span className={cx('font-display leading-none tracking-[-0.01em]', WORDMARK[size])}>
-        <span className={onDark ? 'text-gold-ink' : 'text-brand'}>{lead}</span>
-        {rest.length > 0 ? (
-          <>
-            {' '}
-            <span className={onDark ? 'text-ink' : 'text-brand-ink'}>{rest.join(' ')}</span>
-          </>
-        ) : null}
+        {siteName}
       </span>
     </span>
   );
