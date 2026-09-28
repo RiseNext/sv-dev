@@ -2,6 +2,8 @@
 
 import Image from 'next/image';
 import { useEffect, useRef } from 'react';
+import { LinkButton } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
 import type { ImageRef } from '@/types/content';
 
 /* =============================================================================
@@ -24,13 +26,7 @@ import type { ImageRef } from '@/types/content';
    why they are real markup rather than something the script injects.
    ========================================================================== */
 
-export function PinnedProof({
-  stats,
-  tiles,
-}: {
-  stats: readonly { label: string; value: string }[];
-  tiles: readonly ImageRef[];
-}) {
+export function PinnedProof({ tiles }: { tiles: readonly ImageRef[] }) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const tileRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -133,14 +129,16 @@ export function PinnedProof({
               Built, walked and handed over. <em>Not drawn.</em>
             </h2>
 
-            <dl className="mt-12 grid w-full grid-cols-2 gap-x-6 gap-y-8 tablet:grid-cols-4">
-              {stats.map((stat) => (
-                <div key={stat.label} className="flex flex-col-reverse items-center gap-1">
-                  <dt className="label-mono font-mono">{stat.label}</dt>
-                  <dd className="font-display text-heading-md text-ink">{stat.value}</dd>
-                </div>
-              ))}
-            </dl>
+            {/* The four counters that used to sit here (years building, plots
+                handed over, layouts completed, registration) were removed on
+                request. The claim above is about what can be SEEN, so the
+                proof it now offers is the photographs themselves. */}
+            <div className="mt-12">
+              <LinkButton href="/gallery" size="lg">
+                View the gallery
+                <Icon name="arrowRight" size={16} />
+              </LinkButton>
+            </div>
           </div>
         </div>
       </div>

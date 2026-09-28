@@ -38,6 +38,7 @@ export type IconName =
   | 'route'
   | 'ruler'
   | 'school'
+  | 'share'
   | 'shield'
   | 'shop'
   | 'star'
@@ -47,9 +48,17 @@ export type IconName =
   | 'wall'
   | 'whatsapp'
   | 'youtube'
-  | 'zoomIn';
+  | 'zoomIn'
+  | 'home';
 
 const shapes: Record<IconName, ReactNode> = {
+  home: (
+    <>
+      <path d="M3.5 11 12 4l8.5 7" />
+      <path d="M5.5 9.5v10.5h13V9.5" />
+      <path d="M10 20v-5.5h4V20" />
+    </>
+  ),
   arrowRight: <path d="M4 12h15m-6-6 6 6-6 6" />,
   bank: (
     <>
@@ -73,6 +82,17 @@ const shapes: Record<IconName, ReactNode> = {
     </>
   ),
   check: <path d="m5 13 4.5 4.5L19 7" />,
+  /* Three nodes and the two threads between them. Round caps on the threads
+     and true circles for the nodes, so it stays smooth at 16px — the box-and-
+     arrow share glyph goes muddy at that size. */
+  share: (
+    <>
+      <circle cx="18" cy="5.5" r="2.5" />
+      <circle cx="6" cy="12" r="2.5" />
+      <circle cx="18" cy="18.5" r="2.5" />
+      <path d="m8.2 10.8 7.6-4.1m-7.6 6.5 7.6 4.1" />
+    </>
+  ),
   chevronDown: <path d="m6 9.5 6 6 6-6" />,
   chevronRight: <path d="m9.5 6 6 6-6 6" />,
   city: (

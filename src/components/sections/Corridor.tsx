@@ -1,7 +1,6 @@
 import { Icon } from '@/components/ui/Icon';
 import { Plate } from '@/components/ui/Media';
 import { Reveal } from '@/components/ui/Reveal';
-import { LinkButton } from '@/components/ui/Button';
 import { location, media } from '@/content/pages';
 
 /* The reference marks every practice on a dotted map. Ours is a corridor, not
@@ -33,13 +32,9 @@ export function Corridor() {
               </li>
             ))}
           </ul>
-
-          <div className="mt-8">
-            <LinkButton href="/location" variant="ghost">
-              Location detail
-              <Icon name="arrowRight" size={16} />
-            </LinkButton>
-          </div>
+          {/* The "Location detail" ghost button that stood here went with
+              /location. The proximity list above IS the location detail now;
+              anything project-specific is on the project's own page. */}
         </Reveal>
 
         <Reveal delay={120} className="tablet:sticky tablet:top-28">

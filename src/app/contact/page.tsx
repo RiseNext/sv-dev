@@ -1,10 +1,9 @@
 import { Suspense } from 'react';
-import { Accordion } from '@/components/ui/Accordion';
 import { Icon } from '@/components/ui/Icon';
 import { Reveal } from '@/components/ui/Reveal';
 import { ContactForm } from '@/components/sections/ContactForm';
+import { FaqSection } from '@/components/sections/FaqSection';
 import { PageHero } from '@/components/sections/PageHero';
-import { Statement } from '@/components/sections/Statement';
 import { contact } from '@/content/pages';
 import { getSiteSettings } from '@/lib/api/site';
 import { getProjects } from '@/lib/api/projects';
@@ -128,12 +127,11 @@ export default async function ContactPage() {
         </div>
       </section>
 
-      <Statement id="faq" label="FAQ" title="Before you come," titleAccent="the usual questions" />
-      <div className="container-prose mt-14">
-        <Accordion
-          items={faqs.length ? faqs.map((f) => ({ q: f.question, a: f.answer })) : contact.faq}
-        />
-      </div>
+      <FaqSection
+        title="Before you come,"
+        titleAccent="the usual questions"
+        items={faqs.length ? faqs.map((f) => ({ q: f.question, a: f.answer })) : contact.faq}
+      />
 
       <div className="pb-section-sm" />
     </>

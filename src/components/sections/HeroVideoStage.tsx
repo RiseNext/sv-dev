@@ -16,55 +16,49 @@ import type { VideoRef } from '@/types/content';
    The frame, the wash and the type treatment are IDENTICAL across both, so
    adding a second video changes what moves, never how the hero looks.
 
-   ─── THE SCRIM IS DARK, AND THE FOOTAGE IS LEFT SHARP ─────────────────────
-   This was a white wash over a blurred video, and it buried the footage: the
-   point of a hero video is that you can see it. So the blur is gone entirely
-   and the scrim is a DIM rather than a wash — the video reads at full clarity
-   and the type sits on darkened footage instead of behind frosted glass.
+   ─── NOTHING IS LAID OVER THE FOOTAGE ─────────────────────────────────────
+   🔶 REMOVED ON REQUEST, 28 Sep 2026: this carried a dark vertical gradient
+   over the video — a scrim — to hold the white headline up. It is gone, and
+   with it the last thing standing between the visitor and the footage. The
+   video now plays at full brightness and full clarity: no tint, no blur.
 
-   THE TYPE IS THEREFORE WHITE, not `text-ink`. That is forced, not stylistic:
-   near-black type on a darkened video is unreadable at any scrim strength that
-   still lets the footage show.
+   THE TYPE IS STILL WHITE, and its legibility now comes from a TEXT SHADOW set
+   in Hero.tsx. That is the important distinction: a shadow darkens the handful
+   of pixels behind the letterforms, where a scrim darkened the entire frame.
+   If a pale clip ever makes the headline hard to read, deepen that shadow —
+   the tint is not coming back.
 
-   IT IS A VERTICAL GRADIENT, NOT A FLAT TINT, and that is what keeps it
-   reading as texture rather than as a grey sheet someone dropped on the video.
-   Darkest at the top and bottom edges — which is where the headline and the
-   controls sit — and at its lightest across the middle, where the footage is
-   allowed to come through almost untouched.
-
-   🔶 THE ONE THING TO WATCH: the footage is admin-supplied, so its brightness
-   is not ours to control. These stops hold white type against the bright, dusty
-   daylight clip currently in the preview folder; a near-white shot (overcast
-   sky, sand) would need them stronger. If a future upload makes the headline
-   hard to read, RAISE THE ALPHAS HERE — do not darken the type, which would
-   fail against the next clip in the carousel.
+   ─── THE PANE OPENS FULL SCREEN ───────────────────────────────────────────
+   Its width, height, border and radius are NOT set here. They are interpolated
+   in globals.css from `--hero-p`, which the effect below writes onto the
+   section as you scroll: 0 covering the whole screen, 1 settled into the
+   bordered pane. What stays here is everything that does not change between
+   those two states — the footage, the type, the controls, the padding.
 
    ─── HEIGHT IS CONTENT-DRIVEN, NOT ASPECT-DRIVEN ──────────────────────────
-   No `aspect-[16/9]` on the frame. An aspect ratio fixes the height from the
-   WIDTH, so on a narrow phone the pane becomes short exactly as the headline
-   wraps to four lines, and the type either overflows or has to shrink. Padding
-   plus a `min-h` lets the pane grow to whatever the type needs at every width,
-   which is what makes this survive translation, a longer headline, or a 320px
-   screen. The video fills whatever height results via `object-cover`.
+   No `aspect-[16/9]` on the frame, in either state. An aspect ratio fixes the
+   height from the WIDTH, so on a narrow phone the pane becomes short exactly
+   as the headline wraps to four lines, and the type either overflows or has to
+   shrink. Padding plus a `min-height` FLOOR lets the pane grow to whatever the
+   type needs at every width, which is what makes this survive translation, a
+   longer headline, or a 320px screen. The video fills whatever height results
+   via `object-cover`.
    ========================================================================== */
 
 /** Long enough to read the headline and watch a few seconds of footage. */
 const ADVANCE_MS = 7000;
 
-/* The scrim. ONE UNBROKEN STRING — Tailwind scans source text for whole class
-   names, so an arbitrary value split across a `+` join silently generates no
-   rule at all.
-
-   Stops are `--color-ink` (#1a1613), the site's warm near-black, NOT pure
-   black: a neutral #000 tint over warm daylight footage turns it grey and
-   lifeless, while the warm ink keeps the dust and the light in the shot. */
-const SCRIM =
-  'bg-[linear-gradient(to_bottom,rgba(26,22,19,0.62)_0%,rgba(26,22,19,0.44)_28%,rgba(26,22,19,0.34)_50%,rgba(26,22,19,0.46)_74%,rgba(26,22,19,0.7)_100%)]';
-
-/* The frame. A hairline plus a two-layer lift, same family as the nav's glass:
-   a tight contact shadow and a wide deep ambient. */
+/* The frame. A two-layer lift, same family as the nav's glass: a tight contact
+   shadow and a wide deep ambient. The hairline that went with it is in
+   globals.css, because it has to fade in as the pane settles — at full bleed a
+   white hairline is a seam along the edge of the screen. */
 const FRAME_SHADOW =
-  'shadow-[0_2px_6px_rgba(26,22,19,0.06),0_24px_60px_-24px_rgba(26,22,19,0.28)]';
+  'shadow-[0_2px_6px_rgba(43,34,23,0.06),0_24px_60px_-24px_rgba(43,34,23,0.28)]';
+
+/* How much of the pin's travel the shrink uses, leaving the rest as a settled
+   hold before the section releases. Derived from the section's own height, so
+   `--hero-run` in globals.css stays the single place the distance is set. */
+const SETTLE_AT = 0.7;
 
 export function HeroVideoStage({
   videos,
@@ -86,8 +80,59 @@ export function HeroVideoStage({
   const [hoverPaused, setHoverPaused] = useState(false);
 
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const paneRef = useRef<HTMLDivElement>(null);
 
   const advancing = multi && !reduceMotion && !userPaused && !hoverPaused;
+
+  /* THE SCROLL-SHRINK. Writes `--hero-p` onto the SECTION, not onto the pane:
+     the sticky wrapper's gutter and nav clearance are interpolated from the
+     same number, and a custom property set on the section inherits down to
+     both. See globals.css for the geometry it drives.
+
+     Nothing here is React state. A `setState` per scroll frame would re-render
+     the whole stage — videos, controls and all — sixty times a second to move
+     one number; writing the property straight onto the node moves it without
+     React in the loop at all. */
+  useEffect(() => {
+    const section = paneRef.current?.closest<HTMLElement>('[data-hero-scroll]');
+    if (!section) return;
+    /* Reduced motion keeps the settled pane, which globals.css already sets.
+       Bailing out before the first write is what leaves it in charge — an
+       inline property here would beat the media query. */
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    let frame = 0;
+
+    const update = () => {
+      frame = 0;
+      /* The pin's travel: everything the section is taller than one screen. */
+      const travel = section.offsetHeight - window.innerHeight;
+      if (travel <= 0) {
+        section.style.setProperty('--hero-p', '1');
+        return;
+      }
+      const scrolled = Math.min(Math.max(-section.getBoundingClientRect().top, 0), travel);
+      const progress = Math.min(scrolled / (travel * SETTLE_AT), 1);
+      section.style.setProperty('--hero-p', progress.toFixed(4));
+    };
+
+    /* Coalesced to one write per frame: scroll fires far more often than the
+       screen refreshes, and Lenis drives it from its own rAF loop. */
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      section.style.removeProperty('--hero-p');
+    };
+  }, []);
 
   /* ONLY THE VISIBLE VIDEO PLAYS. Leaving all of them running decodes N video
      streams for one visible pane — the single most expensive thing a hero can
@@ -134,27 +179,40 @@ export function HeroVideoStage({
 
   return (
     <div
+      ref={paneRef}
       className={cx(
         'relative isolate w-full overflow-hidden',
         /* `on-dark` switches focus rings to white — see globals.css. Without it
-           the keyboard outline is `--color-core-black` on darkened footage,
-           i.e. invisible, which is a real failure and not a cosmetic one. */
+           the keyboard outline is `--color-core-black` on the footage, i.e.
+           invisible, which is a real failure and not a cosmetic one. */
         'on-dark',
-        /* Smaller radius on a phone: 24px on a pane only a few hundred pixels
-           wide eats visibly into the corners of the type inside it. */
-        'rounded-card tablet:rounded-media',
-        /* Down from white/55, which was tuned against a pale wash. At that
-           strength a hairline over darkened footage reads as a bright seam. */
-        'border border-white/20',
+        /* Width, the height floor, the border and the radius all live in this
+           class in globals.css, because every one of them is interpolated
+           between the full-screen and settled states. */
+        'hero-pane',
         FRAME_SHADOW,
-        /* Content-driven height with a floor — see the header note on why this
-           is not an aspect ratio. */
-        'min-h-[30rem] tablet:min-h-[34rem]',
-        'flex flex-col items-center justify-center',
+        /* `justify-end`, not `justify-center`: the glass panel sits LOW in the
+           frame on request — centred across, down at the bottom. The pane's
+           own bottom padding is what holds it off the edge, so it keeps the
+           same clearance at every breakpoint and at every point of the shrink.
+
+           The controls, when there are any, are absolutely placed at
+           `bottom-4/6` — inside that padding, so they land under the panel
+           rather than behind it. */
+        'flex flex-col items-center justify-end',
         'px-5 py-16 mid:px-8 mid:py-20 tablet:px-12 tablet:py-28',
       )}
       /* Hover and focus pause the rotation, so a slide cannot change out from
-         under someone reading it or tabbing through the controls. */
+         under someone reading it or tabbing through the controls.
+
+         🔶 WORTH KNOWING once a SECOND hero video exists. The CMS ships one
+         today, so `multi` is false and none of this runs. But the pane now
+         covers the whole screen on arrival, and "the pointer is over the pane"
+         therefore means "the pointer is anywhere on the page" until it
+         settles — so on a desktop the rotation would sit paused through the
+         opening. If a second video is added and the first never hands over,
+         that is the cause: gate this on `--hero-p` being past the settle
+         point rather than on hover alone. */
       onPointerEnter={() => setHoverPaused(true)}
       onPointerLeave={() => setHoverPaused(false)}
       onFocusCapture={() => setHoverPaused(true)}
@@ -192,20 +250,12 @@ export function HeroVideoStage({
         />
       ))}
 
-      {/* ---------- Layer 2: the scrim ----------
-          NO `backdrop-blur` here, deliberately. It used to carry a 3px blur,
-          which softened the footage into a texture — the opposite of the point
-          of a hero video. Tinting alone keeps every frame sharp, and it is also
-          the cheaper layer: `backdrop-filter` over a playing video forces the
-          compositor to re-sample and re-blur its backdrop EVERY FRAME, which is
-          the one thing on this page that could cost real frame rate on a
-          phone. */}
-      <div aria-hidden="true" className={cx('pointer-events-none absolute inset-0 -z-10', SCRIM)} />
-
-      {/* ---------- Layer 3: the type ---------- */}
+      {/* ---------- Layer 2: the type ----------
+          There is no layer between this and the footage any more. The scrim
+          that used to sit here is gone on request — see the header note. */}
       <div className="relative flex w-full flex-col items-center">{children}</div>
 
-      {/* ---------- Layer 4: controls, only when they have a job ---------- */}
+      {/* ---------- Layer 3: controls, only when they have a job ---------- */}
       {multi ? (
         <div
           className={cx(

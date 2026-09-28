@@ -31,7 +31,7 @@ export function ProjectCatalogue({
             type="button"
             onClick={() => setActive('all')}
             aria-pressed={active === 'all'}
-            className={cx(pill, active === 'all' ? 'bg-ink text-white' : 'bg-surface text-ink')}
+            className={cx(pill, active === 'all' ? 'bg-gold text-core-black' : 'bg-surface text-ink')}
           >
             All projects
           </button>
@@ -41,7 +41,7 @@ export function ProjectCatalogue({
               type="button"
               onClick={() => setActive(category)}
               aria-pressed={active === category}
-              className={cx(pill, active === category ? 'bg-ink text-white' : 'bg-surface text-ink')}
+              className={cx(pill, active === category ? 'bg-gold text-core-black' : 'bg-surface text-ink')}
             >
               {category}
             </button>

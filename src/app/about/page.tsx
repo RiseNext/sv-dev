@@ -1,5 +1,4 @@
 import { Reveal } from '@/components/ui/Reveal';
-import { ClosingCta } from '@/components/sections/ClosingCta';
 import { FeatureList } from '@/components/sections/FeatureList';
 import { PageHero } from '@/components/sections/PageHero';
 import { about, home } from '@/content/pages';
@@ -93,7 +92,10 @@ export default async function AboutPage() {
         </Reveal>
       </section>
 
-      <ClosingCta />
+      {/* The closing "Come and walk the layout" band was removed on request —
+          see the note in app/page.tsx. */}
+
+      <div className="pb-section-sm" />
     </>
   );
 }

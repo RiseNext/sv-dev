@@ -64,7 +64,7 @@ export function EnquiryPill({
     <div className="mx-auto w-full max-w-[30rem]">
       <form
         onSubmit={onSubmit}
-        className="flex items-center gap-1 rounded-card border border-white/40 bg-surface/90 p-1.5 shadow-[0_10px_40px_rgba(26,22,19,0.1)] backdrop-blur-[13px]"
+        className="flex items-center gap-1 rounded-card border border-white/40 bg-surface/90 p-1.5 shadow-[0_10px_40px_rgba(122,90,34,0.14)] backdrop-blur-[13px]"
       >
         <label htmlFor={inputId} className="visually-hidden">
           Your mobile number
@@ -84,7 +84,7 @@ export function EnquiryPill({
         />
         <button
           type="submit"
-          className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-pill bg-core-black px-5 text-body-sm font-medium text-white transition-colors hover:bg-ink"
+          className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-pill bg-gold px-5 text-body-sm font-medium text-core-black transition-colors hover:bg-gold-deep"
         >
           {whatsappReady ? <Icon name="whatsapp" size={16} /> : null}
           Book a site visit

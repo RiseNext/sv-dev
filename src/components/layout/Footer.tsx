@@ -2,23 +2,28 @@ import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
 import { FooterWordmark } from '@/components/layout/FooterWordmark';
 import { Logo } from '@/components/layout/Logo';
-import { buildFooterNav, legal } from '@/content/site';
+import { buildFooterNav, legal, socialFallback } from '@/content/site';
 import { getSiteSettings } from '@/lib/api/site';
 import { getProjects } from '@/lib/api/projects';
 import { anchorProps, mailHref, telHref } from '@/lib/href';
 
-/* The page ends on a colour band with the wordmark set large enough to be
-   clipped by it. Above the band the content block keeps the page background
-   and rounds its bottom corners, so the band shows through the corners —
-   which is what makes the whole page read as one card rather than a stack of
+/* The page ends on a deep green band carrying the name in cream. Above the
+   band the content block runs on the footer's own cream — a step richer than
+   the page, so the footer reads as the sign-off and not as more page — and
+   rounds its bottom corners, so the green shows through the corners. That cut
+   is what makes the whole page read as one card rather than a stack of
    sections.
 
-   A sign-off, not a second homepage. Every page already closes on <ClosingCta>
-   — a full band with a heading and two buttons — directly above this, so the
-   footer no longer repeats that ask: it carries the brand, the directory, the
+   A sign-off, not a second homepage: it carries the brand, the directory, the
    two ways to reach the office and the legal line, and nothing else. One
    compact rhythm serves every width rather than a phone layout that unfolds
    into four columns.
+
+   ⚠️ This used to say "every page already closes on <ClosingCta> directly above
+   this, so the footer no longer repeats that ask". That band was removed from
+   every page on request, so the footer's contact column is now the last thing
+   before the legal line. Left deliberately unchanged regardless — the reasoning
+   above is about the footer not being a second homepage, which still holds.
    ========================================================================== */
 
 const LINK = 'text-body-sm text-ink-soft transition-colors hover:text-ink';
@@ -33,26 +38,29 @@ export async function Footer() {
 
   // DERIVED, not a hand-maintained list of five slugs.
   const footerNav = buildFooterNav(projects);
-  const social = site.social ?? [];
+  /* `?.length`, not `??` — the CMS omitting the field and the CMS returning an
+     empty array mean the same thing here, and only the second was ever going to
+     be the real case once someone adds the field but leaves it blank. */
+  const social = site.social?.length ? site.social : socialFallback;
 
   return (
     <footer className="bg-footer-band">
-      <div className="rounded-b-band bg-bg pb-8 pt-12 tablet:pb-10 tablet:pt-16">
+      <div className="rounded-b-band bg-footer-cream pb-6 pt-8 tablet:pb-8 tablet:pt-10">
         <div className="container-page">
-          <div className="grid gap-8 tablet:grid-cols-[minmax(0,1fr)_auto] tablet:gap-16">
+          <div className="grid gap-6 tablet:grid-cols-[minmax(0,1fr)_auto] tablet:gap-12">
             {/* ---------- Brand and the two live contact routes ---------- */}
             <div>
               <Logo size="xs" siteName={site.name} logo={site.logo} />
-              <address className="mt-3 font-mono text-body-xs leading-normal text-ink-faint">
+              <address className="mt-2.5 font-mono text-body-xs leading-normal text-ink-faint">
                 {site.address.map((line) => (
                   <span key={line} className="block">
                     {line}
                   </span>
                 ))}
               </address>
-              <p className="mt-3 text-body-sm text-ink-soft">{site.officeHours}</p>
+              <p className="mt-2 text-body-sm text-ink-soft">{site.officeHours}</p>
 
-              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5">
+              <div className="mt-2.5 flex flex-wrap gap-x-5 gap-y-1.5">
                 <a
                   {...anchorProps(telHref(site.phone))}
                   className={`${LINK} inline-flex items-center gap-1.5`}
@@ -73,11 +81,11 @@ export async function Footer() {
             {/* Two columns from the narrowest phone up — stacked, the groups
                 ran to roughly twenty rows, on their own more scrolling than
                 the rest of the footer put together. */}
-            <div className="grid grid-cols-2 gap-x-6 gap-y-6 tablet:gap-x-16">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5 tablet:gap-x-12">
               {footerNav.map((group) => (
                 <nav key={group.title} aria-label={group.title}>
                   <h2 className="label-mono font-mono">{group.title}</h2>
-                  <ul className="mt-3 flex flex-col gap-1.5">
+                  <ul className="mt-2 flex flex-col gap-1">
                     {group.links.map((link) => (
                       <li key={link.label}>
                         <Link href={link.href} className={LINK}>
@@ -95,16 +103,16 @@ export async function Footer() {
               Social is three icons here rather than a labelled column: the
               names added four rows and told a visitor nothing the mark does
               not. Each keeps its accessible name. */}
-          <div className="mt-8 flex flex-col gap-4 border-t border-line pt-5 tablet:flex-row-reverse tablet:items-start tablet:justify-between tablet:gap-8">
+          <div className="mt-6 flex flex-col gap-3 border-t border-line pt-4 tablet:flex-row-reverse tablet:items-start tablet:justify-between tablet:gap-8">
             <ul className="flex items-center gap-1">
               {social.map((item) => (
                 <li key={item.label}>
                   <a
                     {...anchorProps(item.href)}
                     aria-label={item.label}
-                    className="flex size-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface hover:text-ink"
+                    className="flex size-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface hover:text-ink"
                   >
-                    <Icon name={item.icon} size={17} />
+                    <Icon name={item.icon} size={16} />
                   </a>
                 </li>
               ))}
@@ -114,7 +122,7 @@ export async function Footer() {
               <p className={`${META} leading-relaxed`}>
                 {site.copyrightText} {legal.disclaimer}
               </p>
-              <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5">
+              <ul className="mt-1.5 flex flex-wrap gap-x-5 gap-y-1.5">
                 {(site.legalLinks ?? []).map((link) => (
                   <li key={link.label}>
                     <a
@@ -131,8 +139,10 @@ export async function Footer() {
         </div>
       </div>
 
-      {/* Oversized wordmark, clipped by the band, and now drawn up out of it as
-          the band scrolls into view. A client component because the reveal
+      {/* The wordmark, drawn up out of the band as it scrolls into view. Its
+          size is what sets the band's height — see FILL in that file, which is
+          the knob for how much of the page's end this takes.
+          A client component because the reveal
           needs an IntersectionObserver — see FooterWordmark for why it cannot
           reuse the shared <Reveal>. */}
       <FooterWordmark name={site.name} />

@@ -1,251 +1,274 @@
-'use client';
-
 import Image from 'next/image';
-import { useEffect, useRef, useState } from 'react';
-import type { ImageRef } from '@/types/content';
+import { LinkButton } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
+import { ShareButton } from '@/components/ui/ShareButton';
+import { ProjectPhotoFrame } from '@/components/sections/ProjectPhotoFrame';
+import type { ImageRef, Project } from '@/types/content';
 import { cx } from '@/lib/cx';
 
 /* =============================================================================
-   MEDIA SEQUENCE — the reference's second band (PRD §2.6, row 2).
+   MEDIA SEQUENCE — the project cards on the home page.
 
-   A deck of large rounded media cards, and nothing else. Each card parks near
-   the top of the viewport and the next one rises over it, so one card owns the
-   screen at a time. The pictures carry this section on their own: the
-   statement above it has already said what it is about, and the specifications
-   are listed in full on /amenities.
+   One white card per published project: the photograph on the left, the name,
+   place, summary, a link and a share control on the right. They are a plain
+   column and they scroll like a plain column.
 
-   WHY THIS RUNS ON SCROLL POSITION AND NOT ON TRANSITIONS
-   The stack itself is `position: sticky` — CSS does the holding. But a deck
-   only feels like a deck if the card underneath *reacts* while it is being
-   covered. Toggling a class at a threshold gives you a fixed-length animation
-   that runs whether you scrolled 2px or 2000, which reads as a jump. So every
-   value here is a pure function of scroll offset:
+   ─── THERE IS DELIBERATELY NO SCROLL EFFECT ───────────────────────────────
+   This was a scroll-driven deck: the cards stacked with `position: sticky`,
+   each one parking below the nav while the next rose over it, and each card
+   opened as it landed — its edges sweeping out from a centred photograph to
+   reveal the copy from behind it, with a parallax on the photograph inside.
+   Every value was a function of scroll offset, so it ran backwards on the way
+   up.
 
-     cover  — how far the NEXT card has travelled over this one (0 → 1)
-     enter  — how far THIS card has travelled into the viewport (0 → 1)
-     drift  — this card's whole passage, used for parallax inside the frame
+   All of it was removed on request, in that order: the parallax first (a
+   photograph sliding inside a card that is standing still reads as a fault),
+   then the hover on the picture, then the reveal and the stacking together.
+   What is here now is what that effect was always resolving TO — so if it is
+   ever wanted back, the layout below is the finished state to animate toward,
+   and the history has the arithmetic.
 
-   From those: the covered card sinks, scales down and washes out into the page
-   (never down into shadow — a dark scrim on this palette is a grey slab, and
-   the design carries no dark bands), while the photograph inside each frame
-   moves slower than the frame itself. Scroll up and it all runs exactly
-   backwards, because there is no state to unwind.
+   Nothing in this file runs in the browser any more. It is a server component:
+   no state, no effects, no refs, no scroll listener, and no JavaScript shipped
+   for the section beyond the share button, which brings its own.
 
-   The reader is one passive scroll listener collapsed into a rAF, writing
-   transforms on a handful of nodes — no layout is read in the loop, positions
-   are measured once per resize. GSAP is not imported: nothing here needs a
-   timeline.
+   ─── THE CARD ─────────────────────────────────────────────────────────────
+   A white card with 8px of padding holding both halves. The radii are
+   concentric, which is what makes the inset read as deliberate rather than as
+   a misaligned overlay: the card is 40px, the padding is 8px, so the picture
+   is 40 − 8 = 32px (`rounded-4xl`). Change the padding and the inner radius
+   has to move with it.
 
-   The deck runs at EVERY width. It was desktop-only at first, which left the
-   phone — where most of this site's traffic will be — with three static
-   pictures and none of the section's character. Card height is capped in
-   `svh` rather than set by aspect ratio so a card always fits the viewport it
-   has to park in, phone landscape included.
+   From 1024px the card is a flex row, 60/40. The picture stretches to the
+   row's height with a floor, so a long summary makes the CARD taller and the
+   picture grows with it rather than leaving the copy hanging past the white.
+   Below 1024px the same card is a column: picture, then copy.
 
-   DEGRADATION: everything above is enhancement. Without JS or under
-   `prefers-reduced-motion`, `stacked` stays false — the deck never forms and
-   the cards are a plain column. That is why the stacking class comes from
-   state rather than being written into the markup.
-
-   CONSTRAINT: no ancestor of a card may set `overflow: hidden` or a
-   `transform` — either one silently kills sticky. The transforms below are all
-   applied INSIDE the sticky element, never to it.
+   ─── THE PICTURE IS A SET, NOT A PHOTOGRAPH ───────────────────────────────
+   `gallery` is optional and often absent, so the picture half is `image`
+   followed by that project's own site photography, de-duplicated — a project
+   with nothing but a cover image gets a set of one and the frame renders
+   exactly what it used to, controls and all withheld. The stepping lives in
+   ProjectPhotoFrame; the card still owns the frame's size and radius, which
+   is why they are passed to it as `className` rather than set inside it.
    ========================================================================== */
 
-type Item = {
-  /** Not rendered — the stable key for the card, and its alt text's subject. */
-  title: string;
-  image: ImageRef;
-};
-
-/* Where a card parks, and how much lower each one parks than the last — the
-   sliver of the card underneath is what makes the stack read as a deck. */
-const STICK_REM = 5;
-const DECK_REM = 0.75;
-
-const clamp01 = (n: number) => (n < 0 ? 0 : n > 1 ? 1 : n);
-/* smoothstep: kills the corner at both ends of a linear scrub. */
-const ease = (n: number) => n * n * (3 - 2 * n);
-
-/* Sticky shifts an element's painted box but not its layout box, and
-   `offsetTop` reports the layout box — which is exactly the number this needs.
-   `getBoundingClientRect()` would report the shifted one and the whole scrub
-   would drift as soon as the first card stuck. */
-function layoutTop(el: HTMLElement) {
-  let top = 0;
-  let node: HTMLElement | null = el;
-  while (node) {
-    top += node.offsetTop;
-    node = node.offsetParent as HTMLElement | null;
-  }
-  return top;
-}
+/* The card shape — exactly the fields read here. The project list from the
+   data layer satisfies all of it but `gallery`, which only the single-project
+   endpoint returns; the page merges that in. */
+type Item = Pick<Project, 'slug' | 'name' | 'category' | 'locality' | 'summary' | 'image'> &
+  Partial<Pick<Project, 'gallery'>> & {
+    /**
+     * The project's own logo, for the slot at the card's top-right corner.
+     *
+     * 🔶 NOT ON THE CMS CONTRACT. `src/types/content.ts` has no `logo` on a
+     * project and is deliberately left alone, so this field is declared HERE
+     * and nowhere else: the card is the only thing that wants it. The page
+     * reads it off the project record opportunistically — see the note there —
+     * which means it is `undefined` on every project today and the slot
+     * renders its empty state.
+     *
+     * The moment the backend emits `logo` on `/projects/{slug}`, every card
+     * fills with no change to this file. Nothing here has to be unpicked when
+     * it does: this declaration simply stops being ahead of the contract.
+     */
+    logo?: ImageRef | null;
+  };
 
 export function MediaSequence({ items }: { items: readonly Item[] }) {
-  const [stacked, setStacked] = useState(false);
+  if (items.length === 0) return null;
 
-  const rowRefs = useRef<(HTMLLIElement | null)[]>([]);
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const scrimRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  /* Enhancement is opt-in, and the opt-in happens after mount so the server
-     HTML is the plain column. */
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    setStacked(true);
-  }, []);
-
-  useEffect(() => {
-    if (!stacked) return;
-
-    const count = items.length;
-
-    let frame = 0;
-    let tops: number[] = [];
-    let viewport = 0;
-    let stick = 0;
-    let cardHeight = 0;
-
-    const measure = () => {
-      const rows = rowRefs.current.slice(0, count).filter(Boolean) as HTMLLIElement[];
-      if (rows.length !== count) return false;
-      viewport = window.innerHeight;
-      /* Read the parking offset off the element rather than recomputing the
-         calc() — it stays correct if the deck's spacing is ever changed. */
-      const first = rows[0];
-      stick = first ? parseFloat(getComputedStyle(first).top) || 0 : 0;
-      cardHeight = cardRefs.current[0]?.offsetHeight ?? viewport * 0.68;
-      tops = rows.map(layoutTop);
-      return true;
-    };
-
-    const update = () => {
-      if (tops.length !== count) return;
-      const scroll = window.scrollY;
-      /* One card's whole handover happens in the distance the incoming card
-         covers between the bottom edge of the viewport and its parking slot. */
-      const travel = Math.max(viewport - stick, 1);
-
-      for (let i = 0; i < count; i += 1) {
-        const card = cardRefs.current[i];
-        const scrim = scrimRefs.current[i];
-        const image = imageRefs.current[i];
-        if (!card || !scrim || !image) continue;
-
-        const top = tops[i] ?? 0;
-        const nextTop = tops[i + 1];
-        const cover =
-          nextTop === undefined ? 0 : ease(clamp01((scroll - nextTop + viewport) / travel));
-        const enter = ease(clamp01((scroll - top + viewport) / travel));
-
-        const scale = 0.97 + 0.03 * enter - 0.07 * cover;
-        card.style.transform = `translate3d(0, ${(-40 * cover).toFixed(2)}px, 0) scale(${scale.toFixed(4)})`;
-        scrim.style.opacity = (0.62 * cover).toFixed(3);
-
-        /* Parallax runs across the card's entire passage, so the photograph
-           keeps moving during the long stretch where the frame is parked. */
-        const drift = clamp01((scroll - top + viewport) / (viewport + cardHeight));
-        image.style.transform = `translate3d(0, ${((drift - 0.5) * cardHeight * 0.14).toFixed(2)}px, 0)`;
-      }
-    };
-
-    /* Hands every node back to the stylesheet on teardown. */
-    const reset = () => {
-      for (let i = 0; i < count; i += 1) {
-        const card = cardRefs.current[i];
-        const image = imageRefs.current[i];
-        const scrim = scrimRefs.current[i];
-        if (card) card.style.transform = '';
-        if (image) image.style.transform = '';
-        if (scrim) scrim.style.opacity = '';
-      }
-    };
-
-    const sync = () => {
-      if (measure()) update();
-    };
-
-    const onScroll = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-        update();
-      });
-    };
-
-    sync();
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', sync);
-    window.addEventListener('orientationchange', sync);
-    window.addEventListener('load', sync);
-
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', sync);
-      window.removeEventListener('orientationchange', sync);
-      window.removeEventListener('load', sync);
-      reset();
-    };
-  }, [stacked, items.length]);
+  const count = String(items.length).padStart(2, '0');
 
   return (
-    <section
-      className="mt-16 px-gutter tablet:mt-28"
-      aria-label="What is already built before a plot is released"
-    >
+    <section className="mt-16 px-gutter tablet:mt-28" aria-label="Our layouts">
       <ol className="container-page">
-        {items.map((item, index) => (
-          <li
-            key={item.title}
-            ref={(node) => {
-              rowRefs.current[index] = node;
-            }}
-            style={stacked ? { top: `calc(${STICK_REM}rem + ${index * DECK_REM}rem)` } : undefined}
-            className={cx(
-              'mb-10',
-              stacked && 'sticky mb-[16svh] last:mb-0 tablet:mb-[26svh]',
-            )}
-          >
-            {/* The transform lives on this wrapper, never on the sticky <li>. */}
-            <div
-              ref={(node) => {
-                cardRefs.current[index] = node;
-              }}
-              /* Height, not aspect ratio: a card has to fit the viewport it
-                 parks in, and a 4:5 box on a phone in landscape does not. */
-              className="relative mx-auto h-[min(68svh,32rem)] w-full will-change-transform tablet:h-[min(66svh,36rem)] tablet:max-w-[58rem]"
-            >
-              <div className="relative h-full w-full overflow-hidden rounded-band bg-surface shadow-[0_40px_90px_-45px_rgba(7,5,3,0.45)]">
-                {/* Overscanned so the parallax never exposes an edge. */}
-                <div
-                  ref={(node) => {
-                    imageRefs.current[index] = node;
-                  }}
-                  className="absolute inset-x-0 -inset-y-[9%] will-change-transform"
-                >
-                  <Image
-                    src={item.image.src}
-                    alt={item.image.alt}
-                    fill
-                    sizes="(min-width: 1024px) 58rem, 100vw"
-                    className="object-cover"
-                  />
-                </div>
+        {items.map((item, index) => {
+          const href = `/projects/${item.slug}`;
 
+          /* THIS PROJECT'S PHOTOGRAPHS AND NOTHING ELSE. Filtered rather than
+             trusted: `gallery` crosses the network, a row with no `src` would
+             render an empty slide, and a gallery that repeats the cover image
+             would open the set on the same picture twice. The layout plan is
+             deliberately left out — the frame crops to fill, and a cropped
+             plan drawing loses the edges that make it a plan. */
+          const photos = [item.image, ...(item.gallery ?? [])].filter(
+            (photo, i, all) => photo?.src && all.findIndex((p) => p?.src === photo.src) === i,
+          );
+
+          return (
+            <li key={item.slug} className="mb-10 last:mb-0 tablet:mb-16">
+              <div
+                className={cx(
+                  'relative rounded-band bg-surface p-2',
+                  'shadow-[0_40px_90px_-45px_rgba(92,68,28,0.45)]',
+                  'tablet:flex tablet:items-stretch',
+                )}
+              >
+                {/* ---- THE PROJECT'S LOGO, straddling the card's top-right
+                    corner, per the template.
+
+                    An image FIELD, not a picture: it holds the corner whether
+                    or not there is a logo to put in it, so the card does not
+                    move when one arrives. No project has one today — see the
+                    🔶 note on `logo` above — so what ships is the empty plate.
+
+                    ─── WIDE, NOT SQUARE ─────────────────────────────────────
+                    A property logo is a wordmark far more often than a badge,
+                    and a square starves it: 240px of width fits a name, where
+                    the same area as a square fits about five letters. Roughly
+                    18% of the card's width at every size, which is the
+                    proportion the template draws. A square logo simply centres
+                    in it — CONTAIN, never cover, because a logo cropped to fill
+                    its box is a ruined logo.
+
+                    ─── WHY IT SITS OVER THE EDGE ────────────────────────────
+                    NOT decoration — it is what buys the size. The copy beside
+                    it is vertically centred in a tall card, and a plate this
+                    large sitting fully inside the corner would run under the
+                    heading of any project with a long name. Lifted onto the
+                    edge, about a third of it is above the card and the rest
+                    lands in the empty band over the copy, clearing it at every
+                    width. The overhang is a few pixels short of the page
+                    gutter, so nothing can push a horizontal scrollbar, and it
+                    is smaller than the gap between cards, so it cannot touch
+                    the card above.
+
+                    Solid `bg-surface`, not a tint: it crosses the card's edge,
+                    so it stands on the page's cream, on the card's white and on
+                    the photograph all at once, and it has to read the same on
+                    all three. Above the photograph's own arrows (`z-10`) —
+                    at phone widths the card is a column and this corner belongs
+                    to the PHOTOGRAPH.
+
+                    It is `aria-hidden` ONLY while empty: an empty plate is
+                    nothing to announce, but a real logo is the project's mark
+                    and carries the CMS's alt text. ---- */}
                 <div
-                  ref={(node) => {
-                    scrimRefs.current[index] = node;
-                  }}
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 bg-bg opacity-0"
+                  aria-hidden={item.logo?.src ? undefined : 'true'}
+                  className={cx(
+                    'absolute -right-2 -top-5 z-20 h-16 w-36 overflow-hidden rounded-2xl',
+                    'border border-line-strong bg-surface',
+                    'shadow-[0_12px_28px_-16px_rgba(92,68,28,0.65)]',
+                    'tablet:-right-3 tablet:-top-7 tablet:h-22 tablet:w-52',
+                    'desktop:-right-4 desktop:-top-8 desktop:h-24 desktop:w-60',
+                  )}
+                >
+                  {item.logo?.src ? (
+                    <Image
+                      src={item.logo.src}
+                      alt={item.logo.alt || `${item.name} logo`}
+                      fill
+                      sizes="(min-width: 1280px) 240px, (min-width: 1024px) 208px, 144px"
+                      className="object-contain p-3 tablet:p-4"
+                    />
+                  ) : null}
+                </div>
+                {/* THE PICTURE IS STILL A LINK, but a pointer-only one: it
+                    goes to the same place as "View project" in the copy, and
+                    two tab stops for one destination is noise for a keyboard
+                    or screen-reader user. The frame keeps it out of the tab
+                    order and out of the accessibility tree; the button is the
+                    one they get, and the arrows over it are their own.
+
+                    Nothing happens on hover — no zoom, no chip. The copy
+                    beside it carries a real button, so a hover state here would
+                    only repeat an action the card already offers.
+
+                    `min-h` rather than `h`: stretched by the row, it matches
+                    the card's height whatever the copy needs, and never drops
+                    below the floor on a short one. The photographs step INSIDE
+                    this box — its height is the same whether the project has
+                    one photograph or five. */}
+                <ProjectPhotoFrame
+                  images={photos}
+                  name={item.name}
+                  href={href}
+                  sizes="(min-width: 1400px) 840px, (min-width: 1024px) 60vw, 100vw"
+                  className={cx(
+                    'h-[min(42svh,20rem)] w-full rounded-4xl',
+                    'tablet:h-auto tablet:min-h-[min(66svh,36rem)] tablet:w-[60%] tablet:shrink-0',
+                  )}
                 />
+
+                {/* The copy stands on the card's own white — it carries no
+                    background of its own, which would be white on white with a
+                    seam where the two met. All it holds is the room around the
+                    words: `pl-12` off the photograph's edge, `pr-10` off the
+                    card's. */}
+                <div
+                  className={cx(
+                    'flex flex-col px-4 pb-4 pt-5',
+                    'tablet:w-[40%] tablet:justify-center tablet:py-10 tablet:pl-12 tablet:pr-10',
+                  )}
+                >
+                  <p className="label-mono font-mono">
+                    {String(index + 1).padStart(2, '0')} / {count} · {item.category}
+                  </p>
+                  <h3 className="mt-3 text-heading-md text-ink tablet:mt-5">{item.name}</h3>
+                  <p className="mt-2 inline-flex items-center gap-1.5 font-mono text-body-xs text-ink-faint">
+                    <Icon name="mapPin" size={13} />
+                    {item.locality}
+                  </p>
+
+                  {/* Rendered only when present: a type is not a runtime
+                      guarantee across the network, and an unsaved field should
+                      leave no empty gap in the card. */}
+                  {item.summary ? (
+                    <p
+                      className={cx(
+                        'mt-4 line-clamp-3 text-body-md text-ink-soft',
+                        'tablet:mt-6 tablet:line-clamp-5 tablet:text-body-lg',
+                      )}
+                    >
+                      {item.summary}
+                    </p>
+                  ) : null}
+
+                  {/* The card's foot: where the project goes, and how to pass
+                      it on. `justify-between` rather than a margin, so the
+                      share control sits on the card's right edge at every
+                      width.
+
+                      VIEW PROJECT IS THE PRIMARY ACTION, in the espresso
+                      variant rather than the gold one: this button stands on
+                      the card's warm white, where solid gold goes heavy, and
+                      espresso is the colour the card's own type is already set
+                      in. The gold returns on hover. See the variant table in
+                      Button.tsx.
+
+                      The three tones read as one set: espresso button, pale
+                      gold share, white card. Share is a step down in weight
+                      rather than a second equal button, and its 44px circle
+                      matches the pill's height exactly. */}
+                  <div className="mt-5 flex items-center justify-between gap-4 tablet:mt-8">
+                    <LinkButton href={href} variant="ink" className="group">
+                      View project
+                      {/* One page carries several of these; the name is what
+                          tells a screen-reader user which project this is. */}
+                      <span className="visually-hidden">: {item.name}</span>
+                      {/* The nudge is a TRANSFORM, not a widening gap: the
+                          button's own `transition-colors` owns the transition
+                          property, and a second `transition-*` class on the
+                          same element would silently replace it — taking the
+                          colour hover with it. */}
+                      <Icon
+                        name="arrowRight"
+                        size={16}
+                        className={cx(
+                          'transition-transform duration-200 ease-out-soft',
+                          'group-hover:translate-x-0.5 motion-reduce:transition-none',
+                        )}
+                      />
+                    </LinkButton>
+
+                    <ShareButton href={href} name={item.name} text={item.summary} />
+                  </div>
+                </div>
               </div>
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ol>
     </section>
   );

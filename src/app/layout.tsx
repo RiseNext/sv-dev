@@ -82,7 +82,7 @@ export function allowIndexing(): boolean {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#f9f8f5', // keep in sync with --color-bg in globals.css
+  themeColor: '#fcf6e4', // keep in sync with --color-bg in globals.css
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -98,7 +98,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* Scroll reveals are progressive enhancement: without JS every section
             stays visible rather than fading in and never arriving. */}
         <noscript>
-          <style>{`[data-reveal]{opacity:1 !important;transform:none !important}`}</style>
+          {/* Two guards, one block: the scroll reveals stay visible, and the
+              hero renders as its settled pane rather than a full-screen video
+              with no script to ever shrink it. */}
+          <style>{`[data-reveal]{opacity:1 !important;transform:none !important}.hero-scroll{--hero-p:1;height:auto}.hero-sticky{position:static;height:auto}`}</style>
         </noscript>
       </head>
       {/* Extensions (ad blockers, Bitdefender's `bis_skin_checked`, password

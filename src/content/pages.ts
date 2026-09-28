@@ -23,18 +23,9 @@ export const media = {
     height: 1350,
   } satisfies ImageRef,
   heroPortrait: '/images/hero-portrait.svg',
-  masterPlan: {
-    src: '/images/master-plan.svg',
-    alt: 'Master plan showing plot numbering, the internal road network and open spaces.',
-    width: 1500,
-    height: 1000,
-  } satisfies ImageRef,
-  plotSizes: {
-    src: '/images/plot-sizes.svg',
-    alt: 'Diagram of the available plot sizes and orientations.',
-    width: 1024,
-    height: 1024,
-  } satisfies ImageRef,
+  /* `masterPlan` and `plotSizes` were removed with /master-plan, and their two
+     placeholder SVGs deleted from public/images — the page was their only
+     reader. `locationMap` stays: <Corridor> on the home page still uses it. */
   locationMap: {
     src: '/images/location-thumb.svg',
     alt: 'Map thumbnail showing the location of the layout.',
@@ -57,7 +48,9 @@ export const home = {
     titleAccent: 'the week you buy it.',
     lead: 'Every SV Developers plot is clear-titled, fully developed and ready to register — roads laid, water and power at the boundary, compound wall standing before the first sale.',
     primaryCta: { label: 'Book a site visit', href: '/contact' },
-    secondaryCta: { label: 'See the master plan', href: '/master-plan' },
+    /* `secondaryCta` — "See the master plan" — is gone with /master-plan. It
+       had already stopped being rendered by the hero before that; removing the
+       route is simply what made it worth deleting rather than noting. */
     /* The rotating `ticker` that used to live here was removed with the Ticker
        itself. It was the STATIC FALLBACK for the CMS's `site.heroTicker`, so
        the two only made sense together — keeping it would have left dead copy
@@ -69,12 +62,10 @@ export const home = {
       { label: 'Registration', value: 'Immediate' },
     ],
   },
-  intro: {
-    eyebrow: 'Why SV Developers',
-    title: 'Finished infrastructure,',
-    titleAccent: 'not a promise of it',
-    lead: 'Most layouts on this corridor sell a drawing. We release plots only once the work in that drawing is on the ground and can be walked.',
-  },
+  /* The `intro` block that used to sit here — the "Why SV Developers /
+     Finished infrastructure, not a promise of it" statement — was removed with
+     the section it fed. It had exactly one reader (the home page), so leaving
+     it would have stranded a heading and a paragraph nothing renders. */
   /* The `steps` array that used to sit here — the five-stage purchase walkthrough
      — was removed with the "How buying works" section it fed. It had exactly one
      reader, and leaving it would have stranded five paragraphs of copy (including
@@ -167,91 +158,35 @@ export const about = {
   },
 } as const;
 
-/* ---------- Amenities ------------------------------------------------------ */
+/* ---------- Amenities and master plan: REMOVED -----------------------------
+   The `amenities` and `masterPlan` blocks stood here — seven specification
+   items, the maintenance note, the approved-layout notes and the plot-size
+   copy. They went with /amenities and /master-plan on 28 Sep 2026, and the
+   route comment in content/site.ts says why.
 
-export const amenities = {
-  hero: {
-    eyebrow: 'Amenities',
-    title: 'What is already built',
-    lead: 'Seven pieces of infrastructure, all complete before the first plot in a layout is released for sale.',
-  },
-  specifications: [
-    {
-      icon: 'road',
-      title: 'Blacktop internal roads',
-      body: '[00] ft main roads and [00] ft internal roads, fully laid and surfaced before handover.',
-    },
-    {
-      icon: 'droplet',
-      title: 'Underground water lines',
-      body: 'Drawn to every plot boundary from a dedicated overhead tank inside the layout.',
-    },
-    {
-      icon: 'bolt',
-      title: 'Underground electricity',
-      body: 'No overhead cabling anywhere. Transformer and feeder commissioned before release.',
-    },
-    {
-      icon: 'drain',
-      title: 'Storm-water drainage',
-      body: 'Covered drains on both sides of every road, graded to the natural fall of the site.',
-    },
-    {
-      icon: 'lamp',
-      title: 'Street lighting',
-      body: 'LED street lights at [00] m intervals across the full internal road network.',
-    },
-    {
-      icon: 'tree',
-      title: 'Landscaped open space',
-      body: 'Avenue planting along each road, plus a central park with a children’s play area.',
-    },
-    {
-      icon: 'fence',
-      title: 'Compound wall and gate',
-      body: 'Continuous boundary wall with a single controlled entry and a security cabin.',
-    },
-  ] satisfies readonly FeatureItem[],
-  maintenance: {
-    eyebrow: 'After handover',
-    title: 'Who maintains it once you own it',
-    body: [
-      'Each layout is handed to a residents’ association once [00]% of plots are sold, together with a maintenance corpus funded from the sale price.',
-      'Until that point, SV Developers maintains the roads, lighting, landscaping and security at its own cost. There is no interim maintenance charge.',
-    ],
-  },
-} as const;
-
-/* ---------- Master plan ---------------------------------------------------- */
-
-export const masterPlan = {
-  hero: {
-    eyebrow: 'Master plan',
-    title: 'The approved layout',
-    lead: 'Plot numbering, the internal road network and open-space allocation for the full development.',
-  },
-  downloadHref: '[MASTER_PLAN_PDF_URL]',
-  notes: [
-    { icon: 'ruler', title: 'Plot sizes from [000] to [0000] sq ft' },
-    { icon: 'compass', title: 'East- and north-facing orientations available' },
-    { icon: 'road', title: '[00] ft main road, [00] ft internal roads' },
-    { icon: 'tree', title: '[00]% of the extent reserved as open space' },
-  ] satisfies readonly FeatureItem[],
-  plotSizes: {
-    eyebrow: 'Plot sizes',
-    title: 'Four standard sizes',
-    lead: 'Dimensions shown are indicative. Exact measurements are confirmed on the approved plan at booking.',
-  },
-} as const;
+   🔴 NOT MOVED, DELETED. A project's own specifications, plan and amenities
+   come from the CMS (`project.amenities`, `project.layoutImage`) and render in
+   <ProjectDetail>. None of this copy fed those, and all of it was
+   [BRACKETED] placeholder awaiting numbers that now only ever arrive per
+   project. Restoring the pages means writing the copy again, not un-deleting
+   it — take it from git history at 216c453 if that day comes. */
 
 /* ---------- Location ------------------------------------------------------- */
 
+/* 🔴 THIS SURVIVED THE /location DELETION ON PURPOSE, and is no longer page
+   copy: <Corridor> on the HOME page reads `intro.eyebrow`, `hero.lead` and
+   `proximity` from here. Deleting the block with the route would have taken a
+   home-page section down with it.
+
+   `growth` — the "Why this corridor" feature list — did go: /location was its
+   only reader. */
 export const location = {
   hero: {
     eyebrow: 'Location',
     title: 'On the corridor, not beyond it',
-    /* Deliberately general: this is a site-wide page, and each project now
-       carries its own location section built from its own brochure. */
+    /* Deliberately general: each project carries its own location section built
+       from its own brochure, and this is the one line that has to be true of
+       all of them at once. */
     lead: 'Our projects sit along the Warangal highway corridor at Aler and Bhongir, and at Genome Valley near Shamirpet. Each project page lists the landmarks and connectivity named on its brochure.',
   },
   intro: {
@@ -272,16 +207,6 @@ export const location = {
     { icon: 'plane', measure: '45 min', place: 'to [INTERNATIONAL AIRPORT]' },
     { icon: 'road', measure: '[00] km', place: 'of frontage on [ROAD NAME]' },
   ] satisfies readonly ProximityItem[],
-  growth: {
-    eyebrow: 'Why this corridor',
-    title: 'What is driving demand here',
-    items: [
-      { icon: 'briefcase', title: '[EMPLOYER NAME] campus under construction, [00] km away' },
-      { icon: 'route', title: '[ROAD NAME] widening to [00] lanes, sanctioned [YEAR]' },
-      { icon: 'train', title: '[TRANSIT PROJECT] proposed station at [LOCATION]' },
-      { icon: 'city', title: '[00]% growth in registered transactions since [YEAR]' },
-    ] satisfies readonly FeatureItem[],
-  },
 } as const;
 
 /* ---------- Testimonials --------------------------------------------------- */
@@ -333,9 +258,12 @@ export const contact = {
 
 /* ---------- Cross-page CTA ------------------------------------------------- */
 
-export const ctaBanner = {
-  title: 'Come and walk the layout',
-  body: 'Site visits run seven days a week. We will send directions and have someone meet you at the gate.',
-  primary: { label: 'Book a site visit', href: '/contact' },
-  secondary: { label: 'View the master plan', href: '/master-plan' },
-} as const;
+/* 🔴 DELETED. `ctaBanner` held "Come and walk the layout" / "Site visits run
+   seven days a week…" / "Book a site visit", and fed the ClosingCta band on the
+   home, about and projects pages. The band was removed on request from every
+   page that carried it, along with the matching sand band on the project detail
+   pages, so both the component and this copy are gone rather than left behind
+   as an unused export that reads like live content.
+
+   The same ask still reaches people from the nav bar, the hero enquiry pill,
+   each project's enquiry card and /contact. */

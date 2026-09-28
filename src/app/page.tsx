@@ -1,22 +1,21 @@
 import { LinkButton } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { Accordion } from '@/components/ui/Accordion';
 import { Reveal } from '@/components/ui/Reveal';
-import { ClosingCta } from '@/components/sections/ClosingCta';
 import { Corridor } from '@/components/sections/Corridor';
+import { FaqSection } from '@/components/sections/FaqSection';
 import { Hero } from '@/components/sections/Hero';
 import { MediaSequence } from '@/components/sections/MediaSequence';
 import { PinnedProof } from '@/components/sections/PinnedProof';
-import { ProjectCard } from '@/components/sections/ProjectCard';
-import { Statement } from '@/components/sections/Statement';
+import { ProjectCarousel } from '@/components/sections/ProjectCarousel';
 import { Testimonials } from '@/components/sections/Testimonials';
-import { amenities, contact, home, media } from '@/content/pages';
-import { getFeaturedProjects, getProjects } from '@/lib/api/projects';
+import { contact } from '@/content/pages';
+import { getFeaturedProjects, getProject, getProjects } from '@/lib/api/projects';
 import { getSiteSettings } from '@/lib/api/site';
 import { getFaqs, getStatistics, getTestimonials } from '@/lib/api/content';
 /* 🔶 TEMPORARY — delete with the `??` below when the CMS ships `heroVideos`. */
 import { previewHeroVideos } from '@/lib/dev/previewHeroVideos';
 import { pageMetadata } from '@/lib/seo';
+import type { ImageRef, Project } from '@/types/content';
 
 export async function generateMetadata() {
   const site = await getSiteSettings();
@@ -32,15 +31,17 @@ export async function generateMetadata() {
    site flattened into one scroll. Each block ends in a link to the page that
    carries the detail. */
 
-/* Until site photography exists, the media sequence borrows each project's own
-   card image so the section shows real (if placeholder) artwork rather than an
-   empty frame. Swap these for infrastructure photography when it lands.
-
-   The sequence carries no copy — the titles below are keys and alt-text
-   subjects only. The specifications themselves are listed in full on
-   /amenities, which is where they belong. */
+/* The media sequence is a plain column of the projects themselves: one white
+   card each, picture on the left, name, place and summary on the right with a
+   link to its page and a share control. It used to be a scroll-driven deck;
+   that was removed on request — see the header of MediaSequence.tsx. */
 export default async function HomePage() {
-  const [site, projects, featured, statistics, faqs, testimonials] = await Promise.all([
+  /* `getStatistics()` is still called, and its slot in the destructure is
+     deliberately empty. The proof band's four counters were removed on request
+     (see PinnedProof.tsx), so nothing on this page renders them today — but the
+     reader and its cache tag are part of the CMS seam, and the counters are the
+     kind of thing that comes back. Dropping the call would quietly unwire it. */
+  const [site, projects, featured, , faqs, testimonials] = await Promise.all([
     getSiteSettings(),
     getProjects(),
     getFeaturedProjects(),
@@ -49,13 +50,34 @@ export default async function HomePage() {
     getTestimonials(),
   ]);
 
-  /* Until site photography exists, the media sequence borrows each project's own
-     card image so the section shows real (if placeholder) artwork rather than an
-     empty frame. Swap these for infrastructure photography when it lands. */
-  const sequence = amenities.specifications.slice(0, 3).map((spec, index) => ({
-    title: spec.title,
-    image: projects[index]?.image ?? media.masterPlan,
-  }));
+  /* THE DECK'S CARDS STEP THROUGH EACH PROJECT'S OWN PHOTOGRAPHS, and `/projects`
+     carries one image per project — `gallery` is only on the single-project
+     record. So each one is read here, through the SAME `getProject()` the
+     detail route already uses: same endpoint, same cache tags (`projects`,
+     `project:<slug>`), so a publish still revalidates this page through the
+     existing webhook. Server-side at build/revalidate, never per visitor.
+
+     `getProject` returns null for a slug the CMS 404s, which is why the card
+     falls back to the list record rather than disappearing: the list is what
+     decides which projects exist, and this read only enriches them. */
+  const details = await Promise.all(projects.map((project) => getProject(project.slug)));
+
+  /* 🔶 `logo` IS AHEAD OF THE CONTRACT, and read here rather than declared.
+     `src/types/content.ts` has no logo on a project and is left alone on
+     purpose, so the cast below is the whole of the coupling: it says "if the
+     record happens to carry a logo, the card may have it", and nothing else in
+     the codebase gains a field that the CMS does not emit.
+
+     Today that is always `undefined` and the card's logo slot renders empty.
+     When the backend adds `logo` to `/projects/{slug}` the cards fill on the
+     next revalidation with no code change; the cast can then be dropped in
+     favour of the real field. */
+  type WithLogo = Project & { logo?: ImageRef };
+
+  const cards = projects.map((project, i) => {
+    const detail = details[i] as WithLogo | null;
+    return { ...project, gallery: detail?.gallery, logo: detail?.logo };
+  });
 
   /* ⚠️ COUNT-COUPLED COPY, now derived. This read "Five layouts." — a hardcoded
      number that silently becomes a LIE the first time an admin publishes a
@@ -80,20 +102,22 @@ export default async function HomePage() {
         videos={site.heroVideos ?? previewHeroVideos()}
       />
 
-      <Statement
-        id="why"
-        label={home.intro.eyebrow}
-        title={home.intro.title}
-        titleAccent={home.intro.titleAccent}
-        lead={home.intro.lead}
-      />
+      {/* The "Why SV Developers" statement ("Finished infrastructure, not a
+          promise of it") was removed on request — eyebrow, heading and
+          sub-line together. Nothing linked to its `#why` anchor, so no
+          navigation broke, and the deck below now follows the hero directly. */}
 
-      <MediaSequence items={sequence} />
+      {/* Every published project, in CMS order: a new one joins the deck
+          without any change here. Each card's picture is that project's cover
+          photograph plus its own gallery, stepped with arrows in place. */}
+      <MediaSequence items={cards} />
 
-      <PinnedProof
-        stats={statistics.length ? statistics.map((s) => ({ value: s.value, label: s.label })) : home.hero.stats}
-        tiles={projects.slice(0, 4).map((p) => p.image)}
-      />
+      {/* Above the proof band on request. Renders a reserved, visibly inert
+          placeholder until the CMS returns its first consented row — see the
+          🔶 marker in Testimonials.tsx. */}
+      <Testimonials items={testimonials} />
+
+      <PinnedProof tiles={projects.slice(0, 4).map((p) => p.image)} />
 
       {/* ---- Featured projects: read from content/projects.ts, the same
               records the catalogue and the detail pages use. ---- */}
@@ -113,32 +137,44 @@ export default async function HomePage() {
             </LinkButton>
           </Reveal>
 
-          <ul className="mt-14 grid gap-4 mid:grid-cols-2 tablet:grid-cols-3">
-            {featured.map((project, index) => (
-              <Reveal as="li" key={project.slug} delay={index * 80}>
-                <ProjectCard project={project} />
-              </Reveal>
-            ))}
-          </ul>
+          {/* A carousel that runs once and stops: 1 → 2 → … → last. Nothing is
+              repeated. Count-agnostic — every project marked "featured" in the
+              CMS is in it. Only the fields a card reads cross to the browser
+              (ProjectCarousel is a client component). */}
+          <Reveal className="mt-14">
+            <ProjectCarousel
+              projects={featured.map((p) => ({
+                slug: p.slug,
+                name: p.name,
+                category: p.category,
+                locality: p.locality,
+                image: p.image,
+                status: p.status,
+                tagline: p.tagline,
+              }))}
+            />
+          </Reveal>
         </div>
       </section>
 
       <Corridor />
 
-      <Testimonials items={testimonials} />
-
       {/* The "How buying works" Statement and its StepList were removed on
           request — the whole area, heading and steps together. Nothing linked
           to its `#how` anchor, so no navigation broke. */}
 
-      <Statement id="faq" label="FAQ" title="The questions" titleAccent="we get asked first" />
-      <div className="container-prose mt-14">
-        <Accordion
-          items={faqs.length ? faqs.map((f) => ({ q: f.question, a: f.answer })) : contact.faq}
-        />
-      </div>
+      <FaqSection
+        title="The questions"
+        titleAccent="we get asked first"
+        items={faqs.length ? faqs.map((f) => ({ q: f.question, a: f.answer })) : contact.faq}
+      />
 
-      <ClosingCta />
+      {/* The closing "Come and walk the layout" band was removed on request —
+          heading, sub-line and "Book a site visit" together, from every page
+          that carried it. The action is still on the nav bar, on the hero
+          enquiry pill and on /contact, so nothing became unreachable. */}
+
+      <div className="pb-section-sm" />
     </>
   );
 }

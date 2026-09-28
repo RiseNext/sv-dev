@@ -41,23 +41,49 @@
   --font-mono: var(--font-mono-loaded), ui-monospace, 'SF Mono', Menlo, monospace;
 
   /* ---------- Colour ------------------------------------------------------ */
-  --color-bg: #f9f8f5; /* page — warm off-white, never pure white */
-  --color-surface: #ffffff; /* cards, pills, FAQ rows */
-  --color-ink: #1a1613; /* headings + body — 15.6:1 on bg */
-  --color-ink-soft: #5f5953; /* secondary copy — 6.9:1 on bg */
-  --color-ink-faint: #8a827a; /* mono labels — 3.6:1, non-body use only */
-  --color-core-black: #070503; /* buttons */
-  --color-gold: #c9a227; /* fills, chips, the footer band */
-  --color-gold-ink: #7c5f1f; /* the only gold allowed to carry type — 5.98:1 on white */
-  --color-band: #f0e8d2; /* the pale band behind the closing CTA */
-  /* The footer's band, deliberately a SEPARATE token from `--color-band`.
-     They were one value until this colour arrived; recolouring the shared token
-     would have dragged <ClosingCta> with it, and that band carries `text-ink`
-     headings and two buttons which would have lost their contrast against a
-     mid-dark terracotta. Two names because there are now two jobs. */
-  --color-footer-band: #a36031;
-  --color-line: rgba(26, 22, 19, 0.12);
-  --color-line-strong: rgba(26, 22, 19, 0.22);
+  /* THE CREAM-AND-GOLD SCHEME, sampled from the design screenshot: a warm
+     cream page, lighter cream cards and bar, solid gold buttons, pale gold for
+     highlights, gold hairlines. Type is a warm espresso rather than black so it
+     sits in the palette. Ratios are on the page cream unless stated. */
+  --color-bg: #fcf6e4; /* page — warm cream */
+  --color-surface: #fffbf0; /* cards, the nav bar, pills, FAQ rows */
+  --color-ink: #2b2217; /* headings + body, warm espresso — 14.5:1 */
+  --color-ink-soft: #5f503a; /* secondary copy — 7.2:1 */
+  --color-ink-faint: #6e5e43; /* mono labels — 5.8:1, and 4.7:1 on the palest gold */
+  /* Espresso, the dark end of the palette: type on gold fills, the skip link,
+     the "Enlarge" chip, the selected filter pill. White on it is 15.6:1. */
+  --color-core-black: #2b2217;
+  --color-gold: #c4a162; /* buttons, chips — espresso on it 6.4:1 */
+  --color-gold-deep: #b8924f; /* gold on hover — espresso on it 5.4:1 */
+  --color-gold-soft: #f2dcaa; /* highlights: nav link hover, carousel arrows — ink 11.6:1 */
+  /* One step deeper than `gold-soft`, one step lighter than `gold`: the filled
+     pill behind the CURRENT nav link, which has to read as selected against the
+     bar's cream without competing with the solid-gold CTA beside it. Ink on it
+     is 8.9:1. A sibling of `gold-soft` rather than a redefinition — `gold-soft`
+     is still the hover wash, and the two are visible together in the bar. */
+  --color-gold-mid: #e3c88c;
+  --color-gold-line: #e7cf9b; /* hairlines and dividers drawn in gold */
+  --color-gold-ink: #7a5a22; /* the gold allowed to carry type — 5.9:1 */
+  --color-band: #f4e6c4; /* the pale gold band behind the closing CTA — ink 12.6:1 */
+  /* The footer's band — the deep green the page ends on, under the big
+     wordmark. Cream on it is 8:1. A separate token from `--color-band`: the
+     closing CTA's band sits inside the gutter and carries ink headings and
+     buttons, which this dark a band would lose; this one is full bleed and
+     carries only the name. */
+  --color-footer-band: #00573f;
+  /* The footer's own cream, one step richer than the page so the block reads
+     as the sign-off rather than as more page. Ink on it 13.1:1, ink-soft 6.5:1,
+     ink-faint 5.2:1 — every pair the footer actually uses stays AA. */
+  --color-footer-cream: #f7edd3;
+  /* The project page's palette (ProjectDetail): umber for the wash over its
+     cover photograph, a pale gold for its tiles, plan band and closing band,
+     and the gold pair its label rules are drawn in. */
+  --color-umber: #2b2217;
+  --color-sand: #f3e6c6; /* ink on it 12.6:1, ink-soft 6.3:1, gold-ink 5.1:1 */
+  --color-gold-from: #c4a162;
+  --color-gold-to: #dcc28c;
+  --color-line: rgba(122, 90, 34, 0.16);
+  --color-line-strong: rgba(122, 90, 34, 0.3);
   --color-line-invert: rgba(255, 255, 255, 0.18);
   /* ---------- Glass -------------------------------------------------------
      The top bar's material, split into three parts so it can be re-skinned
@@ -65,9 +91,9 @@
      that makes it read as glossy rather than as a flat wash, and the hairline
      it ends on. The body is deliberately under 60% opaque — the blur, not the
      fill, is what stops the page showing through as legible text. */
-  --color-glass: rgba(252, 251, 249, 0.46); /* nav bar over any background */
+  --color-glass: rgba(255, 251, 240, 0.46); /* nav bar over any background */
   --color-glass-sheen: rgba(255, 255, 255, 0.55); /* the lit top edge */
-  --color-glass-edge: rgba(26, 22, 19, 0.1); /* the hairline it ends on */
+  --color-glass-edge: rgba(122, 90, 34, 0.12); /* the hairline it ends on */
   --color-danger: #8a3324;
   --color-success: #1f6e4e;
 
@@ -150,9 +176,10 @@
     color-scheme: light;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    /* Anchor targets clear the fixed top bar (80px at desktop) with a little
-       air to spare. */
-    scroll-padding-top: 6rem;
+    /* Anchor targets clear the nav — the emblem overhanging the floating
+       capsule reaches 114px from the top at 1024px — with a little air to
+       spare. Moves with the numbers recorded in PillNav. */
+    scroll-padding-top: 8.5rem;
     background-color: var(--color-ink);
   }
 
@@ -238,8 +265,10 @@
     font-style: normal;
   }
 
+  /* `--focus-ring` is set only inside a `theme-dark` section (white there);
+     everywhere else the fallback keeps the ring near-black as before. */
   :focus-visible {
-    outline: 2px solid var(--color-core-black);
+    outline: 2px solid var(--focus-ring, var(--color-core-black));
     outline-offset: 3px;
     border-radius: 0.25rem;
   }
@@ -423,12 +452,13 @@
   }
 }
 
+/* Section and card labels, in gold — 5.9:1 on the page. */
 @utility label-mono {
   font-family: var(--font-mono);
   font-size: var(--text-label);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-ink-faint);
+  color: var(--color-gold-ink);
 }
 
 @utility visually-hidden {
@@ -441,6 +471,53 @@
   clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
+}
+
+/* SECTION THEMES — the project page's photo cover sets its type on an umber
+   wash, and re-points the colour tokens for everything inside it, so the same
+   `text-ink` / `text-ink-soft` classes read light there. A card or button
+   inside it takes `theme-light`, which restates the site's normal values.
+   Every pair clears WCAG AA on solid umber: ink 14.8:1, soft 9.8:1, faint
+   6.8:1, gold 8.5:1. */
+@utility theme-dark {
+  --color-ink: #fdf9ec;
+  --color-ink-soft: #d8ccb4;
+  --color-ink-faint: #b9a98c;
+  --color-gold-ink: #d9bb7f;
+  --color-line: rgba(253, 249, 236, 0.14);
+  --color-line-strong: rgba(253, 249, 236, 0.3);
+  --focus-ring: #ffffff;
+}
+
+@utility theme-light {
+  --color-ink: #2b2217;
+  --color-ink-soft: #5f503a;
+  --color-ink-faint: #6e5e43;
+  --color-gold-ink: #7a5a22;
+  --color-line: rgba(122, 90, 34, 0.16);
+  --color-line-strong: rgba(122, 90, 34, 0.3);
+  --focus-ring: var(--color-core-black);
+}
+
+/* The project page's section label: a short gold rule, then the label.
+   Centred variants come from the caller. */
+@utility eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-gold-ink);
+
+  &::before {
+    content: '';
+    width: 2.25rem;
+    height: 2px;
+    border-radius: 1px;
+    background: linear-gradient(90deg, var(--color-gold-from), var(--color-gold-to));
+  }
 }
 
 /* Scroll reveal — progressive enhancement. The <noscript> block in layout.tsx
@@ -512,5 +589,165 @@
      has reduced motion switched on. */
   .wordmark-rise[data-reveal='pending'] {
     transform: none;
+  }
+}
+
+/* =============================================================================
+   THE HERO'S SCROLL-SHRINK
+
+   The footage covers the whole screen on arrival — no gutter, no frame, no
+   rounded corners — and as you scroll it settles into the bordered pane it
+   used to open as. One number drives the whole thing: `--hero-p`, set on the
+   section by HeroVideoStage, 0 at full bleed and 1 once settled.
+
+   ─── WHY GEOMETRY AND NOT `transform: scale()` ────────────────────────────
+   Scaling is the cheap way to do this, and it is wrong here: a scale that
+   takes the pane from the viewport down to a 1400px box also scales the
+   HEADLINE inside it, so the type arrives oversized and shrinks — distorted
+   the whole way, and blurred while the compositor resamples it. Interpolating
+   width, height and radius instead means the box changes and the type simply
+   stays the size it is meant to be, re-centring as the box moves under it.
+   The cost is a layout per frame on one element, which is affordable; a
+   blurred, jumping headline is not.
+
+   ─── WHY `sticky` AND NOT A PINNING LIBRARY ───────────────────────────────
+   Same reason PinnedProof gives: GSAP's `pin: true` reparents the node into a
+   spacer div it injects, and React then throws `removeChild` on navigation.
+   Sticky costs nothing and works before any script loads.
+
+   ─── WITHOUT JS, AND WITH REDUCED MOTION ──────────────────────────────────
+   Both fall back to the SETTLED pane — the hero as it was before this
+   existed — by forcing `--hero-p: 1` and unpinning: reduced motion in the
+   block below, no-JS in layout.tsx's <noscript>. Neither is left holding a
+   full-screen video that can never shrink.
+   ========================================================================== */
+
+.hero-scroll {
+  /* One screen to pin against, plus the distance the shrink runs over. */
+  --hero-run: 70svh;
+  height: calc(100svh + var(--hero-run));
+}
+
+.hero-sticky {
+  position: sticky;
+  top: 0;
+  display: flex;
+  height: 100svh;
+  align-items: center;
+  justify-content: center;
+  /* Nothing between the footage and the screen edge at full bleed; the page's
+     own gutter once settled. `container-page` pads a second time inside its
+     max-width, which is why this is two gutters and not one. */
+  padding-inline: calc(var(--spacing-gutter) * 2 * var(--hero-p, 0));
+  /* Clears the nav as the pane comes in. At full bleed the footage runs behind
+     the glass bar on purpose — that is where a full-screen hero wants it. */
+  padding-block: calc(5.5rem * var(--hero-p, 0)) calc(3rem * var(--hero-p, 0));
+}
+
+.hero-pane {
+  /* 87.5rem less two gutters is exactly the width `container-page` leaves a
+     child, so the settled pane lands where it always sat. */
+  max-width: calc(
+    (87.5rem - var(--spacing-gutter) * 2) + (100vw - (87.5rem - var(--spacing-gutter) * 2)) *
+      (1 - var(--hero-p, 0))
+  );
+  /* A FLOOR, not a height: the pane still grows if a long headline needs it,
+     which is the whole reason it was never given an aspect ratio. */
+  min-height: calc(100svh - (100svh - 30rem) * var(--hero-p, 0));
+  border: 1px solid rgba(255, 255, 255, calc(0.2 * var(--hero-p, 0)));
+  border-radius: calc(var(--radius-card) * var(--hero-p, 0));
+}
+
+@media (min-width: 64rem) {
+  .hero-pane {
+    min-height: calc(100svh - (100svh - 34rem) * var(--hero-p, 0));
+    border-radius: calc(var(--radius-media) * var(--hero-p, 0));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-scroll {
+    --hero-p: 1;
+    height: auto;
+  }
+
+  .hero-sticky {
+    position: static;
+    height: auto;
+  }
+}
+
+/* =============================================================================
+   THE HERO'S GLASS PANEL — the headline and the enquiry pill on frosted white.
+
+   Same material as the nav bar (`glass-bar`): a warm white fill, a lit top
+   edge falling away down the panel, and a blurred, saturated backdrop. Using
+   the site's own glass tokens rather than a fresh set of whites is the point —
+   the bar and this panel are then visibly the same pane of glass, which is
+   what stops the hero reading as a card someone dropped on a video.
+
+   ─── WHY THE FILL IS HEAVIER THAN THE NAV'S ───────────────────────────────
+   `--color-glass` is 0.46 alpha, tuned to sit over the site's own cream page,
+   where the backdrop is known and pale. This panel sits over ADMIN-SUPPLIED
+   FOOTAGE, so the backdrop could be anything including a night shot. At 0.68
+   the worst case — the panel over pure black — still lands near #adaaa2, which
+   holds `--color-ink` at about 8:1. The type therefore cannot fail against a
+   clip nobody has seen yet, which a lighter fill could not promise.
+
+   ─── THE TYPE IS INK AGAIN, NOT WHITE ─────────────────────────────────────
+   It was white because the footage behind it was dark. It is now on white
+   glass, so it is `text-ink` in both hero states — and the text shadow that
+   replaced the scrim is gone with it. See Hero.tsx.
+
+   🔶 THE COST, STATED PLAINLY. `backdrop-filter` over a PLAYING video makes
+   the compositor re-sample and re-blur its backdrop every frame, and while the
+   pane is shrinking it does that against a box that is also resizing every
+   frame. It is affordable here because the panel is a few hundred thousand
+   pixels rather than the whole screen — which is exactly why the removed scrim
+   was never allowed to carry a blur. Keep it off anything full-bleed.
+   ========================================================================== */
+
+.hero-glass {
+  /* Eased back on request, from 14/22px. The fill is untouched at 0.68, so
+     the type's contrast is exactly what it was — blur softens what shows
+     THROUGH the panel, it does not lighten or darken it. At 8px the footage
+     behind the headline stays recognisable as footage instead of dissolving
+     into a wash. */
+  --glass-blur: 8px;
+
+  background-color: rgba(255, 251, 240, 0.68);
+  background-image: linear-gradient(
+    to bottom,
+    var(--color-glass-sheen) 0%,
+    rgba(255, 255, 255, 0.16) 55%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  /* PREFIXED FIRST, STANDARD LAST — see the note on `glass-bar`. Written the
+     other way round the build emits only the -webkit- property and Firefox
+     silently loses the blur. */
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 24px 60px -30px rgba(26, 22, 19, 0.55);
+
+  @media (min-width: 64rem) {
+    --glass-blur: 12px;
+  }
+}
+
+/* 🔴 REQUIRED, not belt-and-braces. The pane carries `on-dark`, whose
+   `.on-dark :focus-visible` rule hardcodes a WHITE outline for the controls
+   over footage. Inside this panel that ring would be white on white glass —
+   invisible — for everyone tabbing to the phone field or the submit button. */
+.hero-glass :focus-visible {
+  outline-color: var(--color-core-black);
+}
+
+/* No blur to carry the type, so the fill has to do it alone. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .hero-glass {
+    background-color: rgba(255, 251, 240, 0.92);
   }
 }

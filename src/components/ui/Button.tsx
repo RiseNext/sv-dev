@@ -4,14 +4,32 @@ import { anchorProps, isExternal, isPlaceholder } from '@/lib/href';
 import { cx } from '@/lib/cx';
 
 /* Every button on this site is a pill: 12px radius, 44px minimum height — the
-   touch-target floor — and DM Sans at body-sm. Three fills only.
+   touch-target floor — and DM Sans at body-sm.
 
-   dark   white on #070503        — 19.6:1, the primary action
-   light  ink on white            — 15.6:1, used over photography and on cards
-   ghost  ink on nothing          — inherits the surface, 1px hairline border
-   gold   near-black on #c9a227   —  7.4:1, one per page at most */
+   THE CREAM-AND-GOLD SCHEME HAS ONE ACTION COLOUR: solid gold with espresso
+   type. So the primary variant is gold whatever its historical name — `dark`
+   is the default every call site already uses, and recolouring it here moves
+   every primary button on the site at once.
 
-type Variant = 'dark' | 'light' | 'ghost' | 'gold';
+   dark   espresso on gold #c4a162 — 6.4:1 (5.4:1 on hover), the primary action
+   gold   the same — kept as a name so existing call sites need no change
+   bronze the same — the project page's name for it
+   light  ink on cream-white        — 15.1:1, used over photography
+   ghost  ink on cream, gold outline — the secondary button
+   ink    cream on espresso #2b2217 — 14.5:1, warming to gold-ink on hover
+
+   `ink` IS STILL THE ONE ACTION COLOUR, inverted. On the cream page gold is
+   the action; on a WHITE CARD solid gold turns heavy and mustard against the
+   warm white, so the card's own espresso carries the button and the gold comes
+   back on hover. Use it on white, `dark` everywhere else.
+
+   `theme-light` on the filled variants: inside a `theme-dark` section (the
+   project page's photo cover) `text-ink` would otherwise resolve light. */
+
+type Variant = 'dark' | 'light' | 'ghost' | 'gold' | 'bronze' | 'ink';
+
+const GOLD =
+  'bg-gold text-core-black shadow-[0_8px_20px_-12px_rgba(122,90,34,0.55)] hover:bg-gold-deep';
 type Size = 'md' | 'lg';
 
 const base =
@@ -19,10 +37,15 @@ const base =
   'whitespace-nowrap transition-colors duration-200 disabled:opacity-55 disabled:cursor-not-allowed';
 
 const variants: Record<Variant, string> = {
-  dark: 'bg-core-black text-white hover:bg-ink',
-  light: 'bg-surface text-ink hover:bg-white',
-  ghost: 'border border-line-strong text-ink hover:bg-surface',
-  gold: 'bg-gold text-core-black hover:bg-gold-ink hover:text-white',
+  dark: GOLD,
+  gold: GOLD,
+  bronze: GOLD,
+  light: 'theme-light bg-surface text-ink hover:bg-white',
+  ghost: 'border border-gold bg-surface/60 text-ink hover:bg-gold-soft',
+  /* `theme-light` for the same reason the filled variants have it, and
+     `text-bg` is safe to pair with it: the section themes re-point `ink` but
+     never `bg`, so the type stays cream in either one. */
+  ink: 'theme-light bg-ink text-bg shadow-[0_8px_20px_-12px_rgba(43,34,23,0.5)] hover:bg-gold-ink',
 };
 
 const sizes: Record<Size, string> = {

@@ -25,11 +25,11 @@ export function pageMetadata({
   path?: string;
   image?: { url: string; alt: string; width: number; height: number };
   /* 🔴 REQUIRED, AND IT USED TO BE OPTIONAL WITH A HARDCODED DEFAULT.
-     The default was `'SV Developers'`, and three pages — /amenities, /location
-     and /master-plan — silently took it, because they were plain `export const
-     metadata` and had no way to await the CMS. The company name is CMS data, so
-     those three would have kept the old name the day it was changed in Admin,
-     while the other four updated. Nothing would have reported it.
+     The default was `'SV Developers'`, and any page that was a plain `export
+     const metadata` silently took it, because such a page has no way to await
+     the CMS. The company name is CMS data, so those pages would have kept the
+     old name the day it was changed in Admin while the rest updated, and
+     nothing would have reported it.
 
      Making this required turns that into a compile error. The claimed
      justification for the default — "so a metadata call during an outage still

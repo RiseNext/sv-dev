@@ -32,14 +32,13 @@ Every route is statically prerendered at build time — 18 pages including the f
 | `/projects` | The project catalogue |
 | `/projects/[slug]` | One page per project, generated from `content/projects.ts` |
 | `/blog` | Articles index |
-| `/amenities` | The seven infrastructure specifications |
-| `/master-plan` | Approved drawing with zoomable lightbox + plot sizes |
-| `/location` | Proximity list, directions, corridor growth |
 | `/contact` | Enquiry form, contact details, FAQ |
 | `not-found` | 404 that routes people to the projects |
 | `/robots.txt`, `/sitemap.xml` | Generated from the content layer |
 
 Adding a project to `src/content/projects.ts` creates its detail route, its dropdown entry and its sitemap record automatically.
+
+`/master-plan`, `/amenities` and `/location` were removed on 28 September 2026. They were site-wide pages from when there was one layout; every project page now carries its own plan, amenities and location sections built from that project's brochure. The URLs 404 — add redirects in `next.config.mjs` if any of them were ever shared externally.
 
 ---
 
@@ -182,7 +181,7 @@ Ordered by how badly it hurts to miss.
 
 1. **Decide the company name.** `content/site.ts` says "SV Developers" and the only real brand asset in the repo is `sv-developers-mark.jpg`, but the brief and the live site say "SRR Developers Pvt. Ltd." These have deliberately not been reconciled by guesswork. Every heading and SEO title renders from `site.name`, so it is a one-line fix once decided. The full list of open content questions is at the top of `content/projects.ts`.
 2. **Replace every `[BRACKETED]` value in `src/content/`.** Anything in square brackets is a factual claim with legal or regulatory weight — approval numbers, RERA registration, plot dimensions, addresses, phone numbers, URLs.
-3. **Replace the testimonials or delete the section.** The three quotes in `content/pages.ts` are written placeholders with bracketed attributions. Publishing invented reviews under real-sounding names is a fabricated record.
+3. **Retire the testimonials stub.** The three invented quotes that used to sit in `content/pages.ts` are gone — reviews are CMS data now, published and consented only. Until the `/testimonials` endpoint is live, `components/sections/Testimonials.tsx` renders a visibly inert skeleton (bracketed attributions, no quote text) so the area is reserved on the page. The CMS wins the moment it returns a row; restore `return null` and delete `TestimonialsStub` once real quotes exist.
 4. **Measure the drive times.** The 11 proximity figures are illustrative. Proximity is the primary persuasion device on a land page and the claim most likely to be challenged.
 5. **Wire up the form.** It validates, then states plainly that it is not connected — it does *not* fake a success message. Point it at a real handler in `components/sections/ContactForm.tsx`.
 6. **Shoot the hero video and the site photography.** This design carries photography where the old one carried nothing: a 15–25s silent hero loop (≤3 MB, plus a poster frame), three infrastructure clips, and 8–12 stills for the project cards and the pinned proof band. Until they exist the hero runs in its type-only mode and `public/images/` holds neutral "IMAGE PENDING" placeholders. Pass `media` to `<Hero />` in `app/page.tsx` to switch it on. Once no SVGs remain, delete the three `dangerouslyAllowSVG` lines from `next.config.mjs`.
@@ -190,5 +189,5 @@ Ordered by how badly it hurts to miss.
 8. **Supply the logo as SVG or transparent PNG** (see above).
 9. **Add a 1200×630 OG image** and reference it in `lib/seo.ts`.
 10. **Remove the indexing block**: `robots: { index: false }` in `app/layout.tsx` and the `disallow` in `app/robots.ts`.
-11. **Add an embedded map** to `/location` — lazy-loaded; third-party map embeds are the heaviest thing that can land on a page like this, and the audience is on mid-range Android.
+11. **Add an embedded map** to the project pages' location section — lazy-loaded; third-party map embeds are the heaviest thing that can land on a page like this, and the audience is on mid-range Android.
 12. **Run an accessibility audit** and test on a real device.

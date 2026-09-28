@@ -1,7 +1,6 @@
 import { EnquiryPill } from '@/components/sections/EnquiryPill';
 import { HeroVideoStage } from '@/components/sections/HeroVideoStage';
 import { home } from '@/content/pages';
-import { cx } from '@/lib/cx';
 import type { VideoRef } from '@/types/content';
 
 /* =============================================================================
@@ -19,12 +18,17 @@ import type { VideoRef } from '@/types/content';
    `{ src, poster }` that nothing ever passed. `heroVideos` supersedes it —
    two mechanisms for one job, one of them never used, was worse than either.
 
-   THE HEADLINE'S COLOUR IS THE ONE THING THAT DIFFERS between the two states,
-   and it is forced rather than chosen: the video pane dims the footage with a
-   dark scrim so the footage still reads, and near-black type on darkened
-   footage is unreadable at any scrim strength worth having. So it is
-   `text-white` over video and `text-ink` on the off-white field, driven from
-   one place below so the two cannot drift apart.
+   THE TYPE IS NOW IDENTICAL IN BOTH STATES, which it was not before. Over
+   video the headline and the pill sit on a FROSTED WHITE PANEL (`hero-glass`,
+   added on request — see globals.css), so the headline is `text-ink` there
+   just as it is on the off-white field. It used to be `text-white` over a dark
+   scrim; the scrim is gone, the panel carries the type instead, and with it
+   went the text shadow that briefly stood in for the scrim.
+
+   Legibility is therefore a property of the PANEL, not of the type. If a clip
+   ever leaves the headline hard to read, raise the panel's fill in
+   globals.css — the whole point of the panel is that a change there cannot be
+   undone by the next upload.
 
    The EnquiryPill needs no such switch: it is already a light frosted pill
    with dark type inside it, which reads correctly on both — and over video it
@@ -65,13 +69,12 @@ export function Hero({
           is gone, and it leads the rise stagger at 0ms for the same reason. */}
       <h1
         id="hero-title"
-        className={cx(
-          'max-w-[16ch] text-balance text-center text-heading-xl',
-          /* See the header note: white over the dimmed footage, ink on the
-             off-white field. The pane's dark scrim makes this a legibility
-             requirement, not a preference. */
-          hasVideo ? 'text-white' : 'text-ink',
-        )}
+        /* `heading-lg` (36 → 70px), not `heading-xl` (50 → 104px): stepped
+           down on request. The glass panel behind it did NOT change size with
+           it, so the smaller type is what buys the headline its margins rather
+           than filling the panel edge to edge. Both hero states take it — one
+           size, per the note above, so the two cannot drift apart. */
+        className="max-w-[16ch] text-balance text-center text-heading-lg text-ink"
         style={{ animation: 'rise 700ms var(--ease-out-soft) backwards' }}
       >
         {title} <em>{titleAccent}</em>
@@ -92,7 +95,7 @@ export function Hero({
   if (!hasVideo) {
     return (
       <section
-        className="relative flex min-h-svh flex-col items-center justify-center px-gutter pb-8 pt-28"
+        className="relative flex min-h-svh flex-col items-center justify-center px-gutter pb-8 pt-28 tablet:pt-36"
         aria-labelledby="hero-title"
       >
         {type}
@@ -100,15 +103,40 @@ export function Hero({
     );
   }
 
-  /* `pt-24 tablet:pt-28` (96/112px) clears the fixed bar (64/80px) with air to
-     spare, so the pane's top edge and its rounded corners are never tucked
-     under the nav. The pane is inside `container-page`, which is what gives it
-     a margin from the viewport edge at every width — the "boundary" the video
-     runs inside rather than bleeding to the screen edge. */
+  /* THE VIDEO ARRIVES FULL SCREEN AND SETTLES INTO ITS PANE AS YOU SCROLL.
+     The section is one screen tall plus a run to shrink over; the child inside
+     it is `position: sticky`, so the footage is held against the viewport for
+     that run and then releases and scrolls away like any other section.
+
+     There is no padding here any more: the gutter, the nav clearance and the
+     pane's own width, height, border and radius are all interpolated from
+     `--hero-p` in globals.css (see "THE HERO'S SCROLL-SHRINK"), which
+     HeroVideoStage drives from the scroll position. `data-hero-scroll` is what
+     it looks up to find this element — a class would do, but an attribute says
+     it is a handle for script rather than styling. */
   return (
-    <section className="px-gutter pb-12 pt-24 tablet:pb-16 tablet:pt-28" aria-labelledby="hero-title">
-      <div className="container-page">
-        <HeroVideoStage videos={videos ?? []}>{type}</HeroVideoStage>
+    <section className="hero-scroll" data-hero-scroll aria-labelledby="hero-title">
+      <div className="hero-sticky">
+        <HeroVideoStage videos={videos ?? []}>
+          {/* THE GLASS PANEL, over video only. On the type-only state the page
+              is already off-white, so a white panel on it would be a card with
+              nothing to separate itself from — which is why this wraps the
+              type here rather than inside `type` itself.
+
+              A FIXED CEILING, not a shrink-wrap: the headline is balanced to
+              16ch and the pill is capped at 30rem, so a panel sized to its
+              content would change width every time the copy changed.
+
+              🔶 THE PADDING IS EVEN ON ALL FOUR SIDES, and that is the whole
+              rule. It was `px-6 py-10 / mid:px-10 mid:py-12 / tablet:px-14`,
+              which left the vertical padding larger than the horizontal on a
+              phone and SMALLER than it from 1024px — the panel's proportions
+              inverted halfway up the breakpoints, which is what read as
+              uneven. One value per breakpoint cannot drift that way. */}
+          <div className="hero-glass w-full max-w-[42rem] rounded-card p-5 mid:p-8 tablet:rounded-media tablet:p-10">
+            {type}
+          </div>
+        </HeroVideoStage>
       </div>
     </section>
   );
