@@ -1,4 +1,3 @@
-import { ClosingCta } from '@/components/sections/ClosingCta';
 import { PageHero } from '@/components/sections/PageHero';
 import { ProjectCatalogue } from '@/components/sections/ProjectCatalogue';
 import { getProjects, usedCategories } from '@/lib/api/projects';
@@ -41,7 +40,10 @@ export default async function ProjectsPage() {
 
       <ProjectCatalogue projects={projects} categories={categories} />
 
-      <ClosingCta />
+      {/* The closing "Come and walk the layout" band was removed on request —
+          see the note in app/page.tsx. */}
+
+      <div className="pb-section-sm" />
     </>
   );
 }

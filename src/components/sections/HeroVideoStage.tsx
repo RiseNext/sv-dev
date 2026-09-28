@@ -1,72 +1,174 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cx } from '@/lib/cx';
 import type { VideoRef } from '@/types/content';
 
 /* =============================================================================
-   HERO VIDEO STAGE — the dark wave on the right of the hero.
+   HERO VIDEO STAGE — the bordered pane the hero type sits on.
 
-   The design template's hero is type on the cream field with a sweeping dark
-   green wave on the right. Here the CMS hero video plays INSIDE that wave: the
-   footage is clipped to the curve, tinted toward the forest green so it still
-   reads as the template's dark shape, and crossed by the template's thin gold
-   line. With no video in the CMS it is the template exactly — a solid forest
-   wave with the gold line.
+   ONE COMPONENT, TWO LAYOUTS, chosen by how many videos the CMS returns:
+     · exactly one  → a still pane. No controls are rendered at all, because a
+                      carousel with one slide is furniture that does nothing.
+     · more than one → the same pane, plus a crossfade and a control cluster.
+   The frame, the wash and the type treatment are IDENTICAL across both, so
+   adding a second video changes what moves, never how the hero looks.
 
-   ─── THE SHAPE ────────────────────────────────────────────────────────────
-   Two clip paths in `objectBoundingBox` units (0–1 of the box, so they
-   stretch to whatever size the box is):
-     · from 1024px — a tall S-curve on the right, leaving the top-left cream
-       for the headline
-     · below 1024px — a band under the headline with a single curved top edge
-   The ids are fixed rather than generated: there is one hero per page, and a
-   Tailwind class must be a literal string to be generated at all.
+   ─── NOTHING IS LAID OVER THE FOOTAGE ─────────────────────────────────────
+   🔶 REMOVED ON REQUEST, 28 Sep 2026: this carried a dark vertical gradient
+   over the video — a scrim — to hold the white headline up. It is gone, and
+   with it the last thing standing between the visitor and the footage. The
+   video now plays at full brightness and full clarity: no tint, no blur.
 
-   ─── ONE OR MORE VIDEOS ───────────────────────────────────────────────────
-   Several videos crossfade every 7s, only the visible one plays, and a pause
-   control appears (WCAG 2.2.2). Hover and focus pause the rotation too. Under
-   `prefers-reduced-motion` nothing plays — the poster frame stands in.
+   THE TYPE IS STILL WHITE, and its legibility now comes from a TEXT SHADOW set
+   in Hero.tsx. That is the important distinction: a shadow darkens the handful
+   of pixels behind the letterforms, where a scrim darkened the entire frame.
+   If a pale clip ever makes the headline hard to read, deepen that shadow —
+   the tint is not coming back.
+
+   ─── THE PANE OPENS FULL SCREEN ───────────────────────────────────────────
+   Its width, height, border and radius are NOT set here. They are interpolated
+   in globals.css from `--hero-p`, which the effect below writes onto the
+   section as you scroll: 0 covering the whole screen, 1 settled into the
+   bordered pane. What stays here is everything that does not change between
+   those two states — the footage, the type, the controls, the padding.
+
+   ─── HEIGHT IS CONTENT-DRIVEN, NOT ASPECT-DRIVEN ──────────────────────────
+   No `aspect-[16/9]` on the frame, in either state. An aspect ratio fixes the
+   height from the WIDTH, so on a narrow phone the pane becomes short exactly
+   as the headline wraps to four lines, and the type either overflows or has to
+   shrink. Padding plus a `min-height` FLOOR lets the pane grow to whatever the
+   type needs at every width, which is what makes this survive translation, a
+   longer headline, or a 320px screen. The video fills whatever height results
+   via `object-cover`.
    ========================================================================== */
 
+/** Long enough to read the headline and watch a few seconds of footage. */
 const ADVANCE_MS = 7000;
+
+/* The frame. A two-layer lift, same family as the nav's glass: a tight contact
+   shadow and a wide deep ambient. The hairline that went with it is in
+   globals.css, because it has to fade in as the pane settles — at full bleed a
+   white hairline is a seam along the edge of the screen. */
+const FRAME_SHADOW =
+  'shadow-[0_2px_6px_rgba(43,34,23,0.06),0_24px_60px_-24px_rgba(43,34,23,0.28)]';
+
+/* How much of the pin's travel the shrink uses, leaving the rest as a settled
+   hold before the section releases. Derived from the section's own height, so
+   `--hero-run` in globals.css stays the single place the distance is set. */
+const SETTLE_AT = 0.7;
 
 export function HeroVideoStage({
   videos,
-  className,
+  children,
 }: {
   videos: readonly VideoRef[];
-  className?: string;
+  children: ReactNode;
 }) {
+  /* Returns false on the server and for the first paint, then syncs. That
+     default is the safe one here: auto-advance is started from an effect, so it
+     can never fire before the query has resolved. */
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+
   const multi = videos.length > 1;
   const [index, setIndex] = useState(0);
+  /* Set by the user via the control, and separately by hover/focus. Kept apart
+     so moving the pointer away does not silently undo an explicit pause. */
   const [userPaused, setUserPaused] = useState(false);
   const [hoverPaused, setHoverPaused] = useState(false);
+
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const paneRef = useRef<HTMLDivElement>(null);
+
   const advancing = multi && !reduceMotion && !userPaused && !hoverPaused;
 
-  /* ONLY THE VISIBLE VIDEO PLAYS. Decoding every clip for one visible pane is
-     the most expensive thing a hero can do on a phone. */
+  /* THE SCROLL-SHRINK. Writes `--hero-p` onto the SECTION, not onto the pane:
+     the sticky wrapper's gutter and nav clearance are interpolated from the
+     same number, and a custom property set on the section inherits down to
+     both. See globals.css for the geometry it drives.
+
+     Nothing here is React state. A `setState` per scroll frame would re-render
+     the whole stage — videos, controls and all — sixty times a second to move
+     one number; writing the property straight onto the node moves it without
+     React in the loop at all. */
+  useEffect(() => {
+    const section = paneRef.current?.closest<HTMLElement>('[data-hero-scroll]');
+    if (!section) return;
+    /* Reduced motion keeps the settled pane, which globals.css already sets.
+       Bailing out before the first write is what leaves it in charge — an
+       inline property here would beat the media query. */
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    let frame = 0;
+
+    const update = () => {
+      frame = 0;
+      /* The pin's travel: everything the section is taller than one screen. */
+      const travel = section.offsetHeight - window.innerHeight;
+      if (travel <= 0) {
+        section.style.setProperty('--hero-p', '1');
+        return;
+      }
+      const scrolled = Math.min(Math.max(-section.getBoundingClientRect().top, 0), travel);
+      const progress = Math.min(scrolled / (travel * SETTLE_AT), 1);
+      section.style.setProperty('--hero-p', progress.toFixed(4));
+    };
+
+    /* Coalesced to one write per frame: scroll fires far more often than the
+       screen refreshes, and Lenis drives it from its own rAF loop. */
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      section.style.removeProperty('--hero-p');
+    };
+  }, []);
+
+  /* ONLY THE VISIBLE VIDEO PLAYS. Leaving all of them running decodes N video
+     streams for one visible pane — the single most expensive thing a hero can
+     do on a phone — and it is invisible while it happens, so nothing about the
+     page suggests why scrolling has gone rough. */
   useEffect(() => {
     videoRefs.current.forEach((el, i) => {
       if (!el) return;
-      if (i !== index || reduceMotion) {
+
+      if (i !== index) {
         el.pause();
-        if (i !== index) el.currentTime = 0;
+        /* Rewound so a returning slide starts from its opening frame rather
+           than resuming mid-shot, which reads as a glitch on a loop. */
+        el.currentTime = 0;
         return;
       }
-      /* `play()` rejects when autoplay is refused (iOS Low Power Mode): the
-         poster stays up and the hero is still complete. */
+
+      if (reduceMotion) {
+        el.pause();
+        return;
+      }
+
+      /* `play()` REJECTS rather than throws — a browser is entitled to refuse
+         autoplay, and on iOS Low Power Mode it always does. Swallowing it is
+         correct: the poster frame stays up and the hero is still complete. An
+         unhandled rejection here would surface as a console error on a page
+         that is working as designed. */
       void el.play().catch(() => {});
     });
   }, [index, reduceMotion, videos.length]);
 
   useEffect(() => {
     if (!advancing) return;
-    const timer = setInterval(() => setIndex((i) => (i + 1) % videos.length), ADVANCE_MS);
+    const timer = setInterval(() => {
+      setIndex((current) => (current + 1) % videos.length);
+    }, ADVANCE_MS);
     return () => clearInterval(timer);
   }, [advancing, videos.length]);
 
@@ -77,28 +179,46 @@ export function HeroVideoStage({
 
   return (
     <div
+      ref={paneRef}
       className={cx(
-        'on-dark pointer-events-auto isolate overflow-hidden bg-forest',
-        '[clip-path:url(#hero-wave-band)] tablet:[clip-path:url(#hero-wave-side)]',
-        className,
+        'relative isolate w-full overflow-hidden',
+        /* `on-dark` switches focus rings to white — see globals.css. Without it
+           the keyboard outline is `--color-core-black` on the footage, i.e.
+           invisible, which is a real failure and not a cosmetic one. */
+        'on-dark',
+        /* Width, the height floor, the border and the radius all live in this
+           class in globals.css, because every one of them is interpolated
+           between the full-screen and settled states. */
+        'hero-pane',
+        FRAME_SHADOW,
+        /* `justify-end`, not `justify-center`: the glass panel sits LOW in the
+           frame on request — centred across, down at the bottom. The pane's
+           own bottom padding is what holds it off the edge, so it keeps the
+           same clearance at every breakpoint and at every point of the shrink.
+
+           The controls, when there are any, are absolutely placed at
+           `bottom-4/6` — inside that padding, so they land under the panel
+           rather than behind it. */
+        'flex flex-col items-center justify-end',
+        'px-5 py-16 mid:px-8 mid:py-20 tablet:px-12 tablet:py-28',
       )}
+      /* Hover and focus pause the rotation, so a slide cannot change out from
+         under someone reading it or tabbing through the controls.
+
+         🔶 WORTH KNOWING once a SECOND hero video exists. The CMS ships one
+         today, so `multi` is false and none of this runs. But the pane now
+         covers the whole screen on arrival, and "the pointer is over the pane"
+         therefore means "the pointer is anywhere on the page" until it
+         settles — so on a desktop the rotation would sit paused through the
+         opening. If a second video is added and the first never hands over,
+         that is the cause: gate this on `--hero-p` being past the settle
+         point rather than on hover alone. */
       onPointerEnter={() => setHoverPaused(true)}
       onPointerLeave={() => setHoverPaused(false)}
       onFocusCapture={() => setHoverPaused(true)}
       onBlurCapture={() => setHoverPaused(false)}
     >
-      {/* The two shapes. A zero-size SVG only carries the definitions. */}
-      <svg aria-hidden="true" width="0" height="0" className="absolute">
-        <defs>
-          <clipPath id="hero-wave-side" clipPathUnits="objectBoundingBox">
-            <path d="M1,0 L1,1 L0.04,1 C0.2,1 0.3,0.86 0.42,0.62 C0.56,0.34 0.74,0.06 1,0 Z" />
-          </clipPath>
-          <clipPath id="hero-wave-band" clipPathUnits="objectBoundingBox">
-            <path d="M0,0.2 C0.22,0.02 0.5,0.02 0.72,0.14 C0.84,0.2 0.93,0.2 1,0.12 L1,1 L0,1 Z" />
-          </clipPath>
-        </defs>
-      </svg>
-
+      {/* ---------- Layer 1: the footage ---------- */}
       {videos.map((video, i) => (
         <video
           key={video.src}
@@ -107,67 +227,50 @@ export function HeroVideoStage({
           }}
           src={video.src}
           poster={video.poster}
+          /* `muted` and `playsInline` are not preferences — every browser
+             refuses to autoplay without both. `loop` because a single clip
+             ending on a frozen frame is worse than no video. */
           muted
           loop
           playsInline
+          /* The active clip is worth bytes; the rest fetch enough to have a
+             first frame ready for the crossfade and no more. */
           preload={i === index ? 'auto' : 'metadata'}
+          /* Decorative: the headline carries the meaning, and the controls
+             below are separately labelled. */
           aria-hidden="true"
           tabIndex={-1}
           className={cx(
             'absolute inset-0 -z-10 size-full object-cover',
+            /* Crossfade rather than slide: opacity is composited, so the
+               transition never touches layout on a full-bleed element. */
             'transition-opacity duration-700 ease-out-soft motion-reduce:transition-none',
             i === index ? 'opacity-100' : 'opacity-0',
           )}
         />
       ))}
 
-      {/* Tints the footage toward the forest green, so the wave still reads as
-          the template's dark shape and not as a photo cut out of the page. */}
-      {videos.length > 0 ? (
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-forest/50" />
-      ) : null}
+      {/* ---------- Layer 2: the type ----------
+          There is no layer between this and the footage any more. The scrim
+          that used to sit here is gone on request — see the header note. */}
+      <div className="relative flex w-full flex-col items-center">{children}</div>
 
-      {/* The template's thin gold line, following the curve inside the wave. */}
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        className="pointer-events-none absolute inset-0 size-full"
-      >
-        <path
-          d="M14,100 C30,96 38,80 48,62 C60,40 76,16 100,10"
-          fill="none"
-          stroke="url(#hero-wave-gold)"
-          strokeWidth="1.2"
-          vectorEffect="non-scaling-stroke"
-          className="max-tablet:hidden"
-        />
-        <path
-          d="M0,44 C24,26 50,26 72,38 C84,44 93,44 100,36"
-          fill="none"
-          stroke="url(#hero-wave-gold)"
-          strokeWidth="1.2"
-          vectorEffect="non-scaling-stroke"
-          className="tablet:hidden"
-        />
-        <defs>
-          <linearGradient id="hero-wave-gold" x1="0" y1="1" x2="1" y2="0">
-            <stop offset="0" stopColor="#d4b98c" stopOpacity="0.15" />
-            <stop offset="0.5" stopColor="#d4b98c" stopOpacity="0.85" />
-            <stop offset="1" stopColor="#d4b98c" stopOpacity="0.35" />
-          </linearGradient>
-        </defs>
-      </svg>
-
+      {/* ---------- Layer 3: controls, only when they have a job ---------- */}
       {multi ? (
         <div
           className={cx(
-            'theme-light absolute bottom-5 right-5 flex items-center gap-1 rounded-pill border border-white/50 bg-surface/85 p-1.5',
+            'absolute bottom-4 left-1/2 -translate-x-1/2 tablet:bottom-6',
+            'flex items-center gap-1 rounded-pill border border-white/50 bg-surface/80 p-1.5',
             'backdrop-blur-[13px]',
           )}
           role="group"
           aria-label="Hero video controls"
         >
+          {/* WCAG 2.2.2 (Pause, Stop, Hide): content that moves or auto-updates
+              for more than five seconds needs a way to stop it. Both the
+              rotation AND the footage qualify, so this is required, not a
+              nicety. Hidden under `prefers-reduced-motion` because nothing is
+              moving there to pause. */}
           {!reduceMotion ? (
             <button
               type="button"
@@ -175,10 +278,13 @@ export function HeroVideoStage({
               aria-pressed={userPaused}
               className="inline-flex size-8 items-center justify-center rounded-pill text-ink transition-colors hover:bg-white/60"
             >
-              <span className="visually-hidden">{userPaused ? 'Play hero videos' : 'Pause hero videos'}</span>
+              <span className="visually-hidden">
+                {userPaused ? 'Play hero videos' : 'Pause hero videos'}
+              </span>
               <Icon name={userPaused ? 'play' : 'pause'} size={14} />
             </button>
           ) : null}
+
           {videos.map((video, i) => (
             <button
               key={video.src}
@@ -191,7 +297,8 @@ export function HeroVideoStage({
               <span
                 aria-hidden="true"
                 className={cx(
-                  'block size-2 rounded-full transition-all duration-300 ease-out-soft motion-reduce:transition-none',
+                  'block size-2 rounded-full transition-all duration-300 ease-out-soft',
+                  'motion-reduce:transition-none',
                   i === index ? 'w-5 bg-ink' : 'bg-ink/30',
                 )}
               />

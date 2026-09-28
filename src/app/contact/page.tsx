@@ -1,10 +1,9 @@
 import { Suspense } from 'react';
-import { Accordion } from '@/components/ui/Accordion';
 import { Icon } from '@/components/ui/Icon';
 import { Reveal } from '@/components/ui/Reveal';
 import { ContactForm } from '@/components/sections/ContactForm';
+import { FaqSection } from '@/components/sections/FaqSection';
 import { PageHero } from '@/components/sections/PageHero';
-import { Statement } from '@/components/sections/Statement';
 import { contact } from '@/content/pages';
 import { getSiteSettings } from '@/lib/api/site';
 import { getProjects } from '@/lib/api/projects';
@@ -65,10 +64,7 @@ export default async function ContactPage() {
               it is blurred well inside the gutter and never carries type. It
               lifts the white form off the off-white field without introducing
               the hard dark band the palette rules out. */}
-          {/* `theme-light` on the wrapper so the form card AND the dark glow
-              behind it (`bg-ink/20`) keep their light-theme colours on the
-              green field. */}
-          <Reveal className="theme-light relative isolate">
+          <Reveal className="relative isolate">
             <div
               aria-hidden
               className="pointer-events-none absolute -inset-3 -z-10 rounded-[2rem] bg-ink/20 blur-2xl tablet:-inset-5"
@@ -88,7 +84,7 @@ export default async function ContactPage() {
           </Reveal>
 
           <Reveal delay={100} className="flex flex-col gap-4">
-            <ul className="theme-light grid gap-px overflow-hidden rounded-media bg-line">
+            <ul className="grid gap-px overflow-hidden rounded-media bg-line">
               {channels.map((channel) => (
                 <li key={channel.label} className="bg-surface">
                   <a
@@ -107,7 +103,7 @@ export default async function ContactPage() {
               ))}
             </ul>
 
-            <div className="theme-light rounded-media bg-surface p-6">
+            <div className="rounded-media bg-surface p-6">
               <p className="font-mono text-body-xs uppercase tracking-[0.06em] text-ink-faint">
                 Site office
               </p>
@@ -131,12 +127,11 @@ export default async function ContactPage() {
         </div>
       </section>
 
-      <Statement id="faq" label="FAQ" title="Before you come," titleAccent="the usual questions" />
-      <div className="container-prose mt-14">
-        <Accordion
-          items={faqs.length ? faqs.map((f) => ({ q: f.question, a: f.answer })) : contact.faq}
-        />
-      </div>
+      <FaqSection
+        title="Before you come,"
+        titleAccent="the usual questions"
+        items={faqs.length ? faqs.map((f) => ({ q: f.question, a: f.answer })) : contact.faq}
+      />
 
       <div className="pb-section-sm" />
     </>

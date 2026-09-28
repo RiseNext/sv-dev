@@ -4,11 +4,9 @@ import { Icon } from '@/components/ui/Icon';
 import type { Project } from '@/types/content';
 import { cx } from '@/lib/cx';
 
-/* The design template's project card: the picture flush along the top, then a
-   gold category label, the name in the display serif, the place and the
-   tagline. A hairline border rather than a shadow, as in the template. The
-   whole card is one link — a card with three separate links in it gives a
-   screen-reader user three stops for one destination. */
+/* Media on top with a mono category label over it, name in the display serif,
+   tagline in sans. The whole card is one link — a card with three separate
+   links in it gives a screen-reader user three stops for one destination. */
 
 /* The prop is the CARD SHAPE, not the whole record — these are exactly the
    fields this component reads. A full `Project` still satisfies it, so nothing
@@ -30,13 +28,9 @@ export function ProjectCard({
   return (
     <Link
       href={`/projects/${project.slug}`}
-      className={cx(
-        'theme-light group flex w-full flex-col overflow-hidden rounded-card border border-line bg-surface',
-        'transition-[transform,box-shadow] duration-300 hover:-translate-y-1',
-        'hover:shadow-[0_24px_50px_-30px_rgba(26,43,40,0.45)]',
-      )}
+      className="group flex flex-col rounded-media bg-surface p-2 transition-transform duration-300 hover:-translate-y-1"
     >
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden rounded-[1.125rem]">
         <Image
           src={project.image.src}
           alt={project.image.alt}
@@ -46,6 +40,9 @@ export function ProjectCard({
           priority={priority}
           className="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
+        <span className="absolute left-3 top-3 inline-flex items-center rounded-pill bg-surface/90 px-3 py-1.5 font-mono text-[0.6875rem] uppercase tracking-[0.06em] text-ink backdrop-blur-[13px]">
+          {project.category}
+        </span>
         {project.status ? (
           <span className="absolute right-3 top-3 inline-flex items-center rounded-pill bg-gold px-3 py-1.5 font-mono text-[0.6875rem] uppercase tracking-[0.06em] text-core-black">
             {project.status}
@@ -53,9 +50,8 @@ export function ProjectCard({
         ) : null}
       </div>
 
-      <div className="flex flex-1 flex-col px-5 pb-6 pt-5">
-        <p className="font-mono text-[0.6875rem] uppercase tracking-[0.08em] text-gold-ink">{project.category}</p>
-        <h3 className="mt-2 text-heading-sm text-ink">{project.name}</h3>
+      <div className="flex flex-1 flex-col px-3 pb-4 pt-5">
+        <h3 className="text-heading-sm text-ink">{project.name}</h3>
         <p className="mt-1 inline-flex items-center gap-1.5 font-mono text-body-xs text-ink-faint">
           <Icon name="mapPin" size={13} />
           {project.locality}

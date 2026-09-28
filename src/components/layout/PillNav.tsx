@@ -2,14 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type ReactNode,
-} from 'react';
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { Logo } from '@/components/layout/Logo';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -18,197 +11,134 @@ import { anchorProps, telHref } from '@/lib/href';
 import type { ImageRef, NavLink } from '@/types/content';
 
 /* =============================================================================
-   TOP NAVIGATION BAR
+   TOP NAVIGATION — THE FULL-WIDTH BAR
 
-   One full-bleed bar pinned to the very top edge of the page — edge to edge,
-   no margin, no floating plate. Brand hard left, links centred on the page
-   axis, the two conversion actions hard right. The bar never changes on
-   scroll — no shrink, no background swap — because it is already its own
-   surface and does not need the page behind it to behave.
+   🔴 THE BAR IS FULL-WIDTH AND FLUSH WITH THE TOP OF THE VIEWPORT. It runs
+   left screen edge to right, pinned at `top-0` with NO gap above it and NO
+   rounded ends. The floating inset capsule this replaced was wrong — the bar
+   is the topmost edge of the page, not an object sitting on it. Cream, a gold
+   hairline along its bottom, a soft warm shadow, and the page scrolls beneath.
 
-   The links are centred with `absolute left-1/2` rather than by flex spacing:
-   the brand and the action group are different widths, so a plain
-   `justify-between` would push the links off the page's optical centre.
+   The BAR ITSELF spans the screen; its CONTENTS are held to `container-page`,
+   so the emblem and the links line up with the page's own gutter rather than
+   jamming into the screen edge.
 
-   One <nav> in the DOM at every width. Below 1024px the link pills are
-   replaced by a Menu pill that opens a full-screen overlay; rendering the links
-   twice would mean two sources of truth and every link announced twice.
+   ─── THE EMBLEM HANGS BELOW, NEVER ABOVE ──────────────────────────────────
+   At advertisement scale the emblem (128px) is taller than the bar (88px), and
+   with the bar flush to the top there is no room above it — anything hanging
+   up there is cut off by the viewport. So it is TOP-ALIGNED (`self-start`)
+   with a few pixels of inset and spills downward only. On a phone it is
+   smaller than the bar and simply centres.
 
-   ─── MOBILE: FULL-SCREEN OVERLAY ──────────────────────────────────────────
-   The phone menu is not a shrunken desktop dropdown. It takes the whole
-   screen and sets the links in the display serif at heading size, so the menu
-   reads as part of the brand rather than as browser chrome. Call and Book a
-   site visit sit at the bottom, in the thumb zone — on desktop those two live
-   in the top-right of the bar, which has no room on a phone.
+   ─── THE NUMBERS EVERY "CLEAR THE NAV" OFFSET DEPENDS ON ───────────────────
+   Bar 64px tall on a phone, 88px from 1024px, starting at y=0. On a phone
+   nothing overhangs it, so the nav ends at 64px; from 1024px the emblem hangs
+   to 132px. Hero's `pt-24 tablet:pt-36` clears both, as does
+   `scroll-padding-top` in globals.css.
 
-   ─── WHY IT IS SMOOTH ─────────────────────────────────────────────────────
-   Three rules, all of them about staying off the main thread:
+   ─── WHAT IS IN THE BAR, AND WHERE ────────────────────────────────────────
+   TWO GROUPS, HARD LEFT AND HARD RIGHT, with the whole middle left empty. The
+   emblem alone on the left; the links AND Book a site visit together on the
+   right. That gap is deliberate — it is what lets the emblem read as a brand
+   mark rather than as the first item in a toolbar.
 
-   1. The overlay animates `opacity` and `transform` ONLY. Both are composited,
-      so the whole panel is one GPU layer and the animation never triggers
-      layout or paint. Height/top/width animations would, which is why the
-      panel does not slide by growing.
-   2. It stays mounted and is toggled with `inert` + `visibility`, not the
-      `hidden` attribute. `hidden` removes the element outright, so there is no
-      "before" state for the browser to transition from — that is why the old
-      sheet popped in and out with no motion at all.
-   3. `backdrop-filter` runs at every width, but NOT at the same radius. A
-      blurred bar fixed over scrolling content makes the compositor re-sample
-      and re-blur its backdrop every frame, and that cost scales with the
-      radius — enough, at a desktop radius, to drop phone scrolling below
-      60fps. Phones get 18px, desktop 26px; the values live on `glass-bar` in
-      globals.css.
+   Links are Home · About Us · Projects. Contact Us is NOT among them and Call
+   is not in the bar: /contact is what the gold CTA at the right end is for, so
+   a text link to it beside the button was the same destination twice. Both
+   still reach the user from the footer and, on a phone, from the menu overlay.
 
-   4. The bar carries NO `overflow-hidden`. The Projects dropdown is a child of
-      the bar and hangs below it, so clipping the bar would clip the menu; the
-      gloss is painted by a gradient and an inset shadow, neither of which
-      needs an overflow context.
+   One <nav> in the DOM at every width. Below 1024px the links are replaced by a
+   Menu button opening a full-screen overlay; rendering the links twice would
+   mean two sources of truth and every link announced twice.
+
+   The bar carries NO `overflow-hidden`: the Projects dropdown and the emblem
+   both hang below it, so clipping the bar would clip them.
    ========================================================================== */
 
 const INLINE_NAV = '(min-width: 64rem)';
 
-/* Glass at every width — the gradient, the blur, the saturation, the lit top
-   edge and the closing hairline all live in `glass-bar` in globals.css, so the
-   bar's material is one thing to re-skin rather than six classes to keep in
-   sync. See rule 3 above for why the blur radius is not the same on a phone. */
-const BAR = 'glass-bar';
+/* 🔴 THESE FOUR MOVE TOGETHER, and the arithmetic is the whole point:
 
-/* The bar's height, and the value every "clear the nav" offset is derived
-   from: 64px on a phone, 80px once the links go inline. */
-const BAR_HEIGHT = 'h-16 tablet:h-20';
+     BADGE.sm in Logo.tsx = medallion − 8   (its 2px ring + 2px band per side)
 
-/* 40px everywhere now. The bar has the room, and the Menu pill is the
-   most-tapped control on the site — it should not be shrunk to win back
-   four pixels.
+   Phone: bar 64, medallion 52, badge 44 — fully contained, nothing overhangs.
 
-   No colour here on purpose: `text-ink` in this string would collide with the
-   `text-white` on the black CTA, and which one wins would come down to
-   Tailwind's own output order rather than anything readable at the call site.
-   Each pill states its own colour. */
-const PILL =
-  'group relative inline-flex min-h-11 items-center gap-1.5 rounded-pill px-5 text-body-sm font-medium';
+   🔴 FROM 1024px THE EMBLEM IS BIGGER THAN THE BAR, ON PURPOSE: bar 88,
+   medallion 128, badge 120. The brand has to read at advertisement scale and
+   THE BAR MUST NOT GROW TO SUIT IT — a 120px-tall bar was tried and was wrong;
+   it turned the nav into a block. So the emblem hangs 44px BELOW the bar
+   instead, while staying inside the page gutter horizontally. The bar keeps
+   its slim proportion, the mark gets its size.
 
-/* The one-pixel lift, for the pills that are their own object: Call, the CTA
-   and the mobile Menu button. The rail links do NOT take this — their depth
-   comes from the capsule, and a link lifting out from under a capsule that is
-   not lifting with it looks like two things coming apart. */
-const PILL_LIFT =
-  'transition-[transform,opacity] duration-300 ease-out-soft hover:-translate-y-px ' +
-  'motion-reduce:transition-none motion-reduce:hover:translate-y-0';
+   This works only because the bar's height is fixed (`h-22`, not `min-h-`) and
+   it carries no `overflow-hidden` — a taller flex child then spills out of it
+   instead of stretching it. */
+const MEDALLION_SIZE = 'size-13 tablet:size-32'; /* 52px / 128px */
+const BAR_HEIGHT = 'h-16 tablet:h-22'; /* 64px / 88px */
 
-/* THE POP. Scale only — a font-weight or font-size change would reflow the
-   label, and the capsule is positioned from measured layout pixels, so the
-   label would grow out from under it. `scale` repaints without touching
-   layout, so the geometry the capsule measured stays true. */
-/* `group-focus-visible` mirrors `group-hover` because the rail already moves the
-   spotlight on focus (see `railItem`), so a keyboard user would otherwise blur
-   every sibling and get no pop on the link they had actually landed on. Same
-   pairing PillFace uses for its chip. */
-const POP =
-  'relative inline-flex items-center gap-1.5 transition-transform duration-300 ease-spring ' +
-  'group-hover:scale-[1.07] group-focus-visible:scale-[1.07] ' +
-  'motion-reduce:transition-none motion-reduce:group-hover:scale-100 ' +
-  'motion-reduce:group-focus-visible:scale-100';
+/* The medallion's frame, kept DELIBERATELY THIN now that it lives inside the
+   bar: a 2px gold ring and a 2px white band, no more. The heavier ring the
+   overhanging version carried ate 18px of a circle that is now 52px on a phone,
+   which left the wordmark under the mark illegible. No drop shadow either — it
+   is on the bar, not above it, and a shadow here only reads as grime. */
+const MEDALLION = cx(
+  /* `inline-flex` is load-bearing: <a> is inline by default, and width/height
+     do not apply to an inline box. It is a flex item here so it would be
+     blockified anyway — but that makes the size depend on the parent, which is
+     not a thing this frame's geometry should be able to lose. */
+  'inline-flex shrink-0 items-center justify-center',
+  'rounded-full border-2 border-gold bg-white p-0.5',
+);
 
-/* THE SPOTLIGHT — the counterpart to POP. One link is singled out, so the rest
-   go soft, which is what makes the popped one read as chosen rather than merely
-   bigger.
+/* THE BAR'S SURFACE — a lit top edge, a gold hairline along the BOTTOM ONLY
+   (the other three sides are the screen edge now, so a ring all the way round
+   would draw a line down the left and right of the viewport), and a soft warm
+   shadow the page scrolls under.
 
-   ON THE PILL, NOT THE <li>. The Projects dropdown is a sibling of the pill
-   inside the same <li>; blurring the <li> would blur an OPEN menu the instant
-   the pointer moved to a neighbouring link. The pill wraps only the label, so
-   the menu is never in the filtered subtree.
+   🔴 ONE UNBROKEN STRING LITERAL. Tailwind scans source text for whole class
+   names, so an arbitrary value split across a `+` join generates NO rule. */
+const BAR = cx(
+  'bg-linear-to-b from-[#fffdf7] to-[#fdf6e6]',
+  'shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(196,161,98,0.38),0_2px_6px_rgba(122,90,34,0.06),0_14px_32px_-20px_rgba(122,90,34,0.55)]',
+);
 
-   `ease-out-soft`, NOT `ease-spring`. A spring overshoots past its target and
-   settles back — the point of POP — but an overshoot on blur or opacity is
-   either invisible or clamped, so it buys nothing and costs a longer settle.
+/* Links are set medium in full ink — dark enough to be read as buttons, light
+   enough that the gold CTA still wins. The current page sits in a filled
+   gold-mid pill with no rim; every other link washes pale gold on hover. */
+const LINK =
+  'inline-flex min-h-10 items-center gap-1.5 rounded-full px-4 text-[1.0625rem] font-medium text-ink ' +
+  'transition-colors duration-200 motion-reduce:transition-none';
+const LINK_IDLE = 'hover:bg-gold-soft/60';
+const LINK_CURRENT = 'bg-gold-mid';
 
-   SOFT_BASE is applied UNCONDITIONALLY so the transition exists in both
-   directions; without it the blur would animate on and snap off. */
-const SOFT_BASE =
-  'transition-[filter,opacity] duration-300 ease-out-soft motion-reduce:transition-none';
+/* The CTA — solid gold, lit from the top-left, with an inner gold rim and a
+   shadow that deepens as it lifts. Since Call was taken out of the bar this is
+   the ONLY control at the right-hand end, which is the point: one destination,
+   no competing pill beside it. Call still reaches the user from the footer and,
+   on a phone, from the overlay. */
+const CTA = cx(
+  'group inline-flex items-center gap-2.5 rounded-full bg-linear-to-br from-gold-to to-gold font-semibold text-core-black',
+  'shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_8px_18px_-8px_rgba(122,90,34,0.7)]',
+  'ring-1 ring-inset ring-gold-deep/40',
+  'transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-0.5 hover:to-gold-deep',
+  'hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_14px_26px_-10px_rgba(122,90,34,0.75)]',
+  'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
+);
 
-/* 2px is the whole budget: enough to drop the label out of the reading plane,
-   not enough to turn 13px type into a smudge. The opacity does most of the
-   de-emphasis; the blur is what makes it read as depth rather than as disabled. */
-const SOFTENED = 'blur-[2px] opacity-50';
-
-/* THE DROPDOWN'S SURFACE — why this is a shadow stack and not an opacity bump.
-
-   The panel was never transparent: `bg-surface` is #ffffff at full opacity. It
-   read as washed out because the PAGE behind it is #f9f8f5 — a 2% step from
-   pure white — and the panel had no edge and a single soft 40px shadow at 14%.
-   An opaque white card with no rim, on an almost-white field, dissolves into
-   it. Raising the opacity of something already opaque would change nothing.
-
-   So the weight comes from separation instead, in four layers:
-     · a rim, which is the one thing that guarantees an edge even where the
-       card and the page behind it are the same colour
-     · a tight contact shadow, which is what reads as "resting just above"
-     · a mid shadow for the body of the lift
-     · a wide, deep ambient so the card has somewhere to fall away to
-
-   `inset 0 0 0 1px` FOR THE RIM, NOT `border` — the same call `glass-capsule`
-   makes. A border would add 2px to a `w-64` panel that is centred by
-   transform, nudging it half a pixel off the link it hangs from. An inset
-   shadow paints inside the box and changes no geometry.
-
-   🔴 ONE UNBROKEN STRING LITERAL, however long the line. Tailwind scans SOURCE
-   TEXT for whole class names, so an arbitrary value split across a `+` join is
-   invisible to it and silently generates NO RULE — which is not a degraded
-   shadow, it is no shadow. The other constants in this file wrap safely only
-   because they break at the whitespace BETWEEN separate classes, leaving each
-   token whole. Never break inside the brackets. */
+/* THE DROPDOWN'S SURFACE — a rim plus three shadows. An opaque cream card on a
+   cream page dissolves into it without an edge; the rim guarantees one, and the
+   shadows lift it off the page. */
 const MENU_SURFACE =
-  'shadow-[inset_0_0_0_1px_rgba(26,22,19,0.09),0_2px_4px_rgba(26,22,19,0.07),0_12px_24px_-8px_rgba(26,22,19,0.22),0_32px_56px_-16px_rgba(26,22,19,0.3)]';
+  'shadow-[inset_0_0_0_1px_rgba(122,90,34,0.14),0_2px_4px_rgba(122,90,34,0.08),0_12px_24px_-8px_rgba(122,90,34,0.22),0_32px_56px_-16px_rgba(122,90,34,0.28)]';
 
 const slug = (label: string) => label.toLowerCase().replace(/\s+/g, '-');
 
-/* =============================================================================
-   PILL FACE — glass behind a STANDALONE pill
+/* 🔴 A 'use client' MODULE CANNOT FETCH. Everything it needs is threaded down
+   from the root layout, which is a Server Component.
 
-   For pills that stand on their own: the Call pill in the right-hand group. The
-   rail links do not use this; one shared capsule slides between those instead
-   (see NAV RAIL below), because a chip per link fading independently reads as
-   several separate highlights rather than one control being moved.
-
-   The chip is a sibling of the label, not a background on the pill: it carries
-   its own `backdrop-filter`, which a `background-color` cannot do, and it
-   scales from 0.9 without dragging the label into the transform — text mid-
-   transform is re-rasterised by the compositor and 13px type goes visibly soft.
-
-   `opacity` and `transform` ONLY, same rule as the mobile overlay: both are
-   composited, so a hover never touches layout or paint.
-   ========================================================================== */
-
-function PillFace({ children }: { children: ReactNode }) {
-  return (
-    <>
-      <span
-        aria-hidden="true"
-        className={cx(
-          'glass-chip pointer-events-none absolute inset-0 rounded-pill',
-          'transition-[opacity,transform] duration-300 ease-out-soft motion-reduce:transition-none',
-          'scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100',
-          'group-focus-visible:scale-100 group-focus-visible:opacity-100',
-        )}
-      />
-      {/* Restates the gap: the pill's own `gap-1.5` now sees one child, so
-          label-to-chevron spacing has to live in here. `relative` lifts the
-          label above the chip without needing a z-index. */}
-      <span className="relative inline-flex items-center gap-1.5">{children}</span>
-    </>
-  );
-}
-
-/* 🔴 A 'use client' MODULE CANNOT FETCH. Everything it needs is threaded
-   down from the root layout, which is a Server Component.
-
-   `nav` in particular is DERIVED from the published project list rather than
-   being a hardcoded array of slugs — so a project added in the CMS actually
-   appears in the dropdown. Its LENGTH IS THEREFORE NOT FIXED, which is why
-   the rail below measures each link's own box instead of dividing the track
-   into a known number of slots. */
+   `nav` is DERIVED from the published project list rather than being a
+   hardcoded array of slugs — so a project added in the CMS appears in the
+   dropdown. */
 export function PillNav({
   nav,
   siteName,
@@ -235,101 +165,6 @@ export function PillNav({
     (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href)),
     [pathname],
   );
-
-  /* ===========================================================================
-     NAV RAIL — the capsule that slides between the links
-
-     ONE capsule for every link, moved rather than redrawn. That is the whole
-     effect: the eye tracks a single object across the bar, which is why it
-     reads as an iOS control and not as a set of independent hover states.
-
-     ITS GEOMETRY IS MEASURED, NOT DECLARED. The links are different widths and
-     the labels come from content, so there is no ratio to hard-code; the
-     capsule copies the target link's own offset box. It is positioned with a
-     `translate3d` and an explicit width/height rather than `left`/`top` so the
-     travel is composited.
-
-     WHICH LINK IT SITS ON, in priority order:
-       1. the hovered link — the pointer always wins
-       2. the link whose dropdown is open — so the capsule does not slide away
-          the moment you move down into the Projects menu
-       3. the current page — the rest position
-     On a page outside the nav (/amenities, /master-plan) none of the three
-     applies and the capsule is simply absent.
-     ========================================================================= */
-
-  const railRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
-  const [hovered, setHovered] = useState<number | null>(null);
-  const [capsule, setCapsule] = useState<{
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-  } | null>(null);
-
-  const activeIndex = nav.findIndex((item) => isActive(item.href));
-  const expandedIndex = openSubmenu ? nav.findIndex((item) => item.label === openSubmenu) : -1;
-
-  const targetIndex =
-    hovered ?? (expandedIndex >= 0 ? expandedIndex : activeIndex >= 0 ? activeIndex : null);
-
-  /* WHICH LINK IS SINGLED OUT, and therefore which ones go soft.
-
-     🔴 DELIBERATELY NOT `targetIndex`. The capsule rests on the current page,
-     but the blur must not: falling back to `activeIndex` here would mean every
-     page loaded with its nav already blurred, and a permanent effect stops
-     reading as focus. Only a live pointer or an open dropdown counts, so at
-     rest nothing is softened. */
-  const focusIndex = hovered ?? (expandedIndex >= 0 ? expandedIndex : null);
-
-  const measureCapsule = useCallback(() => {
-    const el = targetIndex === null ? null : itemRefs.current[targetIndex];
-    /* A hidden rail measures 0×0 — below the inline breakpoint the links are
-       `display: none`, and a zero-width capsule would flash at the rail's
-       left edge on the way to the next layout. */
-    if (!el || !el.offsetWidth) {
-      setCapsule(null);
-      return;
-    }
-    const next = { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight };
-    /* Returns the SAME object when nothing moved, so React bails out of the
-       re-render. The ResizeObserver fires on every frame of a window drag, and
-       a fresh object each time would re-render the whole bar per frame for
-       geometry that is usually identical. */
-    setCapsule((prev) =>
-      prev && prev.x === next.x && prev.y === next.y && prev.w === next.w && prev.h === next.h
-        ? prev
-        : next,
-    );
-  }, [targetIndex]);
-
-  useEffect(() => {
-    measureCapsule();
-  }, [measureCapsule, isInline, pathname]);
-
-  /* Re-measure on anything that moves the links: a viewport resize, the display
-     font swapping in and reflowing the labels, or the bar's own width changing.
-     Observing the rail catches all three — it is sized by its own content.
-
-     The observer reads the measure function out of a ref rather than closing
-     over it. Subscribing directly would tear the observer down and rebuild it on
-     every single hover, since `measureCapsule` is rebuilt whenever the target
-     changes — and `observe()` fires an immediate callback, so each hover would
-     cost an extra render for nothing. */
-  const measureRef = useRef(measureCapsule);
-
-  useEffect(() => {
-    measureRef.current = measureCapsule;
-  }, [measureCapsule]);
-
-  useEffect(() => {
-    const el = railRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(() => measureRef.current());
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   /* Close everything on navigation and when crossing the inline breakpoint. */
   useEffect(() => {
@@ -395,211 +230,113 @@ export function PillNav({
 
   return (
     <div ref={rootRef} onKeyDown={onKeyDown}>
-      {/* ---------- The bar: full width, flush with the top edge ---------- */}
+      {/* 🔴 THE PAINTED SURFACE IS THE <header>, NOT THE <nav>. The header
+          spans the viewport so the cream runs edge to edge and sits flush at
+          `top-0`; the nav inside it is `container-page`, so the contents stop
+          at the page gutter. Painting the nav instead would shrink the bar to
+          the container's width and leave the screen edges bare. */}
       <header className={cx('fixed inset-x-0 top-0 z-100', BAR)}>
         <nav
           aria-label="Primary"
-          className={cx('container-page relative flex items-center justify-between gap-4', BAR_HEIGHT)}
+          className={cx('container-page relative flex items-center gap-3 tablet:gap-5', BAR_HEIGHT)}
         >
-          {/* Brand, hard left. No pill behind it — on a full-bleed bar the
-              mark sits on the surface directly. */}
+          {/* The emblem, hard left.
+
+              `self-start` + `mt-1` from 1024px: at 108px it is taller than the
+              88px bar, and the bar is flush with the top of the screen, so
+              centring it would push 10px of the circle off-screen. Top-aligned,
+              the whole overhang falls BELOW the bar where there is room. On a
+              phone it is smaller than the bar and inherits `items-center`.
+
+              `prefetch={false}` because this is the THIRD link to `/` on
+              every page (the Home link and the overlay's copy of it both
+              point here, and both keep their prefetch), so prefetching it
+              again buys nothing. */}
           <Link
             href="/"
             aria-label={`${siteName} — home`}
-            /* `prefetch={false}` because this is the THIRD link to `/` on every
-               page: the rail's own `Home` item and the mobile overlay's copy of
-               it both point here too, and Next prefetches each one it finds in
-               the viewport. The other two are real navigation and keep their
-               prefetch; the brand mark is a duplicate destination, so its
-               prefetch buys nothing and just re-requests the route every time
-               the dev server invalidates its cache. */
             prefetch={false}
-            className="inline-flex shrink-0 items-center rounded-pill text-ink"
+            className={cx(MEDALLION, MEDALLION_SIZE, 'tablet:mt-1 tablet:self-start')}
           >
-            <Logo siteName={siteName} logo={logo} size="sm" />
+            <Logo siteName={siteName} logo={logo} size="sm" showName={false} />
           </Link>
 
-          {/* Links inline from 1024px up, centred on the page axis; the Menu
-              pill below it.
-
-              `onPointerLeave` is on the RAIL, not on each link: leaving one link
-              for its neighbour must not blank the capsule mid-travel — only
-              leaving the rail entirely sends it back to the current page.
-
-              The rail is a <div> wrapping the <ul> rather than being the <ul>:
-              the capsule must be a sibling of the list, and a <span> as a direct
-              child of <ul> is invalid markup — only <li> may go there. */}
-          <div
-            ref={railRef}
-            onPointerLeave={() => setHovered(null)}
-            /* CONCENTRIC RADII, and the reason this is an arbitrary 18px rather
-               than a token. The track's radius must equal the pill's radius
-               PLUS the padding between them — 12px + 6px — or the two curves
-               run at different rates and the capsule looks wedged into a
-               corner at each end. `rounded-card` (16px) was exactly right while
-               the padding was 4px; it stopped being right the moment the track
-               was opened up to `p-1.5`, and there is no 18px token. If the
-               padding changes again, this number changes with it.
-
-               Centred explicitly rather than leaning on `items-center` from the
-               flex parent — an absolutely positioned flex child takes its static
-               position from the parent's alignment, which is true but is the
-               kind of thing that quietly stops being true. */
-            className={cx(
-              /* 🔴 `w-max` IS LOAD-BEARING, NOT A TIDY-UP. An absolutely
-                 positioned box is sized by SHRINK-TO-FIT:
-                 min(max-content, available). With `left-1/2` and no `right`,
-                 "available" is only the distance from the 50% mark to the
-                 containing block's right edge — half the bar. As soon as the
-                 links need more than that, the track is clamped to 50% and the
-                 last link and its capsule spill out past the rounded end,
-                 while `-translate-x-1/2` recentres the CLAMPED box so the
-                 overflow is lopsided. `w-max` opts out of shrink-to-fit and
-                 sizes to the links themselves, whatever the bar's width. */
-              'glass-rail absolute left-1/2 top-1/2 hidden w-max -translate-x-1/2 -translate-y-1/2',
-              'rounded-[1.125rem] p-1.5 tablet:block',
-            )}
-          >
-            {/* The capsule. Behind the labels by paint order — it comes first in
-                the DOM and every label is `relative` — so no z-index needed. */}
-            <span
-              aria-hidden="true"
-              className={cx(
-                'glass-capsule pointer-events-none absolute left-0 top-0 rounded-pill',
-                'transition-[transform,width,height,opacity] duration-[420ms] ease-out-soft',
-                'motion-reduce:transition-none',
-                capsule ? 'opacity-100' : 'opacity-0',
-              )}
-              style={
-                capsule
-                  ? {
-                      transform: `translate3d(${capsule.x}px, ${capsule.y}px, 0)`,
-                      width: capsule.w,
-                      height: capsule.h,
-                    }
-                  : undefined
-              }
-            />
-
-            <ul className="flex items-center gap-1.5">
-              {nav.map((item, index) => {
+            {/* `ml-auto` here is what pushes the links AND everything after
+                them to the right cap, leaving the emblem alone on the left. */}
+            <ul className="ml-auto hidden items-center gap-1 tablet:flex">
+              {nav.map((item) => {
                 const active = isActive(item.href);
                 const expanded = openSubmenu === item.label;
                 /* The overlay renders the same groups, so the inline dropdown
                    needs its own id — two elements cannot share one. */
                 const submenuId = `nav-submenu-${slug(item.label)}`;
 
-                /* Soft whenever some OTHER link holds the spotlight. The
-                   spotlit link itself is never softened, so hovering always
-                   leaves exactly one label sharp. */
-                const softened = focusIndex !== null && focusIndex !== index;
-
-                /* The capsule measures the <li>, so the ref and the hover
-                   intent both belong on it — not on the <a>, which sits inside
-                   the pill's own padding and would hand back a shorter box.
-                   `focus` is here too, so the capsule follows the keyboard. */
-                const railItem = {
-                  ref: (el: HTMLLIElement | null) => {
-                    itemRefs.current[index] = el;
-                  },
-                  onPointerEnter: () => setHovered(index),
-                  onFocus: () => setHovered(index),
-                  onBlur: () => setHovered(null),
-                };
-
                 if (!item.children) {
                   return (
-                    <li key={item.label} {...railItem}>
+                    <li key={item.label}>
                       <Link
                         href={item.href}
                         aria-current={active ? 'page' : undefined}
-                        className={cx(PILL, SOFT_BASE, softened && SOFTENED, 'text-ink')}
+                        className={cx(LINK, active ? LINK_CURRENT : LINK_IDLE)}
                       >
-                        <span className={POP}>{item.label}</span>
+                        {item.label}
                       </Link>
                     </li>
                   );
                 }
 
                 return (
-                  <li key={item.label} {...railItem} className="relative">
-                    {/* Click-toggled at every width. Hover-only would strand
-                        touch users on the one item that has children. */}
+                  <li key={item.label} className="relative">
+                    {/* Click-toggled. Hover-only would strand touch users on
+                        the one item that has children. */}
                     <button
                       type="button"
                       aria-expanded={expanded}
                       aria-controls={submenuId}
                       onClick={() => setOpenSubmenu(expanded ? null : item.label)}
-                      className={cx(PILL, SOFT_BASE, softened && SOFTENED, 'text-ink')}
+                      className={cx(LINK, active || expanded ? LINK_CURRENT : LINK_IDLE)}
                     >
-                      <span className={POP}>
-                        {item.label}
-                        <Icon
-                          name="chevronDown"
-                          size={14}
-                          className={cx(
-                            'transition-transform duration-200',
-                            expanded && 'rotate-180',
-                          )}
-                        />
-                      </span>
+                      {item.label}
+                      <Icon
+                        name="chevronDown"
+                        size={15}
+                        className={cx('transition-transform duration-200', expanded && 'rotate-180')}
+                      />
                     </button>
 
-                    {/* Offset from the RAIL's bottom edge, not the link's: the
-                        rail's padding sits between them, so 0.75rem here is
-                        0.5rem of visible gap.
+                    {/* Hangs clear of the capsule: the link is 40px tall,
+                        centred in the 88px bar, so its box ends 24px short of
+                        the bar's edge — 2rem puts the panel 8px below it.
 
-                        STAYS MOUNTED, toggled with `inert` + `visibility` — the
-                        same rule as the mobile overlay, and for the same reason:
-                        `hidden` removes the panel outright, leaving the browser
-                        no "before" state to transition from, so the projects
-                        would appear fully formed with no motion at all.
-
-                        `inert` is what makes that safe. The project links are in
-                        the DOM while the menu is shut, and without it they would
-                        stay tabbable and announced — a closed menu that a
-                        keyboard or screen-reader user can still walk into. */}
+                        STAYS MOUNTED, toggled with `inert` + `visibility`, so
+                        it has a state to transition from; `inert` keeps a
+                        closed menu out of the tab order and the accessibility
+                        tree. */}
                     <ul
                       id={submenuId}
                       inert={!expanded}
                       className={cx(
-                        'absolute left-1/2 top-[calc(100%+0.75rem)] w-64 -translate-x-1/2 rounded-card bg-surface p-1.5',
+                        'absolute left-1/2 top-[calc(100%+2rem)] w-64 -translate-x-1/2 rounded-card bg-surface p-1.5',
                         MENU_SURFACE,
-                        /* The panel itself only fades and drops a few pixels;
-                           the staggered travel belongs to the rows inside it.
-                           Faster than the rows on purpose — the surface should
-                           already be there to receive them. */
                         'transition-[opacity,transform,visibility] duration-200 ease-out-soft',
                         'motion-reduce:transition-none',
-                        expanded ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-1 opacity-0',
+                        expanded
+                          ? 'visible translate-y-0 opacity-100'
+                          : 'invisible -translate-y-1 opacity-0',
                       )}
                     >
-                      {item.children.map((child, childIndex) => {
+                      {item.children.map((child) => {
                         const childActive = pathname === child.href;
                         return (
-                          <li
-                            key={child.label}
-                            /* Each project arrives after the one above it.
-                               Delay on the way IN only: closing all at once
-                               keeps the menu from feeling sticky to dismiss —
-                               same asymmetry as the mobile overlay rows. */
-                            className={cx(
-                              'transition-[opacity,transform] duration-300 ease-out-soft',
-                              'motion-reduce:transition-none',
-                              expanded ? 'translate-y-0 opacity-100' : '-translate-y-1 opacity-0',
-                            )}
-                            style={{
-                              transitionDelay: expanded ? `${60 + childIndex * 45}ms` : '0ms',
-                            }}
-                          >
+                          <li key={child.label}>
                             <Link
                               href={child.href}
                               aria-current={childActive ? 'page' : undefined}
                               className={cx(
-                                'flex min-h-10 items-center rounded-[0.5rem] px-3 text-body-sm transition-colors',
+                                'flex min-h-10 items-center rounded-lg px-3 text-body-sm transition-colors',
                                 childActive
-                                  ? 'bg-bg text-ink'
-                                  : 'text-ink-soft hover:bg-bg hover:text-ink',
+                                  ? 'bg-gold-soft text-ink'
+                                  : 'text-ink-soft hover:bg-gold-soft/55 hover:text-ink',
                               )}
                             >
                               {child.label}
@@ -612,57 +349,50 @@ export function PillNav({
                 );
               })}
             </ul>
-          </div>
 
-          {/* ---------- The two conversion actions, hard right ---------- */}
-          <div className="hidden shrink-0 items-center gap-1.5 tablet:flex">
-            {/* Call stands alone outside the rail, so it takes a chip of its own
-                rather than a travelling capsule — same glass family, one step
-                quieter, which is right for a secondary action. */}
-            <a {...anchorProps(telHref(phone))} className={cx(PILL, PILL_LIFT, 'text-ink')}>
-              <PillFace>
-                <Icon name="phone" size={15} />
-                Call
-              </PillFace>
-            </a>
-            {/* The CTA is the one pill that is already a solid object, so it
-                lifts on hover but takes no glass — a chip over it would only
-                mute it. Gold, per the design template's call to action. */}
-            <Link
-              href="/contact"
-              className={cx(
-                PILL,
-                PILL_LIFT,
-                'bg-linear-to-r from-gold-from to-gold-to text-ink hover:brightness-[1.05]',
-              )}
-            >
-              Book a site visit
-            </Link>
-          </div>
+            {/* The CTA, immediately after the links — NOT `ml-auto`. The <ul>
+                above already claimed the slack, so this sits tight against the
+                links as the last item in the right-hand group. */}
+            <div className="hidden shrink-0 items-center tablet:flex">
+              <Link href="/contact" className={cx(CTA, 'min-h-11 px-6 text-[1.0625rem]')}>
+                Book a site visit
+                <Icon
+                  name="arrowRight"
+                  size={17}
+                  className="transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none"
+                />
+              </Link>
+            </div>
 
-          <button
-            ref={toggleRef}
-            type="button"
-            className={cx(
-              PILL,
-              PILL_LIFT,
-              'shrink-0 border border-line bg-white/60 text-ink tablet:hidden',
-            )}
-            aria-expanded={menuOpen}
-            aria-controls="primary-navigation-overlay"
-            onClick={() => (menuOpen ? closeMenu() : setMenuOpen(true))}
-          >
-            {menuOpen ? 'Close' : 'Menu'}
-            <Icon name={menuOpen ? 'close' : 'menu'} size={18} />
-          </button>
+            {/* 🔴 BELOW 1024px THE DESIGN IS OURS, NOT THE PASTED ONE — the
+                comp only covers desktop.
+
+                The bar holds the MENU BUTTON ALONE. Book a site visit and Call
+                both live behind it, at the foot of the overlay: a second gold
+                pill beside Menu crowded a 64px bar rather than making the CTA
+                easier to reach. Nothing is lost — the overlay puts both in the
+                thumb zone, full width. */}
+            <div className="ml-auto flex shrink-0 items-center tablet:hidden">
+              <button
+                ref={toggleRef}
+                type="button"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border-[1.5px] border-gold-line bg-surface px-4 text-[1.0625rem] font-medium text-ink"
+                aria-expanded={menuOpen}
+                aria-controls="primary-navigation-overlay"
+                onClick={() => (menuOpen ? closeMenu() : setMenuOpen(true))}
+              >
+                <Icon name={menuOpen ? 'close' : 'menu'} size={18} />
+                {menuOpen ? 'Close' : 'Menu'}
+              </button>
+            </div>
         </nav>
       </header>
 
       {/* ---------- Mobile full-screen overlay ----------
           Stays mounted so it has a state to transition from. `inert` takes it
-          out of the focus order AND the accessibility tree while closed, which
-          is what `hidden` used to do — without costing the animation.
-          `pt-24` clears the 64px bar, which sits above this on z-index. */}
+          out of the focus order AND the accessibility tree while closed.
+          `pt-24` (96px) clears the nav, which reaches 76px on a phone; the
+          header sits above this on z-index. */}
       <div
         ref={sheetRef}
         id="primary-navigation-overlay"
@@ -672,9 +402,7 @@ export function PillNav({
           'fixed inset-0 z-95 flex flex-col overflow-y-auto overscroll-contain bg-bg',
           'px-5 pb-8 pt-24 tablet:hidden',
           'transition-[opacity,transform,visibility] duration-300 ease-out motion-reduce:transition-none',
-          overlayOpen
-            ? 'visible translate-y-0 opacity-100'
-            : 'invisible -translate-y-1 opacity-0',
+          overlayOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-1 opacity-0',
         )}
       >
         <ul className="flex flex-col">
@@ -704,7 +432,11 @@ export function PillNav({
                      button, so tapping it reveals the projects in place instead
                      of leaving the menu. */
                   <div className="flex items-center">
-                    <Link href={item.href} aria-current={active ? 'page' : undefined} className={cx(row, 'flex-1')}>
+                    <Link
+                      href={item.href}
+                      aria-current={active ? 'page' : undefined}
+                      className={cx(row, 'flex-1')}
+                    >
                       {item.label}
                     </Link>
                     <button
@@ -753,9 +485,10 @@ export function PillNav({
           })}
         </ul>
 
-        {/* The bar's top-right group has no room on a phone, so its two
-            actions land here instead — pinned to the bottom of the overlay,
-            inside thumb reach. */}
+        {/* BOTH of the capsule's actions live here on a phone — the menu button
+            is the only thing in the bar, so this is the ONLY route to the CTA
+            below 1024px. It gets the full desktop treatment (gradient gold, the
+            arrow) at full width, pinned to the bottom inside thumb reach. */}
         <div
           className={cx(
             'mt-auto flex flex-col gap-2 pt-10',
@@ -764,17 +497,15 @@ export function PillNav({
           )}
           style={{ transitionDelay: overlayOpen ? `${80 + nav.length * 45}ms` : '0ms' }}
         >
-          <Link
-            href="/contact"
-            className="inline-flex min-h-12 items-center justify-center rounded-pill bg-linear-to-r from-gold-from to-gold-to px-5 text-body-sm font-medium text-ink"
-          >
+          <Link href="/contact" className={cx(CTA, 'min-h-13 justify-center px-5 text-body-md')}>
             Book a site visit
+            <Icon name="arrowRight" size={17} />
           </Link>
           <a
             {...anchorProps(telHref(phone))}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-pill border border-line-strong px-5 text-body-sm font-medium text-ink"
+            className="inline-flex min-h-13 items-center justify-center gap-2 rounded-full border-[1.5px] border-gold-line bg-surface px-5 text-body-md font-medium text-ink"
           >
-            <Icon name="phone" size={16} />
+            <Icon name="phone" size={17} />
             {phone}
           </a>
         </div>

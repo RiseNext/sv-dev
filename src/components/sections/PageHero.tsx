@@ -22,11 +22,9 @@ export function PageHero({
   className?: string;
 }) {
   return (
-    /* `pt-28 tablet:pt-36` (112/144px) clears the fixed bar (64/80px) with
-       48–64px of air. Down from 160/224px along with the section rhythm. */
-    <header className={cx('px-gutter pb-4 pt-28 tablet:pt-36', className)}>
+    <header className={cx('px-gutter pb-4 pt-40 tablet:pt-56', className)}>
       <div className="container-page flex flex-col items-center text-center">
-        <p className="eyebrow animate-rise">{label}</p>
+        <p className="label-mono animate-rise font-mono">{label}</p>
         <h1
           className="mt-6 max-w-[18ch] text-heading-xl text-ink"
           style={{ animation: 'rise 700ms var(--ease-out-soft) 120ms backwards' }}

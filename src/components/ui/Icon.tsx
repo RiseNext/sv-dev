@@ -9,7 +9,6 @@ export type IconName =
   | 'bank'
   | 'bolt'
   | 'briefcase'
-  | 'building'
   | 'bus'
   | 'check'
   | 'chevronDown'
@@ -26,10 +25,8 @@ export type IconName =
   | 'fence'
   | 'hospital'
   | 'instagram'
-  | 'home'
   | 'key'
   | 'lamp'
-  | 'leaf'
   | 'mail'
   | 'mapPin'
   | 'menu'
@@ -41,6 +38,7 @@ export type IconName =
   | 'route'
   | 'ruler'
   | 'school'
+  | 'share'
   | 'shield'
   | 'shop'
   | 'star'
@@ -50,22 +48,10 @@ export type IconName =
   | 'wall'
   | 'whatsapp'
   | 'youtube'
-  | 'zoomIn';
+  | 'zoomIn'
+  | 'home';
 
 const shapes: Record<IconName, ReactNode> = {
-  arrowRight: <path d="M4 12h15m-6-6 6 6-6 6" />,
-  bank: (
-    <>
-      <path d="M3 10 12 4l9 6" />
-      <path d="M5 10v9M9.5 10v9M14.5 10v9M19 10v9M3 20h18" />
-    </>
-  ),
-  building: (
-    <>
-      <path d="M4.5 20.5V6.5L12 3.5v17M12 9.5h7.5v11M3 20.5h18" />
-      <path d="M7.5 8.5h1.5M7.5 12h1.5M7.5 15.5h1.5M15 13h1.5M15 16.5h1.5" />
-    </>
-  ),
   home: (
     <>
       <path d="M3.5 11 12 4l8.5 7" />
@@ -73,10 +59,11 @@ const shapes: Record<IconName, ReactNode> = {
       <path d="M10 20v-5.5h4V20" />
     </>
   ),
-  leaf: (
+  arrowRight: <path d="M4 12h15m-6-6 6 6-6 6" />,
+  bank: (
     <>
-      <path d="M5 19.5c-.5-8 4.5-14.5 15-15 .5 9.5-5 15-12.5 15H5Z" />
-      <path d="M5 19.5 14 10.5" />
+      <path d="M3 10 12 4l9 6" />
+      <path d="M5 10v9M9.5 10v9M14.5 10v9M19 10v9M3 20h18" />
     </>
   ),
   bolt: <path d="M13 2 5 13h5l-1 9 8-11h-5l1-9Z" />,
@@ -95,6 +82,17 @@ const shapes: Record<IconName, ReactNode> = {
     </>
   ),
   check: <path d="m5 13 4.5 4.5L19 7" />,
+  /* Three nodes and the two threads between them. Round caps on the threads
+     and true circles for the nodes, so it stays smooth at 16px — the box-and-
+     arrow share glyph goes muddy at that size. */
+  share: (
+    <>
+      <circle cx="18" cy="5.5" r="2.5" />
+      <circle cx="6" cy="12" r="2.5" />
+      <circle cx="18" cy="18.5" r="2.5" />
+      <path d="m8.2 10.8 7.6-4.1m-7.6 6.5 7.6 4.1" />
+    </>
+  ),
   chevronDown: <path d="m6 9.5 6 6 6-6" />,
   chevronRight: <path d="m9.5 6 6 6-6 6" />,
   city: (

@@ -1,15 +1,11 @@
 import type { MetadataRoute } from 'next';
 import { getProjects } from '@/lib/api/projects';
 
-const staticRoutes = [
-  '/',
-  '/about',
-  '/projects',
-  '/master-plan',
-  '/amenities',
-  '/location',
-  '/contact',
-];
+/* /master-plan, /amenities and /location were REMOVED — the routes no longer
+   exist, and each project page carries its own plan, amenities and location
+   sections instead. Listing a 404 in the sitemap is a crawl error, so they go
+   out of here at the same time as the pages. */
+const staticRoutes = ['/', '/about', '/projects', '/contact'];
 
 /* Now async, and sourced from the PUBLISHED project set — so a project added in
    the CMS appears here without a code change, and an archived one disappears.

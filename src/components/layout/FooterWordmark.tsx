@@ -3,18 +3,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /* =============================================================================
-   FOOTER WORDMARK — the name at full bleed, drawn up out of the band on scroll.
+   FOOTER WORDMARK — the name set to the band's width, drawn up out of it on
+   scroll.
 
    ─── WHY THE SIZE IS MEASURED AND NOT A `vw` CLAMP ────────────────────────
-   The look being matched has the name spanning the full width, edge to edge,
-   letters touching both sides. A `vw` font-size can only do that for ONE
-   string length: the reference word is six characters, "SV Developers" is
-   thirteen, and the value that fills the width for one overflows or underfills
-   for the other by a wide margin.
+   The name is set to a fixed FRACTION of the viewport (see FILL) rather than a
+   fixed size. A `vw` font-size could land on the same result for ONE string
+   length: the reference word is six characters, "SV Developers" is thirteen,
+   and the value that fills a given fraction for one overflows or underfills for
+   the other by a wide margin.
 
    🔴 AND THE STRING IS NOT OURS. `site.name` is a CMS field — an admin can
    change it to "SV Developers Pvt Ltd" this afternoon. A tuned `vw` would
-   silently overflow the viewport or leave a third of the band empty, with
+   silently overflow the viewport or leave two thirds of the band empty, with
    nothing in the repo to explain why. So the text is measured at a probe size
    and scaled to whatever the frame actually is, which is correct for any name
    at any width by construction.
@@ -41,6 +42,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 /* Measure at a round number and scale from it. Large enough that sub-pixel
    glyph rounding is noise rather than a visible error in the result. */
 const PROBE_PX = 100;
+
+/* How much of the frame's width the name is allowed to take.
+
+   🔴 THIS IS WHAT SETS THE BAND'S HEIGHT. The type is `whitespace-nowrap` on a
+   single line, so its height is its font-size — and the font-size is whatever
+   fills the width. Edge to edge (1.0) put a ~230px slab at the end of every
+   page on a desktop; there is no way to make the band shorter except to set
+   the name smaller, because nothing else is in it.
+
+   Fractional, not a fixed max — a `max-width` in px would go back to being
+   wrong at some widths, and the measured fit is the point of this file. The
+   name stays centred and the cream margin either side reads as deliberate. */
+const FILL = 0.78;
 
 export function FooterWordmark({ name }: { name: string }) {
   /* The clipping frame: the observed node, the measured width, and the only
@@ -72,7 +86,7 @@ export function FooterWordmark({ name }: { name: string }) {
     const measured = text.scrollWidth;
     if (!measured) return;
 
-    text.style.fontSize = `${(available / measured) * PROBE_PX}px`;
+    text.style.fontSize = `${((available * FILL) / measured) * PROBE_PX}px`;
   }, []);
 
   useEffect(() => {
@@ -140,13 +154,10 @@ export function FooterWordmark({ name }: { name: string }) {
     /* Decorative: `site.name` is already announced by the Logo above, so the
        whole block is hidden from assistive tech rather than read twice. */
     <div ref={frameRef} className="overflow-hidden" aria-hidden="true">
-      {/* NO horizontal padding, unlike the rest of the page: the letters are
-          meant to touch both edges.
-
-          `text-[17vw]` is only the PRE-MEASUREMENT value — close enough for
-          "SV Developers" that the correction on mount is imperceptible rather
-          than a jump from tiny to huge. `fit()` overwrites it with an inline
-          font-size immediately.
+      {/* `text-[13vw]` is only the PRE-MEASUREMENT value — close enough for
+          "SV Developers" at the current FILL that the correction on mount is
+          imperceptible rather than a jump from tiny to huge. `fit()` overwrites
+          it with an inline font-size immediately.
 
           🔴 `leading-[1.02]` AND NO NEGATIVE MARGIN — the whole name has to be
           intact. This carried `leading-[0.8]` with `-mb-[0.14em]`, which
@@ -163,7 +174,7 @@ export function FooterWordmark({ name }: { name: string }) {
       <p
         ref={textRef}
         data-reveal={shown ? 'shown' : 'pending'}
-        className="wordmark-rise mt-4 select-none whitespace-nowrap text-center font-display text-[17vw] leading-[1.02] text-white/70"
+        className="wordmark-rise mt-1 select-none whitespace-nowrap text-center font-display text-[13vw] leading-[1.02] text-bg/90"
       >
         {name}
       </p>

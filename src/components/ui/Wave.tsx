@@ -1,8 +1,9 @@
 import { cx } from '@/lib/cx';
 
-/* The design template's curved edge where a dark band meets the cream page.
+/* The curved edge where a coloured band meets the page (the project page's
+   photo cover and its closing band).
 
-   Drawn as the CREAM that is cut back into the band — laid over the band's top
+   Drawn as the PAGE colour cut back into the band — laid over the band's top
    or bottom edge — rather than as the band's own outline, so the band stays a
    plain rectangle with a solid background and nothing behind it can show
    through a gap. `preserveAspectRatio="none"` lets one path stretch to any
@@ -20,7 +21,7 @@ export function Wave({ edge, className }: { edge: 'top' | 'bottom'; className?: 
       viewBox="0 0 1440 80"
       preserveAspectRatio="none"
       className={cx(
-        'pointer-events-none absolute inset-x-0 block h-10 w-full text-cream tablet:h-16 desktop:h-20',
+        'pointer-events-none absolute inset-x-0 block h-10 w-full text-bg tablet:h-16 desktop:h-20',
         edge === 'top' ? 'top-0' : 'bottom-0',
         className,
       )}

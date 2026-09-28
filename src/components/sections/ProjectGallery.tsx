@@ -56,7 +56,7 @@ export function ProjectGallery({ images, name }: { images: readonly ImageRef[]; 
   const scrolls = canBack || canForward;
   const arrow = cx(
     'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full',
-    'border border-line-strong bg-surface text-ink shadow-[0_8px_20px_-12px_rgba(26,43,40,0.5)]',
+    'border border-line-strong bg-surface text-ink shadow-[0_8px_20px_-12px_rgba(92,68,28,0.45)]',
     'transition-opacity duration-200 hover:bg-bg disabled:pointer-events-none disabled:opacity-0 tablet:flex',
   );
 

@@ -59,6 +59,9 @@ export function Lightbox({
       <button
         ref={triggerRef}
         type="button"
+        /* `theme-light`: on the project page's dark band the site's colour
+           tokens are re-pointed light; the white thumbnail card keeps the
+           normal ones. A no-op everywhere else. */
         className="theme-light group relative block w-full rounded-media bg-surface p-3 text-left tablet:p-5"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
@@ -85,9 +88,9 @@ export function Lightbox({
 
       {open ? (
         <div
-          /* `theme-light` keeps `bg-ink` the near-black it was written as — on
-             a dark band it would otherwise resolve to cream. `on-dark`
-             still turns the focus ring white for the controls inside. */
+          /* `theme-light` keeps `bg-ink` the near-black it was written as —
+             opened from a dark band it would otherwise resolve to off-white.
+             `on-dark` still turns the focus ring white for the controls. */
           className="theme-light on-dark fixed inset-0 z-200 flex flex-col gap-4 bg-ink/95 p-4 tablet:p-6"
           role="dialog"
           aria-modal="true"
