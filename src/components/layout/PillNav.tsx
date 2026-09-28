@@ -24,17 +24,25 @@ import type { ImageRef, NavLink } from '@/types/content';
    jamming into the screen edge.
 
    ─── THE EMBLEM HANGS BELOW, NEVER ABOVE ──────────────────────────────────
-   At advertisement scale the emblem (128px) is taller than the bar (88px), and
-   with the bar flush to the top there is no room above it — anything hanging
-   up there is cut off by the viewport. So it is TOP-ALIGNED (`self-start`)
-   with a few pixels of inset and spills downward only. On a phone it is
-   smaller than the bar and simply centres.
+   At advertisement scale the emblem is taller than the bar at both widths —
+   96 over 64 on a phone, 128 over 88 from 1024px — and with the bar flush to
+   the top there is no room above it; anything hanging up there is cut off by
+   the viewport, permanently, because you cannot scroll up to reach it. So it
+   is TOP-ALIGNED (`self-start`) with a few pixels of inset and spills downward
+   only, at every width.
 
    ─── THE NUMBERS EVERY "CLEAR THE NAV" OFFSET DEPENDS ON ───────────────────
-   Bar 64px tall on a phone, 88px from 1024px, starting at y=0. On a phone
-   nothing overhangs it, so the nav ends at 64px; from 1024px the emblem hangs
-   to 132px. Hero's `pt-24 tablet:pt-36` clears both, as does
-   `scroll-padding-top` in globals.css.
+   Bar 64px tall on a phone, 88px from 1024px, starting at y=0. THE EMBLEM
+   OVERHANGS AT BOTH WIDTHS, so the nav's real bottom edge is the emblem's, not
+   the bar's: 100px on a phone (4px top margin + a 96px medallion) and 132px
+   from 1024px.
+
+   Everything that has to clear the nav is measured against THOSE two numbers:
+     · Hero            `pt-28 tablet:pt-36`  — 112 / 144
+     · Menu overlay    `pt-30`               — 120, phone only
+     · globals.css     `scroll-padding-top: 8.5rem` — 136, both
+   The phone figures used to be 20px smaller, from when the emblem still fitted
+   inside the bar. If the medallion grows again, these are what move with it.
 
    ─── WHAT IS IN THE BAR, AND WHERE ────────────────────────────────────────
    TWO GROUPS, HARD LEFT AND HARD RIGHT, with the whole middle left empty. The
@@ -57,30 +65,39 @@ import type { ImageRef, NavLink } from '@/types/content';
 
 const INLINE_NAV = '(min-width: 64rem)';
 
-/* 🔴 THESE FOUR MOVE TOGETHER, and the arithmetic is the whole point:
+/* 🔴 THESE THREE MOVE TOGETHER, and the arithmetic is the whole point:
 
      BADGE.sm in Logo.tsx = medallion − 8   (its 2px ring + 2px band per side)
 
-   Phone: bar 64, medallion 52, badge 44 — fully contained, nothing overhangs.
+   🔴 THE EMBLEM IS BIGGER THAN THE BAR AT EVERY WIDTH, ON PURPOSE:
 
-   🔴 FROM 1024px THE EMBLEM IS BIGGER THAN THE BAR, ON PURPOSE: bar 88,
-   medallion 128, badge 120. The brand has to read at advertisement scale and
-   THE BAR MUST NOT GROW TO SUIT IT — a 120px-tall bar was tried and was wrong;
-   it turned the nav into a block. So the emblem hangs 44px BELOW the bar
-   instead, while staying inside the page gutter horizontally. The bar keeps
-   its slim proportion, the mark gets its size.
+     Phone   bar 64, medallion 96,  badge 88  — hangs 36px below
+     1024px+ bar 88, medallion 128, badge 120 — hangs 44px below
 
-   This works only because the bar's height is fixed (`h-22`, not `min-h-`) and
-   it carries no `overflow-hidden` — a taller flex child then spills out of it
-   instead of stretching it. */
-const MEDALLION_SIZE = 'size-13 tablet:size-32'; /* 52px / 128px */
+   The brand has to read at advertisement scale and THE BAR MUST NOT GROW TO
+   SUIT IT — a 120px-tall bar was tried and was wrong; it turned the nav into a
+   block. So the emblem hangs BELOW the bar instead, while staying inside the
+   page gutter horizontally. The bar keeps its slim proportion, the mark gets
+   its size.
+
+   🔶 THE PHONE USED TO BE THE EXCEPTION: medallion 52, badge 44, fully
+   contained in the bar. It was reported as too small to read — and it was, the
+   word DEVELOPERS inside the emblem is illegible under about 60px, which is
+   the whole reason the desktop mark is 128. A phone is where the brand is seen
+   most, so it now uses the same overhang the desktop always did, scaled to its
+   own bar: 96/64 is the same 1.5 ratio as 128/88.
+
+   This works only because the bar's height is fixed (`h-16`/`h-22`, not
+   `min-h-`) and it carries no `overflow-hidden` — a taller flex child then
+   spills out of it instead of stretching it. */
+const MEDALLION_SIZE = 'size-24 tablet:size-32'; /* 96px / 128px */
 const BAR_HEIGHT = 'h-16 tablet:h-22'; /* 64px / 88px */
 
-/* The medallion's frame, kept DELIBERATELY THIN now that it lives inside the
-   bar: a 2px gold ring and a 2px white band, no more. The heavier ring the
-   overhanging version carried ate 18px of a circle that is now 52px on a phone,
-   which left the wordmark under the mark illegible. No drop shadow either — it
-   is on the bar, not above it, and a shadow here only reads as grime. */
+/* The medallion's frame, kept DELIBERATELY THIN: a 2px gold ring and a 2px
+   white band, no more. An earlier, heavier ring ate 18px of the circle's
+   diameter, which on a phone left the wordmark inside the mark illegible —
+   the ring was winning the space the brand needed. No drop shadow either; a
+   shadow on this warm bar only reads as grime. */
 const MEDALLION = cx(
   /* `inline-flex` is load-bearing: <a> is inline by default, and width/height
      do not apply to an inline box. It is a flex item here so it would be
@@ -242,11 +259,15 @@ export function PillNav({
         >
           {/* The emblem, hard left.
 
-              `self-start` + `mt-1` from 1024px: at 108px it is taller than the
-              88px bar, and the bar is flush with the top of the screen, so
-              centring it would push 10px of the circle off-screen. Top-aligned,
-              the whole overhang falls BELOW the bar where there is room. On a
-              phone it is smaller than the bar and inherits `items-center`.
+              `self-start` + `mt-1` AT EVERY WIDTH, because at every width the
+              medallion is now taller than the bar. The bar is flush with the
+              top of the screen, so centring an oversized circle would push its
+              top off-screen — on a phone that would be 16px of it gone, and
+              there is no scrolling up to recover it. Top-aligned, the entire
+              overhang falls BELOW the bar, where the hero is.
+
+              (It was `tablet:` only while the phone emblem still fitted inside
+              the bar. It no longer does — see MEDALLION_SIZE.)
 
               `prefetch={false}` because this is the THIRD link to `/` on
               every page (the Home link and the overlay's copy of it both
@@ -256,7 +277,7 @@ export function PillNav({
             href="/"
             aria-label={`${siteName} — home`}
             prefetch={false}
-            className={cx(MEDALLION, MEDALLION_SIZE, 'tablet:mt-1 tablet:self-start')}
+            className={cx(MEDALLION, MEDALLION_SIZE, 'mt-1 self-start')}
           >
             <Logo siteName={siteName} logo={logo} size="sm" showName={false} />
           </Link>
@@ -391,8 +412,11 @@ export function PillNav({
       {/* ---------- Mobile full-screen overlay ----------
           Stays mounted so it has a state to transition from. `inert` takes it
           out of the focus order AND the accessibility tree while closed.
-          `pt-24` (96px) clears the nav, which reaches 76px on a phone; the
-          header sits above this on z-index. */}
+          `pt-30` (120px) clears the nav, whose bottom edge on a phone is the
+          overhanging emblem at 100px, not the 64px bar. The header sits above
+          this on z-index, so the emblem hangs ONTO the open overlay — 20px of
+          clear air under it is what keeps the first menu row out from beneath
+          it. It was `pt-24` while the emblem still fitted inside the bar. */}
       <div
         ref={sheetRef}
         id="primary-navigation-overlay"
@@ -400,7 +424,7 @@ export function PillNav({
         aria-label="Site menu"
         className={cx(
           'fixed inset-0 z-95 flex flex-col overflow-y-auto overscroll-contain bg-bg',
-          'px-5 pb-8 pt-24 tablet:hidden',
+          'px-5 pb-8 pt-30 tablet:hidden',
           'transition-[opacity,transform,visibility] duration-300 ease-out motion-reduce:transition-none',
           overlayOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-1 opacity-0',
         )}

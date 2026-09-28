@@ -23,15 +23,19 @@ const FALLBACK = {
 
    The emblem is the whole brand in the bar — no name beside it. It sits INSIDE
    the capsule (see PillNav), so these two numbers are the medallion's outer
-   size (52px on a phone, 128px from 1024px) minus its 2px gold ring and 2px
+   size (96px on a phone, 128px from 1024px) minus its 2px gold ring and 2px
    white band on each side — 8px in total — and the mark fills the frame
    instead of floating inside it. Change them together with MEDALLION_SIZE in
    PillNav; that file carries the arithmetic tying both to the bar's height.
 
-   120px from 1024px is deliberate and large: the brand is meant to read at
-   advertisement scale on desktop, and it is the tallest thing on the page's
-   first screen after the hero type. */
-const BADGE = { xs: 'size-7', sm: 'size-11 tablet:size-30', lg: 'size-12' } as const;
+   BOTH NUMBERS ARE DELIBERATELY LARGE: the brand is meant to read at
+   advertisement scale, and the emblem is the tallest thing on the page's first
+   screen after the hero type. The phone was 44px until it was reported as
+   unreadable — which it was, since the word DEVELOPERS inside this emblem
+   disappears below roughly 60px. That is the same reason the desktop mark is
+   120, so the phone now follows the same rule rather than being the exception
+   to it. */
+const BADGE = { xs: 'size-7', sm: 'size-22 tablet:size-30', lg: 'size-12' } as const;
 
 /* The committed emblem is a square JPEG whose gold ring spans only 71% of the
    width (measured), on a white margin. Zoomed 1.34× the ring lands just inside
