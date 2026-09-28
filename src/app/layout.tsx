@@ -3,6 +3,7 @@ import localFont from 'next/font/local';
 import { Footer } from '@/components/layout/Footer';
 import { PillNav } from '@/components/layout/PillNav';
 import { SkipLink } from '@/components/layout/SkipLink';
+import { WhatsAppFloat } from '@/components/layout/WhatsAppFloat';
 import { SmoothScroll } from '@/components/layout/SmoothScroll';
 import { buildNav } from '@/content/site';
 import { getSiteSettings } from '@/lib/api/site';
@@ -115,6 +116,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <PillNav nav={nav} siteName={site.name} phone={site.phone} logo={site.logo} />
         <main id="main">{children}</main>
         <Footer />
+        {/* Last in the body, after the footer: it is `fixed`, so its position
+            is unaffected, but it should be the final thing a screen reader and
+            the tab order reach rather than something between the content and
+            the footer.
+
+            Renders NOTHING while `site-settings.whatsapp` is a [BRACKETED]
+            placeholder or blank — a floating button that goes nowhere is worse
+            than no button — so it is safe to mount unconditionally here. */}
+        <WhatsAppFloat whatsapp={site.whatsapp} siteName={site.name} />
       </body>
     </html>
   );

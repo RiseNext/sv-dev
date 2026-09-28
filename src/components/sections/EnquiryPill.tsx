@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useId, useState, type FormEvent } from 'react';
 import { Icon } from '@/components/ui/Icon';
-import { isPlaceholder } from '@/lib/href';
+import { isPlaceholder, whatsappHref } from '@/lib/href';
 
 /* The reference captures an email here. A plot buyer gives a phone number, so
    this captures a number and hands it to WhatsApp — the channel this market
@@ -49,8 +49,14 @@ export function EnquiryPill({
     const message = `Hi ${siteName}, please call me about a site visit. My number is ${digits}.`;
 
     if (whatsappReady) {
+      /* 🔴 `whatsappHref`, NOT a hand-built wa.me URL. This stripped the
+         non-digits and stopped there, which for the stored "9306432399" gave
+         `wa.me/9306432399` — ten digits with no country code, which wa.me
+         cannot resolve. The helper adds the 91 (and drops a leading 0), and is
+         what the floating button and the contact page already use, so the same
+         number now opens the same chat from all three. */
       window.open(
-        `https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`,
+        `${whatsappHref(whatsapp)}?text=${encodeURIComponent(message)}`,
         '_blank',
         'noopener,noreferrer',
       );

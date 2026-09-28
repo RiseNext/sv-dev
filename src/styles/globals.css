@@ -85,6 +85,12 @@
   --color-line: rgba(122, 90, 34, 0.16);
   --color-line-strong: rgba(122, 90, 34, 0.3);
   --color-line-invert: rgba(255, 255, 255, 0.18);
+  /* WhatsApp's own green, for the floating chat button and nothing else. It is
+     a BRAND colour, not a palette one: it is recognised on sight, which is the
+     whole reason the button works, so it is not tuned to sit with the golds.
+     3.57:1 on the cream page — under the 3:1 a control needs by a hair on its
+     own, which is why the button carries a white ring as well as this fill. */
+  --color-whatsapp: #169c47;
   /* ---------- Glass -------------------------------------------------------
      The top bar's material, split into three parts so it can be re-skinned
      without touching the component: the body of the plate, the lit top edge
