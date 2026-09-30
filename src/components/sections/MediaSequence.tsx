@@ -280,7 +280,15 @@ export function MediaSequence({ items }: { items: readonly Item[] }) {
                   className={cx(
                     'absolute right-0 top-0 z-20 overflow-hidden',
                     'rounded-bl-3xl rounded-tr-band',
-                    'border-b border-l border-line-strong bg-surface',
+                    /* RECESSED, not flush. The floor is the PAGE's cream
+                       rather than the card's white, so the well reads as a
+                       hole cut through the card to what lies under it; the
+                       paired inset shadows are the walls — warm shade at the
+                       top-left where the light does not reach, a white
+                       highlight at the bottom-right where it pools. Flip
+                       those two and the tab pops out instead of sinking in. */
+                    'border-b border-l border-line bg-bg',
+                    'shadow-[inset_3px_3px_7px_-1px_rgba(92,68,28,0.24),inset_-2px_-2px_5px_-1px_rgba(255,255,255,0.85)]',
                     /* The BOX the tab must fit inside, per width. Not the tab's
                        size — its bounds. See `THE TAB HUGS THE LOGO` above. */
                     '[--tab-h:6rem] [--tab-w:13rem]',
