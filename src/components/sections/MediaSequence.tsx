@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import type { CSSProperties } from 'react';
 import { LinkButton } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { ShareButton } from '@/components/ui/ShareButton';
@@ -75,6 +76,59 @@ type Item = Pick<Project, 'slug' | 'name' | 'category' | 'locality' | 'summary' 
     logo?: ImageRef | null;
   };
 
+/**
+ * The tab's own shape, from the logo's.
+ *
+ * ─── THE TAB HUGS THE LOGO, IN BOTH DIRECTIONS ──────────────────────────────
+ * `--tab-h` and `--tab-w` are a BOUNDING BOX, not a size. The tab is the
+ * largest box of the logo's own proportions that fits inside it, which is
+ * `object-contain` applied to the CONTAINER rather than to the picture.
+ *
+ * This matters because fixing the height and letting only the width follow
+ * looked wrong for anything but a square mark: a 3:1 wordmark got a 240×176
+ * tab and filled 208×69 of it, floating in empty bands, and a 10:1 banner
+ * filled 208×20 of the same box. Now the wordmark gets a 240×80 tab and the
+ * banner a 240×24 strip — each one fills what it is given.
+ *
+ * It is also strictly SAFER for the copy beside it: a wide logo now produces a
+ * SHORTER tab, so the shapes that reach furthest across the card are the ones
+ * that stop highest up it.
+ *
+ * `--logo-r` is width ÷ height as a bare number, because `calc()` needs a
+ * scalar; `aspectRatio` carries the same ratio for the height to fall out of.
+ *
+ * ─── THE FALLBACK IS NOT COSMETIC ───────────────────────────────────────────
+ * `width`/`height` cross the network, so neither is a guarantee: a record can
+ * arrive with one missing, with a zero, or with a string. Anything that is not
+ * two usable positive numbers falls back to square, because `aspect-ratio: 0`
+ * or a `NaN` in `calc()` collapses the tab to nothing and the logo vanishes
+ * entirely — far worse than a slightly wrong shape.
+ */
+const TAB_RATIO_MIN = 0.5; /* no narrower than 1:2  */
+const TAB_RATIO_MAX = 3.5; /* no wider   than 3.5:1 */
+
+function logoBox(logo: ImageRef | null | undefined): CSSProperties {
+  const width = Number(logo?.width);
+  const height = Number(logo?.height);
+  const usable =
+    Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0;
+
+  /* 🔴 CLAMPED, and not for taste. The tab carries a fixed padding, so past a
+     certain thinness the padding is larger than the tab: a 10:1 banner taken
+     literally produced a 240×24 tab whose inner box computed to −80×−8, and
+     the logo disappeared. The clamp is what guarantees the tab always has an
+     inside. Between these bounds it still takes the logo's own shape exactly;
+     beyond them `object-contain` letterboxes the remainder, which is the
+     correct place for the compromise to land. */
+  const raw = usable ? width / height : 1;
+  const ratio = Math.min(Math.max(raw, TAB_RATIO_MIN), TAB_RATIO_MAX);
+
+  return {
+    aspectRatio: String(ratio),
+    '--logo-r': String(ratio),
+  } as CSSProperties;
+}
+
 export function MediaSequence({ items }: { items: readonly Item[] }) {
   if (items.length === 0) return null;
 
@@ -96,6 +150,13 @@ export function MediaSequence({ items }: { items: readonly Item[] }) {
             (photo, i, all) => photo?.src && all.findIndex((p) => p?.src === photo.src) === i,
           );
 
+          /* 🔶 THE CMS IS THE ONLY SOURCE. A logo committed to `public/` stood
+             here briefly while the admin field was being built; it was removed
+             on request so that uploading a logo is the one and only way one
+             appears. Until the backend emits the field this is `undefined` on
+             every project and the tab renders its empty state. */
+          const logo = item.logo;
+
           return (
             <li key={item.slug} className="mb-10 last:mb-0 tablet:mb-16">
               <div
@@ -113,51 +174,127 @@ export function MediaSequence({ items }: { items: readonly Item[] }) {
                     move when one arrives. No project has one today — see the
                     🔶 note on `logo` above — so what ships is the empty plate.
 
-                    ─── WIDE, NOT SQUARE ─────────────────────────────────────
-                    A property logo is a wordmark far more often than a badge,
-                    and a square starves it: 240px of width fits a name, where
-                    the same area as a square fits about five letters. Roughly
-                    18% of the card's width at every size, which is the
-                    proportion the template draws. A square logo simply centres
-                    in it — CONTAIN, never cover, because a logo cropped to fill
-                    its box is a ruined logo.
+                    ─── THE PLATE TAKES THE LOGO'S SHAPE ─────────────────────
+                    🔴 ITS WIDTH IS NOT A CONSTANT. Only the HEIGHT is fixed;
+                    the width comes from `aspect-ratio`, set per project from
+                    the CMS's own `logo.width / logo.height`. A circular badge
+                    gets a square plate, a wordmark gets a wide one, and both
+                    fill the plate they are given.
 
-                    ─── WHY IT SITS OVER THE EDGE ────────────────────────────
-                    NOT decoration — it is what buys the size. The copy beside
-                    it is vertically centred in a tall card, and a plate this
-                    large sitting fully inside the corner would run under the
-                    heading of any project with a long name. Lifted onto the
-                    edge, about a third of it is above the card and the rest
-                    lands in the empty band over the copy, clearing it at every
-                    width. The overhang is a few pixels short of the page
-                    gutter, so nothing can push a horizontal scrollbar, and it
-                    is smaller than the gap between cards, so it cannot touch
-                    the card above.
+                    This was a fixed 2.5:1 box, and that is wrong for a badge:
+                    `object-contain` scales a 1:1 mark to the HEIGHT, so the SV
+                    emblem would have sat 96px wide inside a 240px plate with
+                    70px of dead margin either side — a logo marooned in a box
+                    rather than a logo. Sizing the box instead of padding the
+                    picture is what makes one field hold either shape.
 
-                    Solid `bg-surface`, not a tint: it crosses the card's edge,
-                    so it stands on the page's cream, on the card's white and on
-                    the photograph all at once, and it has to read the same on
-                    all three. Above the photograph's own arrows (`z-10`) —
-                    at phone widths the card is a column and this corner belongs
-                    to the PHOTOGRAPH.
+                    `max-w-*` is the guard, not the size: an extreme banner of a
+                    logo stops at the old width rather than reaching across the
+                    card, and letterboxes inside it. CONTAIN throughout — a logo
+                    cropped to fill its box is a ruined logo.
+
+                    With no logo there is no aspect to take, so the empty plate
+                    falls back to 1:1 — square, because that is the shape of the
+                    mark this site actually uses.
+
+                    ─── IT SITS INSIDE THE CARD ──────────────────────────────
+                    Fully within the white container, inset 20px from its top
+                    and right edges. It used to straddle the corner, and the
+                    only reason was width: at a fixed 240px the plate reached
+                    far enough across the copy column to run under the heading,
+                    so it had to be lifted out of the flow. Taking its shape
+                    from the logo fixed that — a square mark is 96px wide, which
+                    clears the copy, so the overhang bought nothing and is gone.
+
+                    🔴 HOW BIG IT MAY GET IS NOT A TASTE QUESTION — the copy
+                    beside it sets a ceiling, and the ceiling is DIFFERENT at
+                    each width. Read this before enlarging it again.
+
+                    The copy is centred vertically in a card whose height comes
+                    from the photograph, so its rows land at roughly:
+
+                      label     123 → 139     short, left-aligned
+                      name      151 → 187     short, left-aligned
+                      locality  195 → 211     short, left-aligned
+                      summary   227 → 367     RUNS THE FULL COLUMN WIDTH
+
+                    A tab of height H, flush at the top, covers the rightmost H
+                    pixels down to H. Two rules fall out:
+
+                      1. H MUST STAY ABOVE 227. The summary uses the whole
+                         column, so there is no width left to share with it.
+                         This is the hard limit at every size.
+                      2. Below 227 it may overlap the label, name and locality,
+                         because those are short and left-aligned. What matters
+                         is that the column keeps roughly 240px of usable width
+                         for the longest label.
+
+                    Rule 2 is what makes the ceiling width-dependent. From
+                    1280px the column carries ~430px of text, so a 176px tab
+                    still leaves ~296px — comfortable. Between 1024 and 1280 the
+                    same column is only ~274px wide, and a tab that big would
+                    leave ~130px, which the mono label cannot fit into. So there
+                    the tab stays at 112px, just under the 123px where the label
+                    begins, and overlaps nothing at all.
+
+                    On a phone there is no constraint of this kind: the card is
+                    a column, the tab is on the PHOTOGRAPH, and the copy starts
+                    below it. It is sized for the picture, not the text.
+
+                    ─── IT IS A CORNER TAB, NOT A FLOATING BADGE ─────────────
+                    Per the sketch: NO INSET. It shares the card's top edge and
+                    the card's right edge, so two of its own corners are the
+                    card's corners and two are interior.
+
+                    That is what the radii say, and they are not decoration:
+                      · top-right  `rounded-tr-band` — the CARD's own 40px
+                        radius. Anything smaller and the tab's corner would
+                        stand proud of the card's curve; anything larger and it
+                        would cut inside it. It must be the same number.
+                      · bottom-left `rounded-bl-3xl` — the one free corner, the
+                        only one that reads as the tab's own shape.
+                      · top-left and bottom-right stay SQUARE, because they sit
+                        on the card's top and right edges. Rounding them would
+                        open a notch against a straight edge.
+
+                    The border follows the same logic: left and bottom only. The
+                    top and right are the card's outline, and a border there
+                    would double it. No drop shadow either — flush in the
+                    corner it would spill outside the card.
+
+                    `p-4` is doing more than breathing room from 1024px: a 40px
+                    corner curve reaches about 12px diagonally into the box, so
+                    the padding is what keeps a square logo clear of it.
+
+                    Solid `bg-surface`, not a tint, and above the photograph's
+                    own arrows (`z-10`): it stands on the card's white at
+                    desktop and on the photograph on a phone, and has to read
+                    the same on both.
 
                     It is `aria-hidden` ONLY while empty: an empty plate is
                     nothing to announce, but a real logo is the project's mark
                     and carries the CMS's alt text. ---- */}
                 <div
-                  aria-hidden={item.logo?.src ? undefined : 'true'}
+                  aria-hidden={logo?.src ? undefined : 'true'}
+                  style={logoBox(logo)}
                   className={cx(
-                    'absolute -right-2 -top-5 z-20 h-16 w-36 overflow-hidden rounded-2xl',
-                    'border border-line-strong bg-surface',
-                    'shadow-[0_12px_28px_-16px_rgba(92,68,28,0.65)]',
-                    'tablet:-right-3 tablet:-top-7 tablet:h-22 tablet:w-52',
-                    'desktop:-right-4 desktop:-top-8 desktop:h-24 desktop:w-60',
+                    'absolute right-0 top-0 z-20 overflow-hidden',
+                    'rounded-bl-3xl rounded-tr-band',
+                    'border-b border-l border-line-strong bg-surface',
+                    /* The BOX the tab must fit inside, per width. Not the tab's
+                       size — its bounds. See `THE TAB HUGS THE LOGO` above. */
+                    '[--tab-h:6rem] [--tab-w:13rem]',
+                    'tablet:[--tab-h:7rem] tablet:[--tab-w:14rem]',
+                    'desktop:[--tab-h:11rem] desktop:[--tab-w:15rem]',
+                    /* Width is whichever bound the logo hits first; height then
+                       falls out of `aspect-ratio`. */
+                    'w-[min(var(--tab-w),calc(var(--tab-h)*var(--logo-r)))]',
                   )}
                 >
-                  {item.logo?.src ? (
+                  {logo?.src ? (
                     <Image
-                      src={item.logo.src}
-                      alt={item.logo.alt || `${item.name} logo`}
+                      src={logo.src}
+                      alt={logo.alt || `${item.name} logo`}
                       fill
                       sizes="(min-width: 1280px) 240px, (min-width: 1024px) 208px, 144px"
                       className="object-contain p-3 tablet:p-4"
