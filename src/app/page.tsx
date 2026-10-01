@@ -1,7 +1,6 @@
 import { LinkButton } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { Reveal } from '@/components/ui/Reveal';
-import { Corridor } from '@/components/sections/Corridor';
 import { FaqSection } from '@/components/sections/FaqSection';
 import { Hero } from '@/components/sections/Hero';
 import { MediaSequence } from '@/components/sections/MediaSequence';
@@ -157,7 +156,16 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <Corridor />
+      {/* The "Connectivity" section — eyebrow, "On the corridor, not beyond
+          it", the corridor lead and the eight-row proximity list — was removed
+          on request, and Corridor.tsx deleted with it. Its brochure location
+          map had already gone from the section a step earlier. Nothing linked
+          to its `#corridor-title` anchor, so no navigation broke.
+
+          It leaves the whole `location` export in content/pages.ts unused, plus
+          `media.locationMap` and /images/location-thumb.svg — see the 🔶 note
+          there. They are kept rather than deleted on assumption: those eight
+          drive times are the only place the corridor claims are written down. */}
 
       {/* The "How buying works" Statement and its StepList were removed on
           request — the whole area, heading and steps together. Nothing linked
