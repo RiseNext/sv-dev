@@ -25,7 +25,14 @@ export const media = {
   heroPortrait: '/images/hero-portrait.svg',
   /* `masterPlan` and `plotSizes` were removed with /master-plan, and their two
      placeholder SVGs deleted from public/images — the page was their only
-     reader. `locationMap` stays: <Corridor> on the home page still uses it. */
+     reader.
+
+     🔶 `locationMap` IS NOW UNUSED. <Corridor> was its last reader and the map
+     container was removed from that section on request. Nothing renders this
+     entry or /images/location-thumb.svg any more — both can be deleted, and
+     doing so takes the repo one SVG closer to dropping `dangerouslyAllowSVG`
+     from next.config.mjs (see the note there). Left in place for now rather
+     than deleted on assumption, since the map may yet come back. */
   locationMap: {
     src: '/images/location-thumb.svg',
     alt: 'Map thumbnail showing the location of the layout.',
@@ -173,10 +180,15 @@ export const about = {
 
 /* ---------- Location ------------------------------------------------------- */
 
-/* 🔴 THIS SURVIVED THE /location DELETION ON PURPOSE, and is no longer page
-   copy: <Corridor> on the HOME page reads `intro.eyebrow`, `hero.lead` and
-   `proximity` from here. Deleting the block with the route would have taken a
-   home-page section down with it.
+/* 🔶 NOTHING READS THIS ANY MORE. It survived the /location deletion because
+   <Corridor> on the home page still read `intro.eyebrow`, `hero.lead` and
+   `proximity`; that section was removed on request and Corridor.tsx deleted,
+   so this block now has no reader at all.
+
+   It is kept rather than deleted because those eight drive times are the only
+   place the corridor claims are written down anywhere in the repo, and they
+   are [BRACKETED] placeholders someone still has to measure. Delete the whole
+   export once that is settled elsewhere — nothing will break.
 
    `growth` — the "Why this corridor" feature list — did go: /location was its
    only reader. */
