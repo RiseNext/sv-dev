@@ -28,7 +28,29 @@ import type { NavLink } from '@/types/content';
 
 type ProjectLink = { slug: string; name: string };
 
-/* Primary navigation: Home · About Us · Projects.
+/* Primary navigation: Home · About Us · Projects · Blog.
+
+   🔶 BLOG IS THE FOURTH PILL, AND THE BAR'S WIDTH BUDGET HAD ROOM FOR IT.
+   PillNav's budget (the long note above WORDMARK in that file) was written for
+   three pills, so it was worth measuring before adding one. MEASURED in
+   headless Chrome at 1024 / 1280 / 1440 / 1920, with the pill in place:
+
+     the Blog pill                    64px (+8px gap)
+     clear space between the wordmark
+       and the links                  111px at 1024, 206px at 1280
+     nav overflow                     0 at every width
+     page horizontal overflow         0 at every width
+
+   ⚠️ THOSE NUMBERS DISAGREE WITH THE ESTIMATES IN PillNav's COMMENT, which
+   run high — it budgets ~261px for the CTA (really 192) and ~364px for the
+   one-line wordmark at 1280 (really 284). So the bar had roughly 200px more
+   slack than that note implies, and NOTHING had to be given up to fit this
+   pill: no padding came down, no cap moved. Re-measure rather than trusting
+   either set of figures before adding a FIFTH route — at 1024px, where the
+   wordmark wraps to two lines, the remaining 111px is the real ceiling.
+
+   It goes LAST rather than beside About Us: the bar reads left to right as
+   who we are, what we sell, what we have written, and the gold CTA closes it.
 
    /master-plan, /amenities and /location ARE GONE — routes, pages and copy,
    removed 28 Sep 2026. They were written as site-wide pages back when there was
@@ -58,6 +80,7 @@ export function buildNav(projects: readonly ProjectLink[]): readonly NavLink[] {
         })),
       ],
     },
+    { label: 'Blog', href: '/blog' },
   ];
 }
 
@@ -76,6 +99,7 @@ export function buildFooterNav(
       links: [
         { label: 'About us', href: '/about' },
         { label: 'All projects', href: '/projects' },
+        { label: 'Blog', href: '/blog' },
         { label: 'Contact', href: '/contact' },
       ],
     },

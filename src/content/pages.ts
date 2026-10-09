@@ -113,41 +113,115 @@ export const home = {
 
 /* ---------- About --------------------------------------------------------- */
 
+/* ⚠️ A REAL, NAMED INDIVIDUAL — not placeholder copy like the rest of this
+   file. Nothing in `leadershipPeople` may be invented or embellished: every
+   clause is the company's own wording. If a role or a figure changes, change it
+   here; do not guess at it.
+
+   🔶 ONE PROFILE, DOWN FROM TWO. Mr. Rajendra Prasad Reddy's entry was removed
+   on the owner's instruction (8 Oct 2026) and Mrs. Sahitya Reddy's role changed
+   from Managing Director to Chairman at the same time. THE `story.body`
+   PARAGRAPH BELOW MOVED WITH IT — it named him as Chairman, so leaving it would
+   have put two different Chairmen on one page. The two are a pair: a profile
+   cannot be removed here without checking that paragraph.
+
+   🔴 THE SUPPLIED BIO SAID "As the Managing Director of her company". It reads
+   "Chairman" here. That is NOT a transcription slip — the owner's instruction
+   to make her Chairman came one message before the bio, and the bio is the
+   company's existing About-page text, written under the old title. Printing it
+   verbatim would have put the role label "Chairman" directly above a sentence
+   calling her Managing Director, on the same card. If the old title was the
+   intended one, this word and `role` below both flip back together.
+
+   🔴 "Mrs." IS THE SECOND DEVIATION FROM THE SUPPLIED TEXT, on the owner's
+   instruction (9 Oct 2026): the bio arrived reading "Ms." throughout. It is
+   changed in ALL THREE places the honorific appears — `name` and `body` here,
+   and the "We are led by Chairman" line in `story.body` below — because two of
+   them sit on the same page and one page cannot address her two ways.
+
+   Those two words aside, every clause is verbatim. */
+type Leader = {
+  name: string;
+  role: string;
+  body: string;
+  /** A portrait, shown beside the bio. ABSENT ON PURPOSE: none has been
+   *  supplied yet, so <AboutPage> reserves the slot instead of collapsing it.
+   *  Add the image here and the slot fills with no layout change. */
+  photo?: ImageRef;
+};
+
+const leadershipPeople: readonly Leader[] = [
+  {
+    name: 'Mrs. Sahitya Reddy',
+    role: 'Chairman',
+    body: 'Mrs. Sahitya Reddy is a dynamic and successful woman entrepreneur with extensive experience across various industries. As the Chairman of her company, she leads the Marketing, Vendor Management, and HR functions, driving strategic growth and operational efficiency. Her leadership skills, vision, and ability to manage multiple facets of the business have significantly contributed to the company’s success.',
+  },
+];
+
+/* 🔴 THE COMPANY NAME IS DELIBERATELY ABSENT FROM THIS COPY.
+   The source wording names "SRR Developers Pvt. Ltd."; the CMS returns
+   "SV Developers" for `site.name`, and that is what the nav, the footer and
+   every SEO title render. Hardcoding either name here would put two different
+   companies on one page, so the sentences are written to carry the meaning
+   without the name and let the site's own branding say who it is.
+
+   README, "Before you go live", item 1 is this exact unresolved question.
+   Once the name is settled, the name can go back into the first sentence. */
 export const about = {
   hero: {
     eyebrow: 'About us',
     title: 'A plot business built on finishing things',
-    lead: 'SV Developers has been laying out and selling residential plots on the [ROAD NAME] corridor since [YEAR].',
+    lead: 'One of the leading and well-established real estate companies based in Hyderabad, developing residential plots, open plots and gated communities.',
   },
   story: {
-    eyebrow: 'Our approach',
+    eyebrow: 'Welcome',
     title: 'We sell what is already built',
     body: [
-      'SV Developers was started in [YEAR] by [FOUNDER NAME] after a decade of [BACKGROUND]. The premise has not changed since: buy land outright, complete the infrastructure, then sell.',
-      'That order costs more upfront and takes longer to bring to market. It also means a buyer can walk the road to their own plot on the day they book, which is the only thing that reliably separates a real layout from a drawing.',
-      'We have completed [0] layouts and handed over more than [000] plots. Every one of them is still standing and still maintained — the completed projects page exists so you can go and look.',
+      'We are one of the leading and well-established real estate companies based in Hyderabad — a dedicated and innovative property development company specialising in farm lands, villa plots, residential plots, gated communities and luxury real estate.',
+      /* Named Mr. Rajendra Prasad Reddy as Chairman until 8 Oct 2026. His
+         profile came out of `leadership` below, so his name came out of here
+         too — and the title moved with it, since Mrs. Sahitya Reddy is now
+         Chairman. The honorific changed on 9 Oct 2026 with the other two —
+         see the note on `leadershipPeople`. Nothing else in the sentence
+         changed. */
+      'We are led by Chairman Mrs. Sahitya Reddy, offering premium real estate solutions, land investments, residential properties, investment opportunities and high-end villas.',
+      'The company is known for its focus on quality construction, transparency, customer satisfaction, and a strong commitment to developing sustainable properties in the real estate market.',
+      'At the core of our success is strong partnerships and unwavering support, empowering us to deliver exceptional results for our clients and build lasting value in every project.',
     ],
   },
+  /* The leadership of the company. There was no slot for it in this layout, so
+     <AboutPage> renders it in a surface card matching the office block below —
+     the bio on the left, a portrait slot on the right.
+
+     The people themselves are `leadershipPeople`, declared at the top of this
+     file: it is the one block here holding statements about a real, named
+     person, and the warnings that govern it belong where the data is. */
+  leadership: {
+    eyebrow: 'Our team',
+    /* No longer "across finance, delivery and marketing". Those were the two
+       remits between them; with one profile left, the functions named here are
+       the ones the page can still show someone accountable for. */
+    lead: 'Leading the business across marketing, vendor management and HR.',
+    people: leadershipPeople,
+  },
+  /* Mission, vision and values, replacing four invented "rules we do not bend".
+     Those four were written for this site rather than supplied by the company;
+     these three are the company's own words. */
   values: [
     {
-      icon: 'document',
-      title: 'Documents first',
-      body: 'Full document set handed over at booking, not at registration. Take it to your own lawyer.',
+      icon: 'compass',
+      title: 'Mission',
+      body: 'To achieve corporate excellence in all aspects of our functioning and deliver the best to the customers through innovation, creativity, expertise, experience and exceeding client’s expectations in all aspects.',
     },
     {
-      icon: 'check',
-      title: 'No hidden charges',
-      body: 'One price per square foot. Development charges, corner charges and maintenance deposits are quoted upfront.',
+      icon: 'city',
+      title: 'Vision',
+      body: 'To transform open plots into valuable, sustainable real estate investments, creating thriving gated communities and luxury properties.',
     },
     {
-      icon: 'wall',
-      title: 'Built before sold',
-      body: 'Roads, drains, water, power and the boundary wall are complete before the first plot is released.',
-    },
-    {
-      icon: 'key',
-      title: 'Handover that lasts',
-      body: 'Layouts are transferred to a residents’ association with a maintenance corpus, not abandoned.',
+      icon: 'shield',
+      title: 'Values',
+      body: 'We prioritise integrity, quality and innovation in developing residential plots, open plots and gated communities.',
     },
   ] satisfies readonly FeatureItem[],
   approvals: {

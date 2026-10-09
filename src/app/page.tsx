@@ -13,6 +13,7 @@ import { getSiteSettings } from '@/lib/api/site';
 import { getFaqs, getStatistics, getTestimonials } from '@/lib/api/content';
 /* 🔶 TEMPORARY — delete with the `??` below when the CMS ships `heroVideos`. */
 import { previewHeroVideos } from '@/lib/dev/previewHeroVideos';
+import { projectVideo } from '@/lib/projectVideo';
 import { pageMetadata } from '@/lib/seo';
 import type { ImageRef, Project } from '@/types/content';
 
@@ -73,9 +74,23 @@ export default async function HomePage() {
      favour of the real field. */
   type WithLogo = Project & { logo?: ImageRef };
 
+  /* EVERY PROJECT GOES THROUGH THE SAME CALL, and none of them is named here.
+     `projectVideo()` asks the detail record, then the list record, then the
+     slug-keyed stop-gap, and hands back `undefined` when there is no video —
+     which is a card without a pane, not a failure. A project published next
+     year is resolved by this identical line.
+
+     Both records are passed because a backend adding the field need not add
+     it to both payloads, and which one it lands in should not be something
+     this page has to be redeployed to find out. See `lib/projectVideo.ts`. */
   const cards = projects.map((project, i) => {
     const detail = details[i] as WithLogo | null;
-    return { ...project, gallery: detail?.gallery, logo: detail?.logo };
+    return {
+      ...project,
+      gallery: detail?.gallery,
+      logo: detail?.logo,
+      promoVideo: projectVideo(project.slug, detail, project),
+    };
   });
 
   /* ⚠️ COUNT-COUPLED COPY, now derived. This read "Five layouts." — a hardcoded

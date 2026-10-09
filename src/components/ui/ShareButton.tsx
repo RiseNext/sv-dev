@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { cx } from '@/lib/cx';
 
@@ -30,6 +31,16 @@ import { cx } from '@/lib/cx';
    It is a <button>, not a <Link>: sharing is an action and there is nothing to
    link to. Without JavaScript it does nothing at all, and the "View project"
    link beside it still goes where it goes.
+
+   ─── TWO SHAPES: A DISC, OR A PILL WITH A WORD ON IT ──────────────────────
+   The disc is the default and is what the project page and the blog use — a
+   step down in weight from the real button beside it.
+
+   Pass `label` and it becomes a PILL INSTEAD, built from the same `<Button>`
+   in the same `ink` variant as "View project", so the two are identical by
+   construction rather than by two sets of classes that have to be kept in
+   step. The home page's cards use it, where the control stands on its own
+   under the logo with no button beside it to be subordinate to.
    ========================================================================== */
 
 /** How long the copy confirmation stays up. */
@@ -40,6 +51,7 @@ export function ShareButton({
   name,
   text,
   className,
+  label,
 }: {
   /** Path to the project, e.g. `/projects/sri-vanam`. */
   href: string;
@@ -49,6 +61,15 @@ export function ShareButton({
   /** Optional blurb for the share sheet's body. */
   text?: string;
   className?: string;
+  /**
+   * Set to render the PILL instead of the disc — see the header.
+   *
+   * Keep it short: it sits in a strip the width of the project's logo tab,
+   * which is as little as 7rem. The accessible name stays `Share <project>`,
+   * which this word is the start of, so a visible "Share" and a spoken
+   * "Share Sri Vanam" do not disagree.
+   */
+  label?: string;
 }) {
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,18 +110,28 @@ export function ShareButton({
 
   return (
     <span className={cx('relative inline-flex', className)}>
-      <button
-        type="button"
-        onClick={share}
-        aria-label={`Share ${name}`}
-        className={cx(
-          'inline-flex size-11 items-center justify-center rounded-full bg-gold-soft text-ink',
-          'transition-[background-color,scale] duration-300 ease-out-soft',
-          'hover:bg-gold active:scale-95 motion-reduce:transition-none',
-        )}
-      >
-        <Icon name={copied ? 'check' : 'share'} size={17} />
-      </button>
+      {label ? (
+        /* The icon still swaps to the tick on a copy, and the pill below
+           still says so — the WORD does not change, because "Link copied" is
+           wider than "Share" and the button would jump as it was pressed. */
+        <Button variant="ink" onClick={share} aria-label={`Share ${name}`}>
+          <Icon name={copied ? 'check' : 'share'} size={17} />
+          {label}
+        </Button>
+      ) : (
+        <button
+          type="button"
+          onClick={share}
+          aria-label={`Share ${name}`}
+          className={cx(
+            'inline-flex size-11 items-center justify-center rounded-full bg-gold-soft text-ink',
+            'transition-[background-color,scale] duration-300 ease-out-soft',
+            'hover:bg-gold active:scale-95 motion-reduce:transition-none',
+          )}
+        >
+          <Icon name={copied ? 'check' : 'share'} size={17} />
+        </button>
+      )}
 
       {/* Announced once, for a reader who cannot see the pill below. */}
       <span role="status" aria-live="polite" className="visually-hidden">
