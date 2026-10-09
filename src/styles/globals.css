@@ -85,6 +85,12 @@
   --color-line: rgba(122, 90, 34, 0.16);
   --color-line-strong: rgba(122, 90, 34, 0.3);
   --color-line-invert: rgba(255, 255, 255, 0.18);
+  /* The logo's own green, supplied by the owner for the top bar. It is a BRAND
+     colour, not a palette one — nothing else on the page is dark, so this is
+     the only surface it is correct on. Anything set on it must be light:
+     white 11.5:1, cream 11.1:1, gold 4.75:1, but `--color-ink` is 1.36:1 and
+     `--color-gold-ink` 1.92:1, so neither can appear on this ground. */
+  --color-brand-green: #004322;
   /* WhatsApp's own green, for the floating chat button and nothing else. It is
      a BRAND colour, not a palette one: it is recognised on sight, which is the
      whole reason the button works, so it is not tuned to sit with the golds.
@@ -123,6 +129,23 @@
 
   --text-heading-xs: clamp(1rem, 0.93rem + 0.28vw, 1.1875rem); /* 16 → 19 */
   --text-heading-xs--line-height: 1.3;
+
+  /* THE NAV WORDMARK — "SHIVA VARAHI DEVELOPERS" beside the emblem, and the
+     one type size on the site tuned to a CONTAINER rather than to the reading
+     scale. It is a token here, with the rest of the scale, because a clamp
+     written as a Tailwind arbitrary value needs its spaces escaped as
+     underscores (`0.125rem_+_1.875vw`), which is a footgun nobody should have
+     to read in a class string.
+
+     26px at 1280 → 38px at 1920, capped there. Tuned against what is LEFT of
+     the bar after the medallion, the link pills and the CTA — PillNav.tsx
+     carries that arithmetic and is where to check before raising the cap. The
+     clamp only ever applies from 1280px up; below that the name wraps to two
+     lines at a fixed, smaller size.
+
+     NO PAIRED `--line-height` ON PURPOSE: PillNav sets `leading-[1.15]`, and a
+     line-height here would be a second source competing with it. */
+  --text-wordmark: clamp(1.625rem, 0.125rem + 1.875vw, 2.375rem); /* 26 → 38 */
 
   /* ---------- Body and UI type -------------------------------------------- */
   --text-body-lg: clamp(1rem, 0.9rem + 0.28vw, 1.25rem); /* 16 → 20 */
