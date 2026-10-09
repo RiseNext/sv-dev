@@ -9,7 +9,7 @@ import { cx } from '@/lib/cx';
    Admin Panel changed nothing on the site — the one failure mode a CMS field
    must not have. */
 const FALLBACK = {
-  src: '/images/logo/sv-developers-mark.jpg',
+  src: '/images/logo/newlogo.jpeg',
   width: 160,
   height: 160,
 } as const;
@@ -37,11 +37,18 @@ const FALLBACK = {
    to it. */
 const BADGE = { xs: 'size-7', sm: 'size-22 tablet:size-30', lg: 'size-12' } as const;
 
-/* The committed emblem is a square JPEG whose gold ring spans only 71% of the
-   width (measured), on a white margin. Zoomed 1.34× the ring lands just inside
-   the badge's edge, so the mark fills its circle instead of floating small in
-   it. A CMS upload has unknown geometry, so it is never cropped. */
-const FALLBACK_ZOOM = 'scale-[1.34]';
+/* 🔶 THE ZOOM IS GONE WITH THE ARTWORK THAT NEEDED IT.
+   The previous emblem (`sv-developers-mark.jpg`) was a square JPEG whose gold
+   ring spanned only 71% of the width — measured — on a white margin, so it was
+   scaled 1.34× to stop it floating small inside the badge.
+
+   `newlogo.jpeg` is cropped tight: the ring spans 98.8%, so it needs no zoom
+   at all, and the badge's circular clip now lands on the ring itself rather
+   than on white. KEEPING THE 1.34 WOULD HAVE CROPPED THE RING CLEAN OFF, which
+   is why this constant was deleted rather than left at an unused 1.0.
+
+   If the artwork is ever swapped again, measure the ring's span first — that
+   number, not taste, is what decides whether a zoom belongs here. */
 const WORDMARK = { xs: 'text-body-md', sm: 'text-heading-sm', lg: 'text-heading-sm' } as const;
 
 /* `siteName` arrives as a PROP rather than being imported.
@@ -80,7 +87,7 @@ export function Logo({
           height={mark.height}
           quality={90}
           priority={size !== 'lg'}
-          className={cx('size-full object-cover', !logo && FALLBACK_ZOOM)}
+          className="size-full object-cover"
         />
       </span>
       {showName ? (

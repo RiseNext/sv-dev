@@ -4,7 +4,14 @@ import { LinkButton } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { ProjectPhotoFrame } from '@/components/sections/ProjectPhotoFrame';
+import { YouTubeEmbed } from '@/components/ui/YouTubeEmbed';
+import type { ProjectPromoVideo } from '@/lib/projectVideo';
 import type { ImageRef, Project } from '@/types/content';
+/* The YouTube link parser. It lives in `lib/blog.ts` because the blog was the
+   first thing to need it, and it is pure — no network, no `server-only` — so
+   the project cards share it rather than keeping a second copy of the one
+   function that must not get an id wrong. */
+import { youtubeId } from '@/lib/blog';
 import { cx } from '@/lib/cx';
 
 /* =============================================================================
@@ -40,10 +47,57 @@ import { cx } from '@/lib/cx';
    is 40 − 8 = 32px (`rounded-4xl`). Change the padding and the inner radius
    has to move with it.
 
-   From 1024px the card is a flex row, 60/40. The picture stretches to the
-   row's height with a floor, so a long summary makes the CARD taller and the
-   picture grows with it rather than leaving the copy hanging past the white.
-   Below 1024px the same card is a column: picture, then copy.
+   ─── THE LAYOUT, PER THE CLIENT'S SKETCH ──────────────────────────────────
+   From 1024px the card is a flex row: the photographs down the left, and a
+   column on the right whose top line is the promotion video BESIDE the logo
+   tab, the project's details under both, and the two controls at the foot.
+
+     ┌───────────────┬───────────────────────┐
+     │               │ ┌─────────┐ ┌───────┐ │
+     │               │ │  video  │ │ logo  │ │
+     │    images     │ └─────────┘ └───────┘ │
+     │     45%       │ 01 / 04 · CATEGORY    │
+     │               │ Name      locality    │
+     │               │ summary ……………………      │
+     │               │ [view project]   (sh) │
+     └───────────────┴───────────────────────┘
+
+   Below 1024px it is a column, in the order the sketch reads top to bottom:
+   photographs, video, details, controls.
+
+   The picture stretches to the row's height with a floor, so a long summary
+   makes the CARD taller and the picture grows with it rather than leaving the
+   column hanging past the white.
+
+   🔴 THE VIDEO HAS TO CLEAR THE LOGO TAB, AND THE TAB'S WIDTH IS NOT A
+   CONSTANT. It is the logo's own aspect ratio inside a bounding box, so it
+   differs per project — a square mark is 176px at desktop and a wordmark is
+   240px. The pane therefore reserves `--tab-width`, THE SAME EXPRESSION THE
+   TAB SIZES ITSELF WITH, plus the 8px seam; both read it off the card, which
+   is why those custom properties are declared there rather than on the tab.
+   Hard-code a width here and the first wide logo an admin uploads lands on
+   top of the video.
+
+   ─── THE PANE IS RESERVED WHETHER OR NOT THERE IS A VIDEO IN IT ───────────
+   No project carries a link today, so a card that dropped the pane without
+   one would change shape project by project as links arrived — four
+   different cards in one column, and a layout nobody could sign off until the
+   last video existed. `VideoSlot` holds the space instead: same box, same
+   radius, visibly empty. The card does not move when a link lands, exactly as
+   the logo tab holds its corner before a logo arrives.
+
+   ─── THE PLAYER IS A FACADE, NOT AN EMBED ─────────────────────────────────
+   `<YouTubeEmbed>` is the blog's component, and it loads NOTHING from YouTube
+   until the visitor clicks — a poster and a play button, then the iframe on
+   the gesture. Four cards on the home page would otherwise cost four
+   megabytes of third-party script and set tracking cookies on every visitor
+   who scrolled past. The reasoning is in that file; this card just passes it
+   a box.
+
+   The pane is a true 16:9 here, which it could not be in the full-height
+   partition this replaced: a thumbnail is shown uncropped and playback does
+   not letterbox inside a box taller than the video. It is the one thing the
+   sketch's arrangement buys for free.
 
    ─── THE PICTURE IS A SET, NOT A PHOTOGRAPH ───────────────────────────────
    `gallery` is optional and often absent, so the picture half is `image`
@@ -74,6 +128,24 @@ type Item = Pick<Project, 'slug' | 'name' | 'category' | 'locality' | 'summary' 
      * it does: this declaration simply stops being ahead of the contract.
      */
     logo?: ImageRef | null;
+    /**
+     * That project's promotion video.
+     *
+     * 🔶 NOT ON THE CMS CONTRACT EITHER, and declared here for the same reason
+     * `logo` is: `src/types/content.ts` describes what the backend actually
+     * emits, and a project record carries no video field yet.
+     *
+     * The page resolves it through `projectVideo()`, which asks the CMS first
+     * and the slug-keyed stop-gap second — the same call for every project,
+     * including ones published long after this was written. Nothing here, and
+     * nothing on the page, knows a project by name.
+     *
+     * `youtubeUrl` is whatever was pasted — a watch URL, a `youtu.be` link, a
+     * Shorts link, tracking tail and all. It is parsed at the render site, and
+     * an unparseable value drops the pane and renders the approved card
+     * instead of an empty player.
+     */
+    promoVideo?: ProjectPromoVideo | null;
   };
 
 /**
@@ -97,6 +169,12 @@ type Item = Pick<Project, 'slug' | 'name' | 'category' | 'locality' | 'summary' 
  * `--logo-r` is width ÷ height as a bare number, because `calc()` needs a
  * scalar; `aspectRatio` carries the same ratio for the height to fall out of.
  *
+ * 🔴 THE TWO HALVES GO ON DIFFERENT ELEMENTS, and that is not tidiness. The
+ * ratio is declared on the CARD so that the video pane beside the tab can
+ * reserve exactly the tab's width (`--tab-width`, built from it in TAB_VARS);
+ * the `aspectRatio` stays on the tab, because setting it on the card would
+ * give the whole card the logo's shape.
+ *
  * ─── THE FALLBACK IS NOT COSMETIC ───────────────────────────────────────────
  * `width`/`height` cross the network, so neither is a guarantee: a record can
  * arrive with one missing, with a zero, or with a string. Anything that is not
@@ -107,7 +185,7 @@ type Item = Pick<Project, 'slug' | 'name' | 'category' | 'locality' | 'summary' 
 const TAB_RATIO_MIN = 0.5; /* no narrower than 1:2  */
 const TAB_RATIO_MAX = 3.5; /* no wider   than 3.5:1 */
 
-function logoBox(logo: ImageRef | null | undefined): CSSProperties {
+function logoRatio(logo: ImageRef | null | undefined): string {
   const width = Number(logo?.width);
   const height = Number(logo?.height);
   const usable =
@@ -121,12 +199,97 @@ function logoBox(logo: ImageRef | null | undefined): CSSProperties {
      beyond them `object-contain` letterboxes the remainder, which is the
      correct place for the compromise to land. */
   const raw = usable ? width / height : 1;
-  const ratio = Math.min(Math.max(raw, TAB_RATIO_MIN), TAB_RATIO_MAX);
+  return String(Math.min(Math.max(raw, TAB_RATIO_MIN), TAB_RATIO_MAX));
+}
 
-  return {
-    aspectRatio: String(ratio),
-    '--logo-r': String(ratio),
-  } as CSSProperties;
+/* ---------------------------------------------------------------------------
+   THE TAB'S GEOMETRY, DECLARED ON THE CARD.
+
+   `--tab-h` / `--tab-w` are the bounding box per width — not the tab's size,
+   its bounds. `--tab-width` is what the tab actually computes to: whichever
+   bound the logo's ratio hits first.
+
+   🔴 THEY LIVE HERE, ON THE CARD, BECAUSE TWO ELEMENTS NEED THEM. The tab
+   sizes itself with `--tab-width`, and the video pane reserves the same value
+   so the two never overlap. Move them back onto the tab and the pane has no
+   way to know how much room to leave.
+   ------------------------------------------------------------------------ */
+const TAB_VARS = cx(
+  '[--tab-h:6rem] [--tab-w:13rem]',
+  'tablet:[--tab-h:7rem] tablet:[--tab-w:14rem]',
+  'desktop:[--tab-h:11rem] desktop:[--tab-w:15rem]',
+  '[--tab-width:min(var(--tab-w),calc(var(--tab-h)*var(--logo-r)))]',
+);
+
+/* ---------------------------------------------------------------------------
+   THE TWO HALVES, AND WHERE THE 8px SEAM BETWEEN THEM COMES FROM.
+
+   `gap-2` is the card's own padding, so the white between the halves is
+   exactly as wide as the white around them — and both give up HALF of it
+   (`-0.25rem` each), which is what keeps the split a true 45/55 of the space
+   rather than 45/55 plus an overflow of 8px.
+
+   45/55 rather than the 60/40 this started at: the right-hand side is no
+   longer just a column of type, it carries the video and the logo tab across
+   its top, and at 40% there was not enough width left beside a wordmark-shaped
+   tab to show a video at all.
+   ------------------------------------------------------------------------ */
+const PHOTO_SIZES = '(min-width: 1400px) 630px, (min-width: 1024px) 45vw, 100vw';
+
+/** Everything about the frame's box except its width: the phone's fixed height,
+ *  the concentric radius (card 40px − 8px of padding), and the desktop floor it
+ *  stretches up from. */
+const PHOTO_BOX = cx(
+  'h-[min(42svh,20rem)] w-full rounded-4xl',
+  'tablet:h-auto tablet:min-h-[min(66svh,36rem)]',
+);
+
+/* The pane's box, and it is the same box whether a video is in it or not —
+   which is what makes the card stay still when a link arrives. 16:9 at every
+   width, so a thumbnail is never cropped; the WIDTH is the right-hand column
+   minus the logo tab, which the wrapper around it owns. Same `rounded-4xl` as
+   the picture: they are panes of one card. */
+const VIDEO_BOX = 'aspect-video w-full rounded-4xl';
+
+/* ---------------------------------------------------------------------------
+   🔶 THE RESERVED PANE — delete this when every project has a link.
+
+   The space the promotion video will occupy, held open and visibly empty. It
+   is the same idea as `TestimonialsStub`: a reserved area reads as a slot
+   waiting to be filled, where a section that simply vanishes reads as a
+   feature nobody built.
+
+   🔴 IT IS NOT A PLAY BUTTON AND MUST NOT LOOK LIKE ONE. The glyph is an
+   outlined disc on the sand panel, not the solid white disc the real player
+   uses — pressing a convincing play button that does nothing is worse than an
+   obviously empty box. Nothing here is focusable and nothing takes a click.
+
+   `aria-hidden`, because there is nothing to announce: a screen-reader user
+   told "promotion video" and given no video has been misled, and the card's
+   heading, summary and link are all still read normally.
+
+   The label is the project's own `label-mono`, so the empty state is typeset
+   like the rest of the card rather than like an error.
+   ------------------------------------------------------------------------ */
+function VideoSlot() {
+  return (
+    <div
+      aria-hidden="true"
+      className={cx(
+        VIDEO_BOX,
+        'flex flex-col items-center justify-center gap-4 bg-sand',
+        /* The dashed hairline says "reserved" in the one way that cannot be
+           read as "broken": a solid border would read as a frame around
+           nothing, and no border at all as a panel that failed to load. */
+        'border border-dashed border-gold-line',
+      )}
+    >
+      <span className="inline-flex size-16 items-center justify-center rounded-full border border-gold-line text-gold-ink/70">
+        <Icon name="play" size={24} />
+      </span>
+      <p className="label-mono font-mono">Promotion video</p>
+    </div>
+  );
 }
 
 export function MediaSequence({ items }: { items: readonly Item[] }) {
@@ -157,13 +320,27 @@ export function MediaSequence({ items }: { items: readonly Item[] }) {
              every project and the tab renders its empty state. */
           const logo = item.logo;
 
+          /* 🔴 THE PARSE IS THE SWITCH. `youtubeId()` returns null for anything
+             it cannot read a real 11-character id out of, so a half-pasted
+             link, a Vimeo URL or an empty string all land on the approved
+             card rather than on a pane with a dead player in it. Nothing here
+             guesses: see the note on that function. */
+          const videoId = youtubeId(item.promoVideo?.youtubeUrl);
+
           return (
             <li key={item.slug} className="mb-10 last:mb-0 tablet:mb-16">
               <div
+                /* `--logo-r` rides the CARD so the video pane can reserve the
+                   tab's width — see `logoRatio` and TAB_VARS. */
+                style={{ '--logo-r': logoRatio(logo) } as CSSProperties}
                 className={cx(
                   'relative rounded-band bg-surface p-2',
                   'shadow-[0_40px_90px_-45px_rgba(92,68,28,0.45)]',
-                  'tablet:flex tablet:items-stretch',
+                  TAB_VARS,
+                  /* The row: pictures down the left, everything else in the
+                     column on the right. `items-stretch` is the default and is
+                     what makes the picture match the column's height. */
+                  'tablet:flex tablet:items-stretch tablet:gap-2',
                 )}
               >
                 {/* ---- THE PROJECT'S LOGO, straddling the card's top-right
@@ -206,40 +383,31 @@ export function MediaSequence({ items }: { items: readonly Item[] }) {
                     from the logo fixed that — a square mark is 96px wide, which
                     clears the copy, so the overhang bought nothing and is gone.
 
-                    🔴 HOW BIG IT MAY GET IS NOT A TASTE QUESTION — the copy
-                    beside it sets a ceiling, and the ceiling is DIFFERENT at
-                    each width. Read this before enlarging it again.
+                    🔴 HOW BIG IT MAY GET IS NOT A TASTE QUESTION, AND WHAT
+                    SETS THE CEILING HAS CHANGED. Read this before enlarging
+                    it again.
 
-                    The copy is centred vertically in a card whose height comes
-                    from the photograph, so its rows land at roughly:
+                    It used to land on the COPY, which was a 40% column beside
+                    the photograph, and the ceiling was the summary: that
+                    paragraph ran the full width of the column from about
+                    227px down, so a tab reaching past it would have covered
+                    live text at every width. Between 1024 and 1280 the column
+                    was only ~274px wide and the tab had to stay at 112px to
+                    leave the mono label room at all. (The history has the
+                    arithmetic, if that layout ever comes back.)
 
-                      label     123 → 139     short, left-aligned
-                      name      151 → 187     short, left-aligned
-                      locality  195 → 211     short, left-aligned
-                      summary   227 → 367     RUNS THE FULL COLUMN WIDTH
+                    The copy is now UNDER the media row, so none of that
+                    applies: the tab lands on the top-right of the video pane
+                    instead — or on the photograph on a phone, which is where
+                    it already sat.
 
-                    A tab of height H, flush at the top, covers the rightmost H
-                    pixels down to H. Two rules fall out:
-
-                      1. H MUST STAY ABOVE 227. The summary uses the whole
-                         column, so there is no width left to share with it.
-                         This is the hard limit at every size.
-                      2. Below 227 it may overlap the label, name and locality,
-                         because those are short and left-aligned. What matters
-                         is that the column keeps roughly 240px of usable width
-                         for the longest label.
-
-                    Rule 2 is what makes the ceiling width-dependent. From
-                    1280px the column carries ~430px of text, so a 176px tab
-                    still leaves ~296px — comfortable. Between 1024 and 1280 the
-                    same column is only ~274px wide, and a tab that big would
-                    leave ~130px, which the mono label cannot fit into. So there
-                    the tab stays at 112px, just under the 123px where the label
-                    begins, and overlaps nothing at all.
-
-                    On a phone there is no constraint of this kind: the card is
-                    a column, the tab is on the PHOTOGRAPH, and the copy starts
-                    below it. It is sized for the picture, not the text.
+                    What it must not swallow is the play control, and it does
+                    not: that control is centred in a pane the full height of
+                    the row (36rem at the desktop floor), so at the tab's
+                    largest — 11rem down from the top edge — there is more than
+                    10rem of clear pane between the two. The duration badge is
+                    bottom-right, further still. Enlarging `--tab-h` past about
+                    16rem is what would start to reach it.
 
                     ─── IT IS A CORNER TAB, NOT A FLOATING BADGE ─────────────
                     Per the sketch: NO INSET. It shares the card's top edge and
@@ -276,7 +444,9 @@ export function MediaSequence({ items }: { items: readonly Item[] }) {
                     and carries the CMS's alt text. ---- */}
                 <div
                   aria-hidden={logo?.src ? undefined : 'true'}
-                  style={logoBox(logo)}
+                  /* The ratio itself is on the card; this is the shape it
+                     gives THIS box. */
+                  style={{ aspectRatio: 'var(--logo-r)' }}
                   className={cx(
                     'absolute right-0 top-0 z-20 overflow-hidden',
                     'rounded-bl-3xl rounded-tr-band',
@@ -289,14 +459,11 @@ export function MediaSequence({ items }: { items: readonly Item[] }) {
                        those two and the tab pops out instead of sinking in. */
                     'border-b border-l border-line bg-bg',
                     'shadow-[inset_3px_3px_7px_-1px_rgba(92,68,28,0.24),inset_-2px_-2px_5px_-1px_rgba(255,255,255,0.85)]',
-                    /* The BOX the tab must fit inside, per width. Not the tab's
-                       size — its bounds. See `THE TAB HUGS THE LOGO` above. */
-                    '[--tab-h:6rem] [--tab-w:13rem]',
-                    'tablet:[--tab-h:7rem] tablet:[--tab-w:14rem]',
-                    'desktop:[--tab-h:11rem] desktop:[--tab-w:15rem]',
-                    /* Width is whichever bound the logo hits first; height then
-                       falls out of `aspect-ratio`. */
-                    'w-[min(var(--tab-w),calc(var(--tab-h)*var(--logo-r)))]',
+                    /* Whichever bound the logo's ratio hits first — computed
+                       on the card, in TAB_VARS, because the video pane beside
+                       this reserves the very same value. The height falls out
+                       of `aspect-ratio`. */
+                    'w-(--tab-width)',
                   )}
                 >
                   {logo?.src ? (
@@ -329,85 +496,197 @@ export function MediaSequence({ items }: { items: readonly Item[] }) {
                   images={photos}
                   name={item.name}
                   href={href}
-                  sizes="(min-width: 1400px) 840px, (min-width: 1024px) 60vw, 100vw"
-                  className={cx(
-                    'h-[min(42svh,20rem)] w-full rounded-4xl',
-                    'tablet:h-auto tablet:min-h-[min(66svh,36rem)] tablet:w-[60%] tablet:shrink-0',
-                  )}
+                  sizes={PHOTO_SIZES}
+                  className={cx(PHOTO_BOX, 'tablet:w-[calc(45%-0.25rem)] tablet:shrink-0')}
                 />
 
-                {/* The copy stands on the card's own white — it carries no
-                    background of its own, which would be white on white with a
-                    seam where the two met. All it holds is the room around the
-                    words: `pl-12` off the photograph's edge, `pr-10` off the
-                    card's. */}
-                <div
-                  className={cx(
-                    'flex flex-col px-4 pb-4 pt-5',
-                    'tablet:w-[40%] tablet:justify-center tablet:py-10 tablet:pl-12 tablet:pr-10',
-                  )}
-                >
-                  <p className="label-mono font-mono">
-                    {String(index + 1).padStart(2, '0')} / {count} · {item.category}
-                  </p>
-                  <h3 className="mt-3 text-heading-md text-ink tablet:mt-5">{item.name}</h3>
-                  <p className="mt-2 inline-flex items-center gap-1.5 font-mono text-body-xs text-ink-faint">
-                    <Icon name="mapPin" size={13} />
-                    {item.locality}
-                  </p>
+                {/* ---- THE RIGHT-HAND COLUMN: video and logo across the top,
+                     the details under them, the controls at the foot. On a
+                     phone it is simply the rest of the card, stacked. ---- */}
+                <div className="flex flex-col tablet:w-[calc(55%-0.25rem)] tablet:shrink-0">
+                  {/* ---- THE TOP LINE: the video, and the strip the logo tab
+                       stands in.
 
-                  {/* Rendered only when present: a type is not a runtime
-                      guarantee across the network, and an unsaved field should
-                      leave no empty gap in the card. */}
-                  {item.summary ? (
-                    <p
+                       `mt-2` is the same 8px seam the photograph carries, and
+                       it is a margin rather than a gap because the copy below
+                       must NOT get one — it brings its own padding. ---- */}
+                  <div className="mt-2 flex flex-col gap-2 tablet:mt-0 tablet:flex-row">
+                    <div className="min-w-0 flex-1">
+                      {/* The title is the player's ONLY accessible name — it
+                          labels the play button ("Play: <name> promotion
+                          video") and titles the iframe. One page carries
+                          several of these, so it has to name the project.
+
+                          No `cover` is passed, deliberately: the project's own
+                          photograph is already beside this, and using it as
+                          the poster too would make the card read as the same
+                          picture twice. The pane falls back to YouTube's own
+                          thumbnail for the video that is actually being
+                          offered. */}
+                      {videoId ? (
+                        <YouTubeEmbed
+                          videoId={videoId}
+                          title={`${item.name} promotion video`}
+                          duration={item.promoVideo?.duration}
+                          className={VIDEO_BOX}
+                        />
+                      ) : (
+                        <VideoSlot />
+                      )}
+                    </div>
+
+                    {/* ---- THE SHARE CONTROL, UNDER THE LOGO.
+
+                         🔴 THE SPACER IS THE TAB'S OWN FOOTPRINT, and it is
+                         load-bearing: the tab is positioned on the CARD, not
+                         in this flow, so without something holding its place
+                         the control would sit behind the mark. It takes the
+                         same width AND the same aspect ratio as the tab, so it
+                         tracks it exactly whatever shape a logo turns out to
+                         be — a wordmark gives a short tab and the control
+                         rises with it.
+
+                         The strip also sets the video's width: `flex-1` beside
+                         `--tab-width` is what makes the pane end exactly where
+                         the tab begins, with `gap-2` as the seam. The two can
+                         never disagree because they are the same value.
+
+                         On a phone the tab is on the PHOTOGRAPH, not here, so
+                         the spacer goes and the strip becomes a full-width row
+                         with the control on its right. ---- */}
+                    <div
                       className={cx(
-                        'mt-4 line-clamp-3 text-body-md text-ink-soft',
-                        'tablet:mt-6 tablet:line-clamp-5 tablet:text-body-lg',
+                        'flex justify-end',
+                        /* The FLOOR is for the button, not the logo: a very
+                           tall, narrow mark computes a tab only 5.5rem wide,
+                           and the Share pill is about 6.7rem. Below that the
+                           strip stops following the tab so the pill is never
+                           wider than the space it stands in. Every real logo
+                           so far is well past it, so nothing moves. */
+                        'tablet:w-[max(var(--tab-width),7rem)]',
+                        'tablet:shrink-0 tablet:flex-col tablet:items-center tablet:justify-start',
                       )}
                     >
-                      {item.summary}
-                    </p>
-                  ) : null}
-
-                  {/* The card's foot: where the project goes, and how to pass
-                      it on. `justify-between` rather than a margin, so the
-                      share control sits on the card's right edge at every
-                      width.
-
-                      VIEW PROJECT IS THE PRIMARY ACTION, in the espresso
-                      variant rather than the gold one: this button stands on
-                      the card's warm white, where solid gold goes heavy, and
-                      espresso is the colour the card's own type is already set
-                      in. The gold returns on hover. See the variant table in
-                      Button.tsx.
-
-                      The three tones read as one set: espresso button, pale
-                      gold share, white card. Share is a step down in weight
-                      rather than a second equal button, and its 44px circle
-                      matches the pill's height exactly. */}
-                  <div className="mt-5 flex items-center justify-between gap-4 tablet:mt-8">
-                    <LinkButton href={href} variant="ink" className="group">
-                      View project
-                      {/* One page carries several of these; the name is what
-                          tells a screen-reader user which project this is. */}
-                      <span className="visually-hidden">: {item.name}</span>
-                      {/* The nudge is a TRANSFORM, not a widening gap: the
-                          button's own `transition-colors` owns the transition
-                          property, and a second `transition-*` class on the
-                          same element would silently replace it — taking the
-                          colour hover with it. */}
-                      <Icon
-                        name="arrowRight"
-                        size={16}
-                        className={cx(
-                          'transition-transform duration-200 ease-out-soft',
-                          'group-hover:translate-x-0.5 motion-reduce:transition-none',
-                        )}
+                      {/* The tab's footprint — its width, not the strip's, so
+                          the height this reserves stays exactly the tab's. */}
+                      <div
+                        aria-hidden="true"
+                        className="hidden tablet:block tablet:aspect-(--logo-r) tablet:w-(--tab-width)"
                       />
-                    </LinkButton>
+                      <ShareButton
+                        href={href}
+                        name={item.name}
+                        text={item.summary}
+                        label="Share"
+                        className="tablet:mt-4"
+                      />
+                    </div>
+                  </div>
 
-                    <ShareButton href={href} name={item.name} text={item.summary} />
+                  {/* The copy stands on the card's own white — it carries no
+                      background of its own, which would be white on white with
+                      a seam where the two met. All it holds is the room around
+                      the words: `pl-12` off the photograph's edge, `pr-10` off
+                      the card's.
+
+                      `flex-1` so this fills what the video leaves, which is
+                      what lets the controls sit at the FOOT of the card rather
+                      than floating under the summary — see `mt-auto` on them. */}
+                  <div
+                    className={cx(
+                      'flex flex-col px-4 pb-4 pt-5',
+                      'tablet:flex-1 tablet:pb-8 tablet:pl-12 tablet:pr-10 tablet:pt-8',
+                    )}
+                  >
+                    {/* The position-and-category label used to open the copy
+                        here. It is at the card's FOOT now, where the share
+                        control used to be — see the note down there. */}
+                    <h3 className="text-heading-md text-ink tablet:text-heading-lg">
+                      {item.name}
+                    </h3>
+                    <p className="mt-2 inline-flex items-center gap-1.5 font-mono text-body-xs text-ink-faint">
+                      <Icon name="mapPin" size={13} />
+                      {item.locality}
+                    </p>
+
+                    {/* Rendered only when present: a type is not a runtime
+                        guarantee across the network, and an unsaved field
+                        should leave no empty gap in the card. */}
+                    {item.summary ? (
+                      <p
+                        className={cx(
+                          'mt-4 line-clamp-3 text-body-md text-ink-soft',
+                          'tablet:mt-5 tablet:line-clamp-4 tablet:text-body-lg',
+                        )}
+                      >
+                        {item.summary}
+                      </p>
+                    ) : null}
+
+                    {/* The card's foot: where the project goes, and how to
+                        pass it on. `justify-between` rather than a margin, so
+                        the share control sits on the column's right edge at
+                        every width.
+
+                        `mt-auto` is what puts this at the BOTTOM of the card,
+                        per the sketch: the copy block is `flex-1`, so any
+                        height the photograph has over the column's content
+                        collects above this row rather than under it. `pt-8`
+                        is the floor for when there is no slack to collect.
+
+                        THE LABEL SITS WHERE THE SHARE CONTROL USED TO, on
+                        request, and `justify-between` lands it on the column's
+                        right edge.
+
+                        🔴 IT GETS ITS OWN LINE ON A PHONE. Beside the button
+                        there are about 140px left at 390px, and
+                        "RESIDENTIAL PLOTS" needs about 145 — so it broke to
+                        three ragged lines, which is worse than either
+                        alternative. Stacked, it has the whole width and sets
+                        on one.
+
+                        VIEW PROJECT IS THE PRIMARY ACTION, in the espresso
+                        variant rather than the gold one: this button stands on
+                        the card's warm white, where solid gold goes heavy, and
+                        espresso is the colour the card's own type is already
+                        set in. The gold returns on hover. See the variant
+                        table in Button.tsx.
+
+                        The three tones read as one set: espresso button, pale
+                        gold share, white card. Share is a step down in weight
+                        rather than a second equal button, and its 44px circle
+                        matches the pill's height exactly. */}
+                    <div
+                      className={cx(
+                        'mt-5 flex flex-col items-start gap-3',
+                        'tablet:mt-auto tablet:flex-row tablet:items-center',
+                        'tablet:justify-between tablet:gap-4 tablet:pt-8',
+                      )}
+                    >
+                      <LinkButton href={href} variant="ink" className="group">
+                        View project
+                        {/* One page carries several of these; the name is what
+                            tells a screen-reader user which project this is. */}
+                        <span className="visually-hidden">: {item.name}</span>
+                        {/* The nudge is a TRANSFORM, not a widening gap: the
+                            button's own `transition-colors` owns the transition
+                            property, and a second `transition-*` class on the
+                            same element would silently replace it — taking the
+                            colour hover with it. */}
+                        <Icon
+                          name="arrowRight"
+                          size={16}
+                          className={cx(
+                            'transition-transform duration-200 ease-out-soft',
+                            'group-hover:translate-x-0.5 motion-reduce:transition-none',
+                          )}
+                        />
+                      </LinkButton>
+
+                      <p className="label-mono font-mono tablet:text-right">
+                        {String(index + 1).padStart(2, '0')} / {count} · {item.category}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
