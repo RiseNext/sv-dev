@@ -93,6 +93,108 @@ const INLINE_NAV = '(min-width: 64rem)';
 const MEDALLION_SIZE = 'size-24 tablet:size-32'; /* 96px / 128px */
 const BAR_HEIGHT = 'h-16 tablet:h-22'; /* 64px / 88px */
 
+/* 🔴 THE EXPANDED NAME IS A FRONTEND STRING, AND IT HAS TO BE.
+   It is NOT `siteName`, and it is not an oversight that it isn't: the CMS emits
+   `name` and `legalName` and BOTH are "SV Developers" (checked against the
+   live settings, 8 Oct 2026). There is no field carrying the name spelled out,
+   so reading one would render the short name beside an emblem that already
+   says SV — which is the one thing this wordmark exists to stop.
+
+   Changing `site-settings.name` to the long form is NOT the fix. That field
+   feeds every page title, the footer copyright and the home link's accessible
+   name; the long form belongs in the bar, not in a <title>.
+
+   Written in title case and uppercased in CSS, so the DOM text stays readable
+   for a screen reader and for anyone searching the source. ONE STRING, with no
+   line break in it — where it breaks is a width question, so CSS decides it;
+   see WORDMARK. If the CMS ever grows a field for this, this is the line to
+   delete. */
+const WORDMARK_NAME = 'Shiva Varahi Developers';
+
+/* 🔶 ONE LINE BESIDE THE EMBLEM FROM 1280px, STACKED ON TWO BELOW IT.
+   Not a style preference — it is the only way to have it on one line at a size
+   worth reading, and the bar's width budget is the whole argument.
+
+   What the right-hand end costs, measured off the rendered classes:
+
+     medallion                     128
+     three outlined link pills     ~346   (incl. the 8px gaps)
+     gold CTA                      ~261
+     the nav's three gaps + gutter ~108
+     ────────────────────────────────────
+                                   ~843   before the name gets any
+
+   This name set on ONE line needs about 14em of width, so the size and the
+   space it covers are the same decision:
+
+     At 1280px   437px is left; `--text-wordmark` is 26px there → ~364px. Fits.
+     At 1920px  1077px is left; the clamp has reached its 38px cap → ~532px.
+     At 1024px   181px is left. One line does NOT fit at any legible size —
+                 it would need ~11px type, or it would shove the CTA off the
+                 bar. So it WRAPS to two there instead, at a fixed 17px, which
+                 needs ~128px.
+
+   🔴 THE 38px CAP IS A WIDTH DECISION, NOT A TASTE ONE. Raising it is cheap to
+   type and expensive to get wrong: the name grows ~14px wider for every 1px of
+   type, so the next stop that still clears 1280px is around 44px. Past that the
+   name reaches the link pills and the flex row starts shrinking the CTA. If a
+   bigger name is wanted, take the room from the CTA's `px-7` or the links'
+   `px-4` FIRST, then raise the cap — in that order.
+
+   The wrap is done with `max-w` and the browser's own line breaking rather
+   than a hardcoded break, so there is one string to change and the break
+   lands between the words either way. `desktop:max-w-none` plus
+   `desktop:whitespace-nowrap` is what guarantees one line above 1280 — the
+   max-width alone would still allow a wrap at an awkward width.
+
+   ─── 🔶 IT IS ON THE PHONE TOO NOW, AT 14px ───────────────────────────────
+   It was `hidden` below 1024px, on the argument that the oversized emblem was
+   carrying the brand on its own there. IT WASN'T: the name was reported as
+   not visible on a phone, and the emblem's own interior lettering is not the
+   name — it reads SV. So the words are in the phone bar as well.
+
+   The room is there, measured in the rendered bar at a 2× phone DPR, and the
+   binding word is DEVELOPERS (the longest, so it is what decides the size —
+   no number of line breaks helps it):
+
+                       320px   360px   390px
+     free between the
+     emblem and Menu     80     118     147     (after the two savings below)
+     DEVELOPERS @14px    73      73      73
+
+   Instrument Serif's caps are narrow — 5.2px of width per 1px of type — which
+   is the only reason 14px clears a 320px screen at all. 17px would need 89px
+   and overflow it, so the step up waits for `mid` (640px), where the same bar
+   has ~390px spare.
+
+   🔴 TWO SAVINGS PAY FOR IT, both phone-only, and they are why 320px fits:
+   the nav's `gap-2` (was `gap-3`) and the Menu button's `px-3` (was `px-4`),
+   16px between them. THE MEDALLION WAS NOT TOUCHED — its 96px is the
+   advertisement scale that was asked for, and shrinking it to buy room here
+   would undo that.
+
+   🔴 NO `shrink-0` AND NO `min-w-0` BELOW 1280px, both deliberate. Everything
+   else in the phone row is `shrink-0`, so this is the one item flex can take
+   from when a narrow screen overflows — it gives up width and the name wraps,
+   instead of the Menu button being pushed off the bar. And with `min-width`
+   left at `auto` it cannot be squeezed BELOW the 73px DEVELOPERS needs, so the
+   name is never clipped; the row would rather be 7px wider than the screen,
+   which at the measured sizes it never is. `desktop:shrink-0` restores the
+   old behaviour above 1280, where the text is `nowrap` and shrinking it would
+   spill the letters over the links rather than wrap them.
+
+   Gold rather than the links' white: it is brand lettering, not a control, and
+   `gold-line` on this green is about 9:1. Uppercase serif needs the positive
+   tracking — without it the caps close up and read as a single word. */
+const WORDMARK = cx(
+  'block',
+  'font-display uppercase leading-[1.15] tracking-[0.06em] text-gold-line',
+  /* 7.5em holds "SHIVA VARAHI" and pushes "DEVELOPERS" to a second line. In em,
+     so it tracks the font size rather than needing a second number. */
+  'max-w-[7.5em] text-[0.875rem] mid:text-[1.0625rem]',
+  'desktop:max-w-none desktop:shrink-0 desktop:whitespace-nowrap desktop:text-wordmark',
+);
+
 /* The medallion's frame, kept DELIBERATELY THIN: a 2px gold ring and a 2px
    white band, no more. An earlier, heavier ring ate 18px of the circle's
    diameter, which on a phone left the wordmark inside the mark illegible —
@@ -114,27 +216,80 @@ const MEDALLION = cx(
 
    🔴 ONE UNBROKEN STRING LITERAL. Tailwind scans source text for whole class
    names, so an arbitrary value split across a `+` join generates NO rule. */
+/* 🔴 THE BAR IS DARK NOW, and every colour on it had to move with it. It was a
+   cream gradient carrying espresso type; `--color-brand-green` (#004322) is the
+   logo's own green, and on it:
+
+     white / cream   11.5:1 and 11.1:1   — the links and the Menu button
+     gold            4.75:1              — the CTA fill, still clears 3:1 for a
+                                           non-text control boundary
+     ink             1.36:1              — WHICH IS WHY NO INK SURVIVES HERE.
+     gold-ink        1.92:1              — same; it was tuned for white grounds
+
+   The lit top edge stays white but the hairline beneath flips: a warm gold line
+   that read as a seam on cream reads as grime on green, so it is a light line
+   at low alpha instead. The drop shadow deepens, because a pale shadow under a
+   dark bar is invisible. */
 const BAR = cx(
-  'bg-linear-to-b from-[#fffdf7] to-[#fdf6e6]',
-  'shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(196,161,98,0.38),0_2px_6px_rgba(122,90,34,0.06),0_14px_32px_-20px_rgba(122,90,34,0.55)]',
+  'bg-brand-green',
+  'shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(255,255,255,0.10),0_2px_6px_rgba(0,28,14,0.18),0_14px_32px_-20px_rgba(0,28,14,0.75)]',
 );
 
-/* Links are set medium in full ink — dark enough to be read as buttons, light
-   enough that the gold CTA still wins. The current page sits in a filled
-   gold-mid pill with no rim; every other link washes pale gold on hover. */
+/* Links are WHITE on the green bar (11.5:1), not ink — see the note on BAR.
+
+   🔶 THE LINKS ARE SET IN THE DISPLAY SERIF, like the CTA beside them. The bar
+   is now ALL brand lettering and no UI sans, which is the point: the serif is
+   what ties Home · About Us · Projects to the wordmark and to the gold button
+   at the far end. `font-normal` for the same reason the CTA carries it —
+   Instrument Serif has one weight, and asking for a heavier one only gets a
+   synthesised smear. Sized a notch up from the 17px sans they replaced, since
+   a serif reads smaller at a given point size.
+
+   🔴 THESE LINKS HAVE EXACTLY ONE APPEARANCE. No hover wash, no current-page
+   fill, no transition — a gold-outlined pill, and it looks identical whether
+   you are pointing at it, on that page, or neither. THAT IS THE REQUEST: the
+   gold that used to appear underneath the page you were on read as something
+   animating into place on click, and the ask was for three things that simply
+   look like buttons and stay put.
+
+   So the OUTLINE is what does the work the fill used to. It is on all three at
+   all times, which is what makes them read as controls on a bar that would
+   otherwise be three bare words beside a gold button. `gold-line` at 60% over
+   this green clears 3:1 as a control boundary while staying well under the
+   solid CTA — the outline marks a button, it does not try to be one.
+
+   🔴 TWO THINGS THAT MUST NOT BE "TIDIED UP" BACK IN:
+   · `aria-current="page"` is still set at the call site. The page you are on is
+     now announced but NOT drawn, so that attribute is the only thing left
+     carrying it. Deleting it because nothing visible depends on it would strip
+     the last trace of where you are.
+   · The <header>'s `on-dark` class. With no hover and no current state,
+     :focus-visible is the ONLY feedback a keyboard user gets, and the global
+     ring is near-black — invisible on this green. `on-dark` flips it white.
+
+   `select-none` stops a double-click dragging a blue text selection across the
+   label, which is the one bit of state a pointer could still provoke here. */
 const LINK =
-  'inline-flex min-h-10 items-center gap-1.5 rounded-full px-4 text-[1.0625rem] font-medium text-ink ' +
-  'transition-colors duration-200 motion-reduce:transition-none';
-const LINK_IDLE = 'hover:bg-gold-soft/60';
-const LINK_CURRENT = 'bg-gold-mid';
+  'inline-flex min-h-10 select-none items-center gap-1.5 rounded-full border-[1.5px] border-gold-line/60 px-4 font-display text-[1.25rem] font-normal text-white';
 
 /* The CTA — solid gold, lit from the top-left, with an inner gold rim and a
    shadow that deepens as it lifts. Since Call was taken out of the bar this is
    the ONLY control at the right-hand end, which is the point: one destination,
    no competing pill beside it. Call still reaches the user from the footer and,
    on a phone, from the overlay. */
+/* 🔶 THE LABEL IS SET IN THE DISPLAY SERIF — the face the SV wordmark and
+   every heading on the site use — rather than in the UI sans the links beside
+   it carry. That difference is the point: the one gold control in the bar now
+   reads as brand lettering, not as another toolbar item.
+
+   `font-normal` REPLACES the `font-semibold` this carried, and is not optional.
+   Instrument Serif ships ONE weight (400), so asking for 600 does not load a
+   bolder cut — the browser synthesises one by smearing the outlines, which on
+   a high-contrast serif thickens the hairlines and ruins exactly what makes
+   the face look like the logo. The size is stepped up a notch at both call
+   sites instead: a serif at a sans's point size always reads smaller. */
 const CTA = cx(
-  'group inline-flex items-center gap-2.5 rounded-full bg-linear-to-br from-gold-to to-gold font-semibold text-core-black',
+  'group inline-flex items-center gap-2.5 rounded-full bg-linear-to-br from-gold-to to-gold font-display font-normal text-core-black',
   'shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_8px_18px_-8px_rgba(122,90,34,0.7)]',
   'ring-1 ring-inset ring-gold-deep/40',
   'transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-0.5 hover:to-gold-deep',
@@ -252,10 +407,15 @@ export function PillNav({
           `top-0`; the nav inside it is `container-page`, so the contents stop
           at the page gutter. Painting the nav instead would shrink the bar to
           the container's width and leave the screen edges bare. */}
-      <header className={cx('fixed inset-x-0 top-0 z-100', BAR)}>
+      {/* `on-dark` is NOT decoration: it is the one thing making the focus ring
+          white instead of near-black on this green. With the links' hover wash
+          gone, it is the only feedback a keyboard user gets. */}
+      <header className={cx('on-dark fixed inset-x-0 top-0 z-100', BAR)}>
         <nav
           aria-label="Primary"
-          className={cx('container-page relative flex items-center gap-3 tablet:gap-5', BAR_HEIGHT)}
+          /* `gap-2` on a phone, not `gap-3`: the two 4px savings are part of
+             what buys the wordmark its room beside the emblem — see WORDMARK. */
+          className={cx('container-page relative flex items-center gap-2 tablet:gap-5', BAR_HEIGHT)}
         >
           {/* The emblem, hard left.
 
@@ -282,9 +442,21 @@ export function PillNav({
             <Logo siteName={siteName} logo={logo} size="sm" showName={false} />
           </Link>
 
+          {/* Beside the emblem, NOT inside its link. The medallion's <Link> is
+              a fixed-size circle (MEDALLION_SIZE), so text put in it would
+              either be clipped by the circle or break the geometry the whole
+              overhang depends on. It is plain text rather than a second link
+              to `/`: there are already three of those on every page, and a
+              fourth adjacent to the emblem would mean tabbing past the same
+              destination twice in a row to reach Home. */}
+          <span className={WORDMARK}>{WORDMARK_NAME}</span>
+
             {/* `ml-auto` here is what pushes the links AND everything after
                 them to the right cap, leaving the emblem alone on the left. */}
-            <ul className="ml-auto hidden items-center gap-1 tablet:flex">
+            {/* `gap-2`, up from `gap-1`. The links carry their own outline now,
+                so 4px left the three pills nearly touching and reading as one
+                segmented control rather than as three buttons. */}
+            <ul className="ml-auto hidden items-center gap-2 tablet:flex">
               {nav.map((item) => {
                 const active = isActive(item.href);
                 const expanded = openSubmenu === item.label;
@@ -298,7 +470,7 @@ export function PillNav({
                       <Link
                         href={item.href}
                         aria-current={active ? 'page' : undefined}
-                        className={cx(LINK, active ? LINK_CURRENT : LINK_IDLE)}
+                        className={LINK}
                       >
                         {item.label}
                       </Link>
@@ -315,7 +487,7 @@ export function PillNav({
                       aria-expanded={expanded}
                       aria-controls={submenuId}
                       onClick={() => setOpenSubmenu(expanded ? null : item.label)}
-                      className={cx(LINK, active || expanded ? LINK_CURRENT : LINK_IDLE)}
+                      className={LINK}
                     >
                       {item.label}
                       <Icon
@@ -375,7 +547,12 @@ export function PillNav({
                 above already claimed the slack, so this sits tight against the
                 links as the last item in the right-hand group. */}
             <div className="hidden shrink-0 items-center tablet:flex">
-              <Link href="/contact" className={cx(CTA, 'min-h-11 px-6 text-[1.0625rem]')}>
+              {/* Grown on request: 44 → 56px tall, with the padding and label
+                  scaled to match, so there is simply MORE GOLD at the bar's
+                  right end. It fits because the bar is a fixed 88px from
+                  1024px — 56 leaves 16px of air above and below, which is why
+                  this stops here rather than going further. */}
+              <Link href="/contact" className={cx(CTA, 'min-h-14 px-7 text-[1.3125rem]')}>
                 Book a site visit
                 <Icon
                   name="arrowRight"
@@ -397,7 +574,15 @@ export function PillNav({
               <button
                 ref={toggleRef}
                 type="button"
-                className="inline-flex min-h-11 items-center gap-2 rounded-full border-[1.5px] border-gold-line bg-surface px-4 text-[1.0625rem] font-medium text-ink"
+                /* On the green bar: a light outline and white type, not the
+                   cream fill it carried on the old cream bar — a near-white
+                   pill on dark green reads as a second CTA competing with the
+                   gold one.
+                   `px-3`, down from `px-4`: 8px of the 16 the wordmark beside
+                   the emblem needed to clear a 320px screen. The pill is still
+                   104px wide with its label, and the 44px tap target is
+                   untouched — the saving comes off the air, not the hit area. */
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border-[1.5px] border-white/45 px-3 text-[1.0625rem] font-medium text-white transition-colors hover:border-gold-soft hover:bg-gold-soft hover:text-core-black"
                 aria-expanded={menuOpen}
                 aria-controls="primary-navigation-overlay"
                 onClick={() => (menuOpen ? closeMenu() : setMenuOpen(true))}
@@ -521,7 +706,7 @@ export function PillNav({
           )}
           style={{ transitionDelay: overlayOpen ? `${80 + nav.length * 45}ms` : '0ms' }}
         >
-          <Link href="/contact" className={cx(CTA, 'min-h-13 justify-center px-5 text-body-md')}>
+          <Link href="/contact" className={cx(CTA, 'min-h-13 justify-center px-5 text-[1.1875rem]')}>
             Book a site visit
             <Icon name="arrowRight" size={17} />
           </Link>
