@@ -1,48 +1,67 @@
 'use client';
 
+import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cx } from '@/lib/cx';
-import type { VideoRef } from '@/types/content';
+import { heroKey, heroLabel } from '@/lib/heroMedia';
+import { youtubeEmbedUrl, youtubeId } from '@/lib/blog';
+import type { HeroMediaItem } from '@/types/heroMedia';
 
 /* =============================================================================
-   HERO VIDEO STAGE — the bordered pane the hero type sits on.
+   HERO MEDIA STAGE — the bordered pane the hero type sits on.
 
-   ONE COMPONENT, TWO LAYOUTS, chosen by how many videos the CMS returns:
-     · exactly one  → a still pane. No controls are rendered at all, because a
-                      carousel with one slide is furniture that does nothing.
+   ONE COMPONENT, TWO LAYOUTS, chosen by how many items the CMS returns:
+     · exactly one   → a still pane. No controls are rendered at all, because a
+                       carousel with one slide is furniture that does nothing.
      · more than one → the same pane, plus a crossfade and a control cluster.
    The frame, the wash and the type treatment are IDENTICAL across both, so
-   adding a second video changes what moves, never how the hero looks.
+   adding a second item changes what moves, never how the hero looks.
+
+   ─── IT NOW TAKES THREE KINDS OF SLIDE, NOT ONE ───────────────────────────
+   🔴 THIS FILE USED TO RENDER EVERY SLIDE AS `<video src>`, and that is the
+   whole reason it had to change. An image URL in that attribute renders
+   nothing, and a YouTube watch URL renders nothing — so "the admin can choose
+   images or videos" was never a backend-only feature, however it looked from
+   the API. What was already here and is DELIBERATELY UNCHANGED:
+
+     · the crossfade, the 7s auto-advance and the dot navigation
+     · the pause control and WCAG 2.2.2 compliance
+     · `prefers-reduced-motion` handling
+     · hover/focus pause
+     · only-the-visible-slide-plays
+     · the scroll-shrink that opens the pane full-screen
+     · `on-dark` focus rings
+
+   Only the per-slide RENDERER is new, plus the two things that follow from it:
+   a key that works for an item with no `src`, and a YouTube slide holding the
+   rotation while it plays.
+
+   ─── WHY A YOUTUBE SLIDE DOES NOT AUTOPLAY ────────────────────────────────
+   🔴 It renders its poster with a play control and mounts the iframe on the
+   click — the same facade `YouTubeEmbed` uses everywhere else on this site. In
+   a hero the argument is stronger than anywhere else: a YouTube iframe is
+   roughly a megabyte of third-party script and several connections, and the
+   hero is on every visit, so autoplaying one would spend the first screen's
+   whole budget before anyone decided to watch, and set tracking cookies on
+   every visitor. iOS Low Power Mode and Data Saver would refuse it anyway.
+   An administrator who needs silent background motion uploads an MP4, and the
+   admin field says so.
 
    ─── NOTHING IS LAID OVER THE FOOTAGE ─────────────────────────────────────
    🔶 REMOVED ON REQUEST, 28 Sep 2026: this carried a dark vertical gradient
-   over the video — a scrim — to hold the white headline up. It is gone, and
-   with it the last thing standing between the visitor and the footage. The
-   video now plays at full brightness and full clarity: no tint, no blur.
-
-   THE TYPE IS STILL WHITE, and its legibility now comes from a TEXT SHADOW set
-   in Hero.tsx. That is the important distinction: a shadow darkens the handful
-   of pixels behind the letterforms, where a scrim darkened the entire frame.
-   If a pale clip ever makes the headline hard to read, deepen that shadow —
-   the tint is not coming back.
-
-   ─── THE PANE OPENS FULL SCREEN ───────────────────────────────────────────
-   Its width, height, border and radius are NOT set here. They are interpolated
-   in globals.css from `--hero-p`, which the effect below writes onto the
-   section as you scroll: 0 covering the whole screen, 1 settled into the
-   bordered pane. What stays here is everything that does not change between
-   those two states — the footage, the type, the controls, the padding.
+   over the video — a scrim — and it is gone. The type's legibility comes from
+   the frosted panel in Hero.tsx instead. If a pale slide ever makes the
+   headline hard to read, raise that panel's fill; the tint is not coming back.
 
    ─── HEIGHT IS CONTENT-DRIVEN, NOT ASPECT-DRIVEN ──────────────────────────
    No `aspect-[16/9]` on the frame, in either state. An aspect ratio fixes the
    height from the WIDTH, so on a narrow phone the pane becomes short exactly
-   as the headline wraps to four lines, and the type either overflows or has to
-   shrink. Padding plus a `min-height` FLOOR lets the pane grow to whatever the
-   type needs at every width, which is what makes this survive translation, a
-   longer headline, or a 320px screen. The video fills whatever height results
-   via `object-cover`.
+   as the headline wraps to four lines. Padding plus a `min-height` FLOOR lets
+   the pane grow to whatever the type needs at every width, which is what makes
+   this survive translation, a longer headline, or a 320px screen. Every slide
+   fills whatever height results via `object-cover`.
    ========================================================================== */
 
 /** Long enough to read the headline and watch a few seconds of footage. */
@@ -60,11 +79,20 @@ const FRAME_SHADOW =
    `--hero-run` in globals.css stays the single place the distance is set. */
 const SETTLE_AT = 0.7;
 
+/* Shared by all three slide kinds, so a crossfade cannot behave differently
+   depending on what is fading. Opacity is composited, so the transition never
+   touches layout on a full-bleed element. */
+const SLIDE_BASE = 'absolute inset-0 -z-10 size-full object-cover';
+const SLIDE_FADE =
+  'transition-opacity duration-700 ease-out-soft motion-reduce:transition-none';
+
 export function HeroVideoStage({
-  videos,
+  items,
   children,
 }: {
-  videos: readonly VideoRef[];
+  /** From `heroItems()` — `heroMedia` when the CMS has rows, the mapped
+   *  `heroVideos` otherwise. Array order IS slideshow order; never sorted. */
+  items: readonly HeroMediaItem[];
   children: ReactNode;
 }) {
   /* Returns false on the server and for the first paint, then syncs. That
@@ -72,17 +100,33 @@ export function HeroVideoStage({
      can never fire before the query has resolved. */
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 
-  const multi = videos.length > 1;
+  const multi = items.length > 1;
   const [index, setIndex] = useState(0);
   /* Set by the user via the control, and separately by hover/focus. Kept apart
      so moving the pointer away does not silently undo an explicit pause. */
   const [userPaused, setUserPaused] = useState(false);
   const [hoverPaused, setHoverPaused] = useState(false);
+  /* 🔴 THE THIRD HOLD, AND IT IS NOT OPTIONAL. A YouTube slide starts playing
+     on a click, and a 7-second rotation would then carry the visitor off the
+     video they just chose to watch. Keyed by the slide's own key rather than a
+     boolean so that advancing away and coming back does not leave a stale
+     "playing" flag holding the rotation for ever. */
+  const [playingKey, setPlayingKey] = useState<string | null>(null);
 
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const paneRef = useRef<HTMLDivElement>(null);
 
-  const advancing = multi && !reduceMotion && !userPaused && !hoverPaused;
+  /* 🔴 WHETHER ANY SLIDE PLAYS BY ITSELF — the gate for showing a pause
+     control at all. Previously the whole control cluster was gated on `multi`,
+     so a hero holding ONE auto-playing MP4 rendered no pause button: motion
+     with no way to stop it, which is the plain reading of a WCAG 2.2.2
+     failure. Images and YouTube facades do not move on their own, so a
+     single-image hero correctly still shows nothing. */
+  const hasSelfPlaying = items.some((item) => item.kind === 'video');
+
+  const activeKey = items[index] ? heroKey(items[index]!) : null;
+  const youtubePlaying = playingKey !== null && playingKey === activeKey;
+  const advancing = multi && !reduceMotion && !userPaused && !hoverPaused && !youtubePlaying;
 
   /* THE SCROLL-SHRINK. Writes `--hero-p` onto the SECTION, not onto the pane:
      the sticky wrapper's gutter and nav clearance are interpolated from the
@@ -90,7 +134,7 @@ export function HeroVideoStage({
      both. See globals.css for the geometry it drives.
 
      Nothing here is React state. A `setState` per scroll frame would re-render
-     the whole stage — videos, controls and all — sixty times a second to move
+     the whole stage — slides, controls and all — sixty times a second to move
      one number; writing the property straight onto the node moves it without
      React in the loop at all. */
   useEffect(() => {
@@ -137,7 +181,12 @@ export function HeroVideoStage({
   /* ONLY THE VISIBLE VIDEO PLAYS. Leaving all of them running decodes N video
      streams for one visible pane — the single most expensive thing a hero can
      do on a phone — and it is invisible while it happens, so nothing about the
-     page suggests why scrolling has gone rough. */
+     page suggests why scrolling has gone rough.
+
+     ⚠️ `videoRefs` IS SPARSE NOW. Only `kind: 'video'` slides register a ref,
+     so the array has holes wherever an image or a YouTube slide sits. The
+     `if (!el) return` guard that was already here is what makes that a
+     non-event — but it is now load-bearing rather than defensive. */
   useEffect(() => {
     videoRefs.current.forEach((el, i) => {
       if (!el) return;
@@ -150,7 +199,16 @@ export function HeroVideoStage({
         return;
       }
 
-      if (reduceMotion) {
+      /* 🔴 `userPaused` IS HONOURED HERE, AND ITS ABSENCE WAS A REAL WCAG
+         2.2.2 FAILURE. The pause control only ever cleared `advancing`, which
+         stops the ROTATION — the `<video>` elements kept looping underneath it.
+         The success criterion covers "moving, blinking or scrolling"
+         information, and a looping clip is exactly that, so a pause button that
+         visibly does nothing to the motion it sits on top of only half-met the
+         criterion. Hover-pause is deliberately NOT included: an incidental
+         pointer crossing the pane should not stop playback, only the explicit
+         control should. */
+      if (reduceMotion || userPaused) {
         el.pause();
         return;
       }
@@ -162,19 +220,26 @@ export function HeroVideoStage({
          that is working as designed. */
       void el.play().catch(() => {});
     });
-  }, [index, reduceMotion, videos.length]);
+  }, [index, reduceMotion, userPaused, items.length]);
+
+  /* A slide change unmounts any playing YouTube iframe, so the hold is
+     released with it. Without this, clicking play and then pressing a dot
+     would leave `playingKey` pointing at a slide nobody is watching. */
+  useEffect(() => {
+    setPlayingKey(null);
+  }, [index]);
 
   useEffect(() => {
     if (!advancing) return;
     const timer = setInterval(() => {
-      setIndex((current) => (current + 1) % videos.length);
+      setIndex((current) => (current + 1) % items.length);
     }, ADVANCE_MS);
     return () => clearInterval(timer);
-  }, [advancing, videos.length]);
+  }, [advancing, items.length]);
 
   const label = useCallback(
-    (video: VideoRef, i: number) => video.title ?? `Video ${i + 1} of ${videos.length}`,
-    [videos.length],
+    (item: HeroMediaItem, i: number) => heroLabel(item, i, items.length),
+    [items.length],
   );
 
   return (
@@ -194,77 +259,178 @@ export function HeroVideoStage({
         /* `justify-end`, not `justify-center`: the glass panel sits LOW in the
            frame on request — centred across, down at the bottom. The pane's
            own bottom padding is what holds it off the edge, so it keeps the
-           same clearance at every breakpoint and at every point of the shrink.
-
-           The controls, when there are any, are absolutely placed at
-           `bottom-4/6` — inside that padding, so they land under the panel
-           rather than behind it. */
+           same clearance at every breakpoint and at every point of the shrink. */
         'flex flex-col items-center justify-end',
         'px-5 py-16 mid:px-8 mid:py-20 tablet:px-12 tablet:py-28',
       )}
       /* Hover and focus pause the rotation, so a slide cannot change out from
          under someone reading it or tabbing through the controls.
 
-         🔶 WORTH KNOWING once a SECOND hero video exists. The CMS ships one
-         today, so `multi` is false and none of this runs. But the pane now
-         covers the whole screen on arrival, and "the pointer is over the pane"
-         therefore means "the pointer is anywhere on the page" until it
-         settles — so on a desktop the rotation would sit paused through the
-         opening. If a second video is added and the first never hands over,
-         that is the cause: gate this on `--hero-p` being past the settle
-         point rather than on hover alone. */
+         🔶 WORTH KNOWING. The pane covers the whole screen on arrival, so "the
+         pointer is over the pane" means "the pointer is anywhere on the page"
+         until it settles — on a desktop the rotation therefore sits paused
+         through the opening. If a second slide is added and the first never
+         hands over, that is the cause: gate this on `--hero-p` being past the
+         settle point rather than on hover alone. */
       onPointerEnter={() => setHoverPaused(true)}
       onPointerLeave={() => setHoverPaused(false)}
       onFocusCapture={() => setHoverPaused(true)}
       onBlurCapture={() => setHoverPaused(false)}
     >
-      {/* ---------- Layer 1: the footage ---------- */}
-      {videos.map((video, i) => (
-        <video
-          key={video.src}
-          ref={(el) => {
-            videoRefs.current[i] = el;
-          }}
-          src={video.src}
-          poster={video.poster}
-          /* `muted` and `playsInline` are not preferences — every browser
-             refuses to autoplay without both. `loop` because a single clip
-             ending on a frozen frame is worse than no video. */
-          muted
-          loop
-          playsInline
-          /* The active clip is worth bytes; the rest fetch enough to have a
-             first frame ready for the crossfade and no more. */
-          preload={i === index ? 'auto' : 'metadata'}
-          /* Decorative: the headline carries the meaning, and the controls
-             below are separately labelled. */
-          aria-hidden="true"
-          tabIndex={-1}
-          className={cx(
-            'absolute inset-0 -z-10 size-full object-cover',
-            /* Crossfade rather than slide: opacity is composited, so the
-               transition never touches layout on a full-bleed element. */
-            'transition-opacity duration-700 ease-out-soft motion-reduce:transition-none',
-            i === index ? 'opacity-100' : 'opacity-0',
-          )}
-        />
-      ))}
+      {/* ---------- Layer 1: the slides ----------
+          One branch per `kind`. Every branch produces the same box — absolutely
+          positioned, `object-cover`, crossfaded on opacity — so the pane cannot
+          change shape depending on what is in it. */}
+      {items.map((item, i) => {
+        const key = heroKey(item);
+        const active = i === index;
+        const fade = cx(SLIDE_BASE, SLIDE_FADE, active ? 'opacity-100' : 'opacity-0');
+
+        /* ---- A PHOTOGRAPH ----
+           Through `next/image`, which is why the backend must emit it on the
+           allowlisted Cloudinary path: an unlisted host is a BUILD failure, not
+           a broken slide. `priority` on the first slide only — it is the LCP
+           candidate; marking all of them priority would start N full-size
+           downloads for one visible image. */
+        if (item.kind === 'image') {
+          return (
+            <Image
+              key={key}
+              src={item.src}
+              /* Decorative at this size: the headline carries the page's
+                 meaning and the dot controls are separately labelled, so
+                 announcing the backdrop would be duplication. The CMS `alt` is
+                 still what names the slide in those controls. */
+              alt=""
+              fill
+              sizes="100vw"
+              quality={90}
+              priority={i === 0}
+              aria-hidden="true"
+              className={fade}
+            />
+          );
+        }
+
+        /* ---- A YOUTUBE LINK ----
+           The poster fills the pane; the iframe is mounted only by the click on
+           the control in Layer 3. An unparseable URL drops the slide's player
+           but KEEPS its poster, so the hero still looks finished — the same
+           degradation the blog's player chose. */
+        if (item.kind === 'youtube') {
+          const videoId = youtubeId(item.youtubeUrl);
+
+          if (active && playingKey === key && videoId) {
+            return (
+              <iframe
+                key={key}
+                src={youtubeEmbedUrl(videoId)}
+                title={item.title ?? 'Hero video'}
+                /* The narrowest set that leaves a normal player working. No
+                   camera, no microphone, no payment, no geolocation. */
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                /* 🔴 `z-20`, NOT the slide layer's `-z-10`. A playing iframe
+                   carries YouTube's OWN controls, and at the slide depth they
+                   sat underneath the glass type panel and the controls pill —
+                   so the visitor could start a video and then not pause,
+                   seek or fullscreen it. A background slide belongs behind the
+                   type; a video someone is actively watching does not. */
+                className={cx('absolute inset-0 z-20 size-full border-0')}
+              />
+            );
+          }
+
+          return (
+            <Image
+              key={key}
+              src={item.poster}
+              alt=""
+              fill
+              sizes="100vw"
+              quality={90}
+              priority={i === 0}
+              aria-hidden="true"
+              className={fade}
+            />
+          );
+        }
+
+        /* ---- AN UPLOADED MP4 ---- the original behaviour, untouched. */
+        return (
+          <video
+            key={key}
+            ref={(el) => {
+              videoRefs.current[i] = el;
+            }}
+            src={item.src}
+            poster={item.poster}
+            /* `muted` and `playsInline` are not preferences — every browser
+               refuses to autoplay without both. `loop` because a single clip
+               ending on a frozen frame is worse than no video. */
+            muted
+            loop
+            playsInline
+            /* The active clip is worth bytes; the rest fetch enough to have a
+               first frame ready for the crossfade and no more. */
+            preload={active ? 'auto' : 'metadata'}
+            aria-hidden="true"
+            tabIndex={-1}
+            className={fade}
+          />
+        );
+      })}
 
       {/* ---------- Layer 2: the type ----------
-          There is no layer between this and the footage any more. The scrim
-          that used to sit here is gone on request — see the header note. */}
+          There is no layer between this and the slides any more. The scrim that
+          used to sit here is gone on request — see the header note. */}
       <div className="relative flex w-full flex-col items-center">{children}</div>
 
-      {/* ---------- Layer 3: controls, only when they have a job ---------- */}
-      {multi ? (
+      {/* ---------- Layer 3: the YouTube play control ----------
+          🔴 BOTTOM-RIGHT, DELIBERATELY. The glass panel is centred and the dot
+          controls are bottom-centre, so this is the one corner where a
+          focusable control collides with neither. It only exists for a YouTube
+          slide, and it unmounts once playing — the iframe carries its own
+          controls from that point. */}
+      {(() => {
+        const active = items[index];
+        if (!active || active.kind !== 'youtube') return null;
+        if (playingKey === heroKey(active)) return null;
+        if (!youtubeId(active.youtubeUrl)) return null;
+
+        return (
+          <button
+            type="button"
+            onClick={() => setPlayingKey(heroKey(active))}
+            className={cx(
+              /* 🔴 LIFTED CLEAR OF THE DOTS PILL. Both controls previously
+                 occupied the same bottom band at the same z-index, so on a
+                 narrow viewport the play button and the slideshow dots
+                 overlapped and the upper one swallowed the other's clicks.
+                 The pill is centred at bottom-4/6; this sits a control-height
+                 above it, still in the corner, and at a higher z so it is
+                 never the one that loses. */
+              'absolute bottom-16 right-4 z-30 inline-flex items-center gap-2 tablet:bottom-20 tablet:right-6',
+              'rounded-pill border border-white/50 bg-surface/80 py-2 pl-3 pr-4 backdrop-blur-[13px]',
+              'text-body-sm font-medium text-ink transition-colors hover:bg-surface',
+            )}
+          >
+            <Icon name="play" size={15} />
+            {active.title?.trim() ? `Play: ${active.title.trim()}` : 'Play video'}
+          </button>
+        );
+      })()}
+
+      {/* ---------- Layer 4: controls, only when they have a job ---------- */}
+      {multi || (hasSelfPlaying && !reduceMotion) ? (
         <div
           className={cx(
-            'absolute bottom-4 left-1/2 -translate-x-1/2 tablet:bottom-6',
+            'absolute bottom-4 left-1/2 z-10 -translate-x-1/2 tablet:bottom-6',
             'flex items-center gap-1 rounded-pill border border-white/50 bg-surface/80 p-1.5',
             'backdrop-blur-[13px]',
           )}
           role="group"
-          aria-label="Hero video controls"
+          aria-label="Hero slideshow controls"
         >
           {/* WCAG 2.2.2 (Pause, Stop, Hide): content that moves or auto-updates
               for more than five seconds needs a way to stop it. Both the
@@ -279,21 +445,24 @@ export function HeroVideoStage({
               className="inline-flex size-8 items-center justify-center rounded-pill text-ink transition-colors hover:bg-white/60"
             >
               <span className="visually-hidden">
-                {userPaused ? 'Play hero videos' : 'Pause hero videos'}
+                {userPaused ? 'Play hero slideshow' : 'Pause hero slideshow'}
               </span>
               <Icon name={userPaused ? 'play' : 'pause'} size={14} />
             </button>
           ) : null}
 
-          {videos.map((video, i) => (
+          {/* The dots navigate BETWEEN slides, so they appear only when there
+              is somewhere to go. A single-MP4 hero shows the pause button
+              alone. */}
+          {multi ? items.map((item, i) => (
             <button
-              key={video.src}
+              key={heroKey(item)}
               type="button"
               onClick={() => setIndex(i)}
               aria-current={i === index ? 'true' : undefined}
               className="inline-flex size-8 items-center justify-center rounded-pill"
             >
-              <span className="visually-hidden">{label(video, i)}</span>
+              <span className="visually-hidden">{label(item, i)}</span>
               <span
                 aria-hidden="true"
                 className={cx(
@@ -303,7 +472,7 @@ export function HeroVideoStage({
                 )}
               />
             </button>
-          ))}
+          )) : null}
         </div>
       ) : null}
     </div>

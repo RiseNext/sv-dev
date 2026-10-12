@@ -1,22 +1,28 @@
 import { EnquiryPill } from '@/components/sections/EnquiryPill';
 import { HeroVideoStage } from '@/components/sections/HeroVideoStage';
 import { home } from '@/content/pages';
-import type { VideoRef } from '@/types/content';
+import type { HeroMediaItem } from '@/types/heroMedia';
 
 /* =============================================================================
    HERO
 
-   Two states, decided entirely by how many videos the CMS returns:
+   Two states, decided entirely by how many media items the CMS returns:
 
      none  → type on the off-white field. Not a broken state: the reference site
              runs the same treatment on its company page, and it is what the
-             hero renders until the backend ships `site-settings.heroVideos`.
-     one +  → the same type, set on a bordered video pane (HeroVideoStage,
+             hero renders when an administrator has configured no media at all.
+     one +  → the same type, set on a bordered media pane (HeroVideoStage,
              which also handles the crossfade when there is more than one).
 
+   🔴 THE PROP IS NOW `items`, NOT `videos`, AND IT IS A UNION. A slide may be a
+   photograph, an uploaded MP4 or a YouTube link — see `src/types/heroMedia.ts`.
+   The page resolves which list to use with `heroItems()`, which prefers the new
+   `heroMedia` and falls back to the legacy `heroVideos` that is still serving
+   production today. Nothing here knows or cares which one it got.
+
    🔴 THE OLD `media` PROP IS GONE, and deliberately. It took a single
-   `{ src, poster }` that nothing ever passed. `heroVideos` supersedes it —
-   two mechanisms for one job, one of them never used, was worse than either.
+   `{ src, poster }` that nothing ever passed. Two mechanisms for one job, one
+   of them never used, was worse than either.
 
    THE TYPE IS NOW IDENTICAL IN BOTH STATES, which it was not before. Over
    video the headline and the pill sit on a FROSTED WHITE PANEL (`hero-glass`,
@@ -44,21 +50,22 @@ import type { VideoRef } from '@/types/content';
 export function Hero({
   siteName,
   whatsapp,
-  videos,
+  items,
 }: {
   /* Threaded down from the page, because EnquiryPill is a 'use client' module
      and cannot read the CMS itself. */
   siteName: string;
   whatsapp: string;
-  /** From `site-settings.heroVideos`. Absent or empty → the type-only state. */
-  videos?: readonly VideoRef[];
+  /** From `heroItems()` — the resolved hero list, whichever CMS field supplied
+   *  it. Absent or empty → the type-only state. */
+  items?: readonly HeroMediaItem[];
 }) {
   const { title, titleAccent } = home.hero;
 
   /* Absent and empty are treated identically, so the backend can omit the
      field, return `[]`, or return rows — all three are valid and none of them
      needs a frontend change. */
-  const hasVideo = (videos?.length ?? 0) > 0;
+  const hasMedia = (items?.length ?? 0) > 0;
 
   /* One definition of the type block, used in both states. The alternative —
      duplicating the headline into each branch — is how the two states quietly
@@ -92,7 +99,7 @@ export function Hero({
     </>
   );
 
-  if (!hasVideo) {
+  if (!hasMedia) {
     return (
       <section
         className="relative flex min-h-svh flex-col items-center justify-center px-gutter pb-8 pt-28 tablet:pt-36"
@@ -103,7 +110,7 @@ export function Hero({
     );
   }
 
-  /* THE VIDEO ARRIVES FULL SCREEN AND SETTLES INTO ITS PANE AS YOU SCROLL.
+  /* THE MEDIA ARRIVES FULL SCREEN AND SETTLES INTO ITS PANE AS YOU SCROLL.
      The section is one screen tall plus a run to shrink over; the child inside
      it is `position: sticky`, so the footage is held against the viewport for
      that run and then releases and scrolls away like any other section.
@@ -117,7 +124,7 @@ export function Hero({
   return (
     <section className="hero-scroll" data-hero-scroll aria-labelledby="hero-title">
       <div className="hero-sticky">
-        <HeroVideoStage videos={videos ?? []}>
+        <HeroVideoStage items={items ?? []}>
           {/* THE GLASS PANEL, over video only. On the type-only state the page
               is already off-white, so a white panel on it would be a card with
               nothing to separate itself from — which is why this wraps the

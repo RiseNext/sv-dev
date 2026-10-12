@@ -41,6 +41,7 @@ export function YouTubeEmbed({
   videoId,
   title,
   cover,
+  posterSrc,
   duration,
   className = 'aspect-video rounded-media',
 }: {
@@ -49,6 +50,24 @@ export function YouTubeEmbed({
    *  the iframe's only accessible name. */
   title: string;
   cover?: ImageRef;
+  /**
+   * A poster URL, for callers that hold one as a plain string rather than as a
+   * full `ImageRef`.
+   *
+   * 🔴 WHY THIS EXISTS, AND IT IS NOT A CONVENIENCE. `projects.videos[]` makes
+   * `poster` MANDATORY on a YouTube row precisely so the pane never has to fall
+   * back to `i.ytimg.com`, a host deliberately absent from `next.config.mjs`
+   * `images.remotePatterns`. `ProjectVideos` had no way to hand that poster
+   * over — it passed neither `cover` nor this — so the CMS poster was collected,
+   * validated, serialised, and then silently discarded in favour of the very
+   * host the requirement exists to avoid.
+   *
+   * ⚠️ `cover` STILL WINS when both are given, so the blog's existing
+   * `ImageRef` path is byte-for-byte unchanged. Only `.src` is read from
+   * `cover` anyway (the `<Image>` below uses `fill`), which is why a bare string
+   * is sufficient here and no synthetic width/height has to be invented.
+   */
+  posterSrc?: string;
   duration?: string;
   /**
    * THE BOX: its shape, its radius and where it sits. Owned by the caller, the
@@ -86,9 +105,9 @@ export function YouTubeEmbed({
           aria-label={`Play: ${title}`}
           className="group absolute inset-0 h-full w-full cursor-pointer"
         >
-          {cover?.src ? (
+          {cover?.src || posterSrc ? (
             <Image
-              src={cover.src}
+              src={cover?.src ?? posterSrc!}
               alt=""
               fill
               sizes="(min-width: 1024px) 70vw, 100vw"

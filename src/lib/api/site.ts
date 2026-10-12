@@ -2,6 +2,7 @@ import 'server-only';
 import { cache } from 'react';
 import type { IconName } from '@/components/ui/Icon';
 import type { VideoRef } from '@/types/content';
+import type { HeroMediaItem } from '@/types/heroMedia';
 import { getJson } from './client';
 
 /* =============================================================================
@@ -36,34 +37,40 @@ export type SiteSettings = {
   logo?: { src: string; alt: string; width: number; height: number };
   masterPlan?: { title: string; href: string };
   /**
-   * 🔴 NOT EMITTED BY THE BACKEND YET — THIS IS THE SPEC TO IMPLEMENT.
+   * ✅ LIVE. Verified serving one video in production (12 Oct 2026):
+   * `/api/v1/site-settings` returns `heroVideos: [{src, poster, title}]` with
+   * `src` on `/video/upload/videos/<uuid>.mp4` and `poster` on
+   * `/image/upload/media/<uuid>.jpg`.
    *
-   * The hero reads this and needs nothing else: absent or empty renders the
-   * current type-only hero, one entry renders the single-video layout, more
-   * than one renders the carousel. So the section goes live purely by the API
-   * starting to return the field — no frontend deploy required.
+   * 🔶 SUPERSEDED BY `heroMedia` BELOW, BUT NOT DEPRECATED AND NOT GOING AWAY
+   * YET. The live hero still renders through this field, and `heroItems()`
+   * falls back to it whenever `heroMedia` has no rows — so retiring it is a
+   * separate decision, not a side effect of adding images.
    *
-   * WHAT THE BACKEND MUST ADD, on `/api/v1/site-settings`:
-   *   heroVideos: [{ src, poster?, title? }]   // ORDERED — admin sort order is
-   *                                            // the carousel order
-   *
-   *   · `src` — Cloudinary delivery URL for the encoded video. It MUST share
-   *     the origin configured as NEXT_PUBLIC_MEDIA_BASE_URL. `<video>` ignores
-   *     next/image's host allowlist, so a mismatched host is a silent black
-   *     box in production, not a build error.
-   *   · `poster` — a still frame. Please always emit one; it is what the user
-   *     sees while the video loads, and on a metered connection it may be all
-   *     they ever see.
-   *   · Encode for autoplay: H.264/MP4, no audio track (the element is muted
-   *     and `playsInline`, which browsers require for autoplay), and keep each
-   *     file small enough to stream on an Indian mobile connection.
-   *   · Omit the field entirely rather than returning `[]` with placeholder
-   *     rows — the hero treats empty and absent identically, so there is no
-   *     need for filler.
+   * ORDERED: admin sort order is the slideshow order. `src` shares the origin
+   * configured as NEXT_PUBLIC_MEDIA_BASE_URL — `<video>` ignores next/image's
+   * host allowlist, so a mismatched host is a silent black box in production
+   * rather than a build error.
    */
   heroVideos?: VideoRef[];
+  /**
+   * THE UNIFIED HERO LIST — photographs, uploaded MP4s and YouTube links in one
+   * ordered sequence. See `src/types/heroMedia.ts` for the full contract and
+   * `heroItems()` in `src/lib/heroMedia.ts` for how it combines with the legacy
+   * field above.
+   *
+   * 🔴 ABSENT OR EMPTY IS A NORMAL STATE, not a missing feature: the hero then
+   * falls back to `heroVideos`, and to the type-only layout if that is empty
+   * too. The backend OMITS the key rather than returning `[]`.
+   *
+   * ⚠️ A `kind: 'youtube'` SLIDE DOES NOT AUTOPLAY — it shows its poster with a
+   * play control and loads the embed on the click. That is deliberate; the
+   * reasoning is on `HeroYouTube`.
+   */
+  heroMedia?: HeroMediaItem[];
 };
 
 export const getSiteSettings = cache(async (): Promise<SiteSettings> => {
   return getJson<SiteSettings>('/site-settings', { tags: ['site-settings'] });
 });
+

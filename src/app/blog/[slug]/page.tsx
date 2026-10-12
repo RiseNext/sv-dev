@@ -7,7 +7,6 @@ import { ShareButton } from '@/components/ui/ShareButton';
 import { YouTubeEmbed } from '@/components/ui/YouTubeEmbed';
 import { getBlogPost, getBlogPosts } from '@/lib/api/blog';
 import { getSiteSettings } from '@/lib/api/site';
-import { previewBlogPost } from '@/lib/dev/previewBlogPosts';
 import { formatPostDate, youtubeId, youtubeWatchUrl } from '@/lib/blog';
 import { pageMetadata } from '@/lib/seo';
 
@@ -46,8 +45,10 @@ export async function generateStaticParams(): Promise<Params[]> {
 
 export async function generateMetadata({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
-  const [fetched, site] = await Promise.all([getBlogPost(slug), getSiteSettings()]);
-  const post = fetched ?? previewBlogPost(slug);
+  const [post, site] = await Promise.all([getBlogPost(slug), getSiteSettings()]);
+  /* An unpublished or unknown slug yields no metadata, and the component below
+     calls notFound() for the same reason. Returning {} rather than throwing
+     keeps a 404 a 404 instead of a build-time error. */
   if (!post) return {};
 
   const base = pageMetadata({
@@ -85,14 +86,16 @@ export async function generateMetadata({ params }: { params: Promise<Params> }) 
 export default async function BlogPostPage({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
 
-  /* 🔶 The dev preview again — see the note in `app/blog/page.tsx`. The CMS
-     wins: `previewBlogPost()` is only consulted when the API has no such post,
-     and it returns null outside development, so production 404s exactly as it
-     will once the endpoint exists. */
-  const post = (await getBlogPost(slug)) ?? previewBlogPost(slug);
+  /* 🔴 THE DEV PREVIEW IS GONE — see the note in `app/blog/page.tsx`.
+     `getBlogPost()` deliberately has NO `fallback`, so a 404 stays
+     distinguishable from an outage: `getJsonOrNull` turns the 404 into null and
+     lets every OTHER failure keep throwing. That is what makes the next line
+     correct rather than a catch-all. */
+  const post = await getBlogPost(slug);
 
-  /* An unpublished or archived post 404s because the API returns 404 — never
-     403, which would confirm the document exists. */
+  /* A draft, archived or unknown post 404s because the API returns 404 — never
+     403, which would confirm the document exists. Verified against the live
+     endpoint: an unknown slug answers 404 with the shared error envelope. */
   if (!post) notFound();
 
   const date = formatPostDate(post.publishedAt);

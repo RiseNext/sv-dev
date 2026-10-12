@@ -11,8 +11,7 @@ import { contact } from '@/content/pages';
 import { getFeaturedProjects, getProject, getProjects } from '@/lib/api/projects';
 import { getSiteSettings } from '@/lib/api/site';
 import { getFaqs, getStatistics, getTestimonials } from '@/lib/api/content';
-/* 🔶 TEMPORARY — delete with the `??` below when the CMS ships `heroVideos`. */
-import { previewHeroVideos } from '@/lib/dev/previewHeroVideos';
+import { heroItems } from '@/lib/heroMedia';
 import { projectVideo } from '@/lib/projectVideo';
 import { pageMetadata } from '@/lib/seo';
 import type { ImageRef, Project } from '@/types/content';
@@ -103,17 +102,22 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* `heroVideos` is absent from the API today, so the `??` falls through to
-          the local preview folder (public/media/hero) — DEVELOPMENT ONLY, see
-          lib/dev/previewHeroVideos.ts.
+      {/* 🔴 THE DEV STAND-IN IS GONE, and `public/media/hero/` with it. It
+          existed only because there was no way to SEE a hero video before the
+          backend shipped the field. That field is live in production now, so
+          the stand-in was dead weight whose only remaining effect would be to
+          MASK a real misconfiguration in development — a local hero that works
+          off disk while the CMS returns nothing is the bug it used to prevent,
+          inverted.
 
-          🔶 THE `??` IS THE TEMPORARY HALF, not the prop. The CMS wins the
-          moment it returns anything, so nothing here needs unpicking when the
-          backend ships: delete `?? previewHeroVideos()` and its import. */}
+          `heroItems()` is the whole of the selection logic: the new unified
+          `heroMedia` when the CMS has rows, the legacy `heroVideos` otherwise,
+          and an empty list if neither — which renders the type-only hero. All
+          three are valid states. See lib/heroMedia.ts. */}
       <Hero
         siteName={site.name}
         whatsapp={site.whatsapp}
-        videos={site.heroVideos ?? previewHeroVideos()}
+        items={heroItems(site.heroMedia, site.heroVideos)}
       />
 
       {/* The "Why SV Developers" statement ("Finished infrastructure, not a

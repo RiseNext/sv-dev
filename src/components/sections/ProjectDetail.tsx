@@ -9,6 +9,8 @@ import { ContactForm } from '@/components/sections/ContactForm';
 import { ProjectActionBar } from '@/components/sections/ProjectActionBar';
 import { ProjectCard } from '@/components/sections/ProjectCard';
 import { ProjectPhotos } from '@/components/sections/ProjectPhotos';
+import { ProjectVideos } from '@/components/sections/ProjectVideos';
+import type { ProjectVideo } from '@/types/projectMedia';
 import { ProjectSectionNav, type ProjectSection } from '@/components/sections/ProjectSectionNav';
 import { contact } from '@/content/pages';
 import { getProjects } from '@/lib/api/projects';
@@ -196,6 +198,13 @@ export async function ProjectDetail({ project }: { project: Project }) {
   const isApartments = project.category === 'Apartments';
   const planLabel = isApartments ? 'Floor plan' : 'Layout plan';
   const gallery = project.gallery ?? [];
+  /* 🔶 READ OFF THE RECORD OPPORTUNISTICALLY, exactly as `logo` is on the
+     homepage deck. `types/content.ts` is the byte-identical shared contract and
+     is deliberately left alone, so the widened shape lives here and in
+     `types/projectMedia.ts` beside the component that consumes it. Absent on
+     every project until an admin adds one, in which case the section below
+     simply does not render. */
+  const videos = (project as Project & { videos?: readonly ProjectVideo[] }).videos ?? [];
 
   /* The overview, one paragraph per line the admin actually typed — see the
      note at the render site. Trimmed, and blanks dropped, so a trailing or
@@ -240,6 +249,7 @@ export async function ProjectDetail({ project }: { project: Project }) {
     ...(project.approvals?.length ? [{ id: 'approvals', label: 'Approvals' }] : []),
     ...(hasLocation ? [{ id: 'location', label: 'Location' }] : []),
     ...(gallery.length ? [{ id: 'gallery', label: 'Gallery' }] : []),
+    ...(videos.length ? [{ id: 'videos', label: 'Videos' }] : []),
     { id: 'enquire', label: 'Enquire' },
   ];
 
@@ -642,6 +652,22 @@ export async function ProjectDetail({ project }: { project: Project }) {
               <SectionHead id="gallery" label="Gallery" title="On the ground at" accent={project.name} />
               <Reveal delay={80} className="mt-10">
                 <ProjectPhotos images={gallery} name={project.name} />
+              </Reveal>
+            </div>
+          </section>
+        ) : null}
+
+        {/* ---------- 10b. THE VIDEOS ----------
+            Admin order, uploaded MP4s and YouTube links mixed freely. Nothing
+            autoplays and nothing from YouTube loads until a click — see the
+            header of ProjectVideos.tsx. Absent for every project that has not
+            been given one, which is the common case and renders nothing. */}
+        {videos.length ? (
+          <section id="videos" className={cx(SECTION, ANCHOR)} aria-labelledby="videos-title">
+            <div className="container-page">
+              <SectionHead id="videos" label="Videos" title="On camera at" accent={project.name} />
+              <Reveal delay={80} className="mt-10">
+                <ProjectVideos videos={videos} name={project.name} />
               </Reveal>
             </div>
           </section>
