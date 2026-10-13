@@ -67,7 +67,13 @@ export function EnquiryPill({
   };
 
   return (
-    <div className="mx-auto w-full max-w-[30rem]">
+    /* 🔴 `enquiry-pill` IS A HOOK, NOT A STYLE. The hero pane carries
+       `on-dark`, which forces every focus ring inside it WHITE for legibility
+       over footage — and this pill's own surface is cream, so that ring would
+       be invisible on it. The rule restoring a dark outline lives in
+       globals.css beside `.hero-glass`'s, which used to do this job before the
+       panel was removed from the hero. Nothing else depends on the class. */
+    <div className="enquiry-pill mx-auto w-full max-w-[30rem]">
       <form
         onSubmit={onSubmit}
         className="flex items-center gap-1 rounded-card border border-white/40 bg-surface/90 p-1.5 shadow-[0_10px_40px_rgba(122,90,34,0.14)] backdrop-blur-[13px]"
@@ -97,8 +103,17 @@ export function EnquiryPill({
         </button>
       </form>
 
+      {/* 🔶 THE MESSAGE CARRIES ITS OWN SURFACE NOW. It used to sit inside the
+          hero's frosted panel, which is gone — so over a bright slide red type
+          on bare footage was a validation error nobody could read. A frosted
+          chip, `w-fit` so it hugs the sentence rather than drawing a bar the
+          width of the pill. It is `mx-auto` for the same reason the pill is. */}
       {error ? (
-        <p id={`${inputId}-error`} role="alert" className="mt-2 text-center text-body-xs text-danger">
+        <p
+          id={`${inputId}-error`}
+          role="alert"
+          className="mx-auto mt-2 w-fit rounded-pill bg-surface/90 px-3 py-1 text-center text-body-xs text-danger backdrop-blur-[13px]"
+        >
           {error}
         </p>
       ) : null}

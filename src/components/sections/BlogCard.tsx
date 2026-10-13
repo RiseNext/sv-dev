@@ -4,8 +4,7 @@ import type { ReactNode } from 'react';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { YouTubeThumb } from '@/components/ui/YouTubeThumb';
 import type { BlogPostCard } from '@/types/blog';
-import { formatPostDate, postHref, youtubeId } from '@/lib/blog';
-import { anchorProps, isExternal } from '@/lib/href';
+import { formatPostDate, hasPlayableVideo, postHref, youtubeId } from '@/lib/blog';
 import { cx } from '@/lib/cx';
 
 /* =============================================================================
@@ -57,13 +56,20 @@ function PostMedia({
   sizes: string;
   priority: boolean;
 }) {
-  const videoId = post.video ? youtubeId(post.video.youtubeUrl) : null;
+  const videoId = youtubeId(post.video?.youtubeUrl);
   const cover = post.cover?.src ? post.cover : null;
 
-  /* A video whose URL would not parse still counts as a video for the glyph —
-     the post IS one, and the card should say so even when the thumbnail
-     cannot be addressed. */
-  const isVideo = Boolean(post.video);
+  /* 🔴 THE PLAY GLYPH NOW REQUIRES A VIDEO WE CAN ACTUALLY PLAY, and the
+     inverted comment that used to sit here is the bug it describes: "a video
+     whose URL would not parse still counts as a video for the glyph". It does
+     not. A glyph is a PROMISE OF PLAYBACK, and the detail page mounts a player
+     only when `youtubeId()` returns an id — so under the old rule a post with
+     an empty or malformed `youtubeUrl` showed a play button on the index and
+     then had nothing to play when you arrived.
+
+     An article with only a cover, and an article with neither, both correctly
+     show no glyph: this is false for both. See `hasPlayableVideo()`. */
+  const isVideo = videoId !== null;
   if (!cover && !isVideo) return null;
 
   return (
@@ -104,8 +110,13 @@ function PostMedia({
 
       {/* Admin-typed, so it is absent far more often than not — and a badge
           that is sometimes there is better than a badge that invents a value.
-          Gold, in the slot ProjectCard puts its status chip. */}
-      {post.video?.duration ? (
+          Gold, in the slot ProjectCard puts its status chip.
+
+          🔶 GATED ON `isVideo` TOO. A running time printed on a card with no
+          playable video is the same false promise the play glyph was, in
+          smaller type — and the one record that carries a duration without a
+          parseable URL is exactly the half-finished row this change is for. */}
+      {isVideo && post.video?.duration ? (
         <span className="absolute right-3 top-3 inline-flex items-center rounded-pill bg-gold px-3 py-1.5 font-mono text-[0.6875rem] uppercase tracking-[0.06em] text-core-black">
           {post.video.duration}
         </span>
@@ -138,28 +149,24 @@ function PostMeta({ post, className }: { post: BlogPostCard; className?: string 
 /* ---------------------------------------------------------------------------
    THE ACTION LABEL
 
-   Three destinations, three labels. The external one NAMES THE HOST — "Read on
-   rera.telangana.gov.in" — because a link that leaves the site should say
-   where it goes before it is clicked, not after.
+   🔴 THE "Read on <host>" BRANCH IS GONE, AND IT HAD TO BE. It read "Read on
+   geeksforgeeks.org" beside an outbound icon — an accurate promise while the
+   card linked straight out, and a LIE the moment it stopped. Every card now
+   goes to `/blog/<slug>` on this site (see `postHref`), so a label naming a
+   third-party host beside an arrow that does not go there is worse than no
+   label: it is the card telling the visitor the wrong destination.
 
-   The hostname is parsed defensively: `externalUrl` is admin input, and a
-   bracketed placeholder or a typo must produce a generic label rather than
-   throwing during a server render and taking the whole page down.
+   WHERE THE HOST WENT, because it was genuinely useful: onto the outbound
+   button INSIDE the article, which is the one control that really does leave
+   the site. A link that leaves should still say where it goes — just at the
+   point where it actually does.
+
+   Two labels left, and both are now true of every card that carries them. The
+   video one is gated on PLAYABILITY rather than on the presence of a `video`
+   object, for the same reason the glyph above is.
    --------------------------------------------------------------------------- */
 function postAction(post: BlogPostCard): { label: string; icon: IconName } {
-  const external = post.externalUrl?.trim();
-
-  if (external) {
-    let host: string | null = null;
-    try {
-      host = new URL(external).hostname.replace(/^www\./, '');
-    } catch {
-      host = null;
-    }
-    return { label: host ? `Read on ${host}` : 'Read the article', icon: 'external' };
-  }
-
-  if (post.video) return { label: 'Watch the video', icon: 'play' };
+  if (hasPlayableVideo(post)) return { label: 'Watch the video', icon: 'play' };
   return { label: 'Read the article', icon: 'arrowRight' };
 }
 
@@ -183,11 +190,19 @@ function ActionLabel({ post, className }: { post: BlogPostCard; className?: stri
 /* ---------------------------------------------------------------------------
    THE SHELL
 
-   An internal post is a <Link> and gets client-side navigation and prefetch;
-   an external one is an <a> through `anchorProps()`, which adds
-   target/rel — and renders a `[BRACKETED]` destination INERT and visibly
-   struck through rather than as a live link to nowhere. Same split, and the
-   same reasoning, as `LinkButton`.
+   🔴 ALWAYS A <Link>, NEVER AN <a>. The external branch that used to be here —
+   `isExternal(href)` → `anchorProps()` → `target="_blank"` — is gone with the
+   rule that produced it: `postHref()` returns an internal route for every post
+   now, so `isExternal()` was dead code that could only ever answer false.
+
+   What that branch bought is not lost. The outbound `[BRACKETED]`-safe
+   treatment it provided still guards the external link where it now lives —
+   the "Read the full article" button on the detail page, through `LinkButton`,
+   which calls the same `anchorProps()` this used to.
+
+   One consequence worth stating: every card is a real client-side navigation
+   with prefetch again. The external ones were full page loads to another
+   origin.
    --------------------------------------------------------------------------- */
 function CardShell({
   post,
@@ -198,18 +213,8 @@ function CardShell({
   className: string;
   children: ReactNode;
 }) {
-  const href = postHref(post);
-
-  if (isExternal(href)) {
-    return (
-      <a {...anchorProps(href)} className={className}>
-        {children}
-      </a>
-    );
-  }
-
   return (
-    <Link href={href} className={className}>
+    <Link href={postHref(post)} className={className}>
       {children}
     </Link>
   );
@@ -233,8 +238,18 @@ export function BlogCard({ post, priority = false }: { post: BlogPostCard; prior
       />
 
       {/* `pt-5` with media above it, `pt-4` without — a type-only card would
-          otherwise open with a hole where the picture was. */}
-      <div className={cx('flex flex-1 flex-col px-3 pb-4', post.cover || post.video ? 'pt-5' : 'pt-4')}>
+          otherwise open with a hole where the picture was.
+
+          🔶 THE TEST MUST MATCH `PostMedia`'s OWN, which is why it is
+          `hasPlayableVideo` and not `post.video`: a post with an unplayable
+          video and no cover renders NO media box, and under the old test this
+          padded for one that is not there. */}
+      <div
+        className={cx(
+          'flex flex-1 flex-col px-3 pb-4',
+          post.cover || hasPlayableVideo(post) ? 'pt-5' : 'pt-4',
+        )}
+      >
         <PostMeta post={post} />
         <h3 className="mt-2 text-heading-sm text-ink">{post.title}</h3>
         <p className="mt-2.5 text-body-sm text-ink-soft">{post.excerpt}</p>
@@ -257,7 +272,11 @@ export function BlogCard({ post, priority = false }: { post: BlogPostCard; prior
    collapses to one column of type rather than leaving half the card empty.
    --------------------------------------------------------------------------- */
 export function BlogFeatureCard({ post }: { post: BlogPostCard }) {
-  const hasMedia = Boolean(post.cover || post.video);
+  /* Same test as `PostMedia`'s, for the same reason the grid card's padding
+     uses it: this drives the two-column split, and splitting the card for a
+     media box that `PostMedia` then declines to render leaves half of the
+     feature card empty. */
+  const hasMedia = Boolean(post.cover || hasPlayableVideo(post));
 
   return (
     <CardShell post={post} className={cx(SHELL, hasMedia && 'tablet:grid tablet:grid-cols-[1.15fr_1fr]')}>

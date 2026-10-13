@@ -124,24 +124,63 @@ export function youtubeThumbnails(id: string): { maxres: string; hq: string } {
   };
 }
 
+/**
+ * 🔴 WHETHER A POST ACTUALLY HAS SOMETHING TO PLAY — not whether it has a
+ * `video` object.
+ *
+ * THIS IS THE FIX FOR THE PLAY BUTTON ON EVERY CARD. The test used to be
+ * `Boolean(post.video)`, and that is true for a row an administrator opened,
+ * half-filled and saved: the CMS emits `video: { youtubeUrl: '' }`, or a
+ * pasted LinkedIn link, or a typo'd watch URL — none of which produce a
+ * player, all of which produced a play glyph promising one. The visitor taps
+ * it, lands on an article with no video, and the card has lied.
+ *
+ * `youtubeId()` is the ONLY honest test available: it is also what the detail
+ * page uses to decide whether to mount a player, so this function returning
+ * true and the page then rendering no player is impossible by construction.
+ * Anything it cannot parse is, by definition, something we cannot play.
+ *
+ * ⚠️ NOT INFERRED FROM `cover`. A thumbnail says a post has a picture and
+ * nothing more — most article posts have one.
+ */
+export function hasPlayableVideo(post: Pick<BlogPostCard, 'video'>): boolean {
+  return youtubeId(post.video?.youtubeUrl) !== null;
+}
+
 /** Derived from the record, never read from a field — so the badge on the card
- *  and the player on the page cannot disagree about what a post is. */
+ *  and the player on the page cannot disagree about what a post is.
+ *
+ *  🔶 NOW GATED ON PLAYABILITY for exactly that reason: a post whose video URL
+ *  will not parse renders as an ARTICLE on the detail page, so calling it a
+ *  video post anywhere else would be the two disagreeing again. */
 export function postKind(post: Pick<BlogPostCard, 'video'>): BlogPostKind {
-  return post.video ? 'video' : 'article';
+  return hasPlayableVideo(post) ? 'video' : 'article';
 }
 
 /**
- * Where a card goes. `externalUrl` is the whole rule — see the note on that
- * field in `types/blog.ts`.
+ * Where a card goes — ALWAYS THE ARTICLE ON THIS SITE.
  *
- * A bracketed placeholder is returned AS-IS on purpose: every caller renders
- * an outbound destination through `anchorProps()`, which makes `[SOME_URL]`
- * inert and visibly struck through. Resolving it to the internal page here
- * would hide an unfinished record instead of showing it.
+ * 🔴 `externalUrl` NO LONGER DECIDES THIS, AND THAT IS THE WHOLE CHANGE
+ * (13 Oct 2026). A card used to link straight out: tapping "test2" on the blog
+ * index left sv-developers for geeksforgeeks.org before the visitor had read a
+ * word of it, and the post's own page — its cover, its excerpt, its byline,
+ * its share control, its video — was unreachable in practice.
+ *
+ * The flow is now: card → `/blog/<slug>` → read → click the outbound button
+ * inside the article if you want the source. The external destination is not
+ * lost, it is DEMOTED from "where this card goes" to "one link within the
+ * thing it goes to", which is where a citation belongs.
+ *
+ * ⚠️ THIS IS WHY `app/blog/[slug]/page.tsx` HAD TO STOP HIDING `body` ON AN
+ * EXTERNAL POST. That page was written on the assumption that it was a rarely
+ * reached fallback; it is now the primary destination for every post, so an
+ * external one must render whatever the admin actually wrote.
+ *
+ * Takes the whole card for signature stability — callers pass a post, not a
+ * slug, and narrowing the parameter later would churn every call site.
  */
 export function postHref(post: Pick<BlogPostCard, 'slug' | 'externalUrl'>): string {
-  const external = post.externalUrl?.trim();
-  return external ? external : `/blog/${post.slug}`;
+  return `/blog/${post.slug}`;
 }
 
 const MONTHS = [

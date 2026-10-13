@@ -769,8 +769,21 @@
 /* 🔴 REQUIRED, not belt-and-braces. The pane carries `on-dark`, whose
    `.on-dark :focus-visible` rule hardcodes a WHITE outline for the controls
    over footage. Inside this panel that ring would be white on white glass —
-   invisible — for everyone tabbing to the phone field or the submit button. */
-.hero-glass :focus-visible {
+   invisible — for everyone tabbing to the phone field or the submit button.
+
+   🔴 `.enquiry-pill` CARRIES THE SAME RULE, AND IT IS NOT OPTIONAL. The glass
+   panel was removed from the hero on 13 Oct 2026 along with the headline it
+   held, and it was the ONLY thing standing between `on-dark` and the booking
+   form. The pill's own surface is `bg-surface/90` — cream — so without this
+   the phone field and the "Book a site visit" button would have had a white
+   focus ring on a near-white ground: a keyboard user could tab into the hero's
+   one conversion control and not be able to see where they were.
+
+   Both selectors are kept on one rule rather than one being deleted: the panel
+   is the kind of thing that comes back, and the day it does its focus rings
+   must already be correct. */
+.hero-glass :focus-visible,
+.enquiry-pill :focus-visible {
   outline-color: var(--color-core-black);
 }
 

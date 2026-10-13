@@ -1,68 +1,54 @@
 import type { ReactNode } from 'react';
 import { Reveal } from '@/components/ui/Reveal';
+import { TestimonialCard, TestimonialCarousel } from '@/components/sections/TestimonialCarousel';
 import type { Testimonial } from '@/types/content';
-import { isPlaceholder } from '@/lib/href';
 
 /* White card, serif quote, mono attribution — the reference's story card
    without the video, which we do not have.
 
-   `isPlaceholder` still guards the attribution: a CMS row may legitimately be
-   saved with a `[BRACKETED]` name while an admin is mid-edit, and that must
-   render visibly inert rather than looking like a real person. */
+   🔴 THE REAL LIST IS A RAIL NOW, NOT A GRID. It used to be
+   `grid gap-4 mid:grid-cols-2 tablet:grid-cols-3`, which below 640px collapses
+   to one column — so on a phone every review became a full-width block stacked
+   under the last, and the section's height grew without limit as the client
+   published more. It is now `TestimonialCarousel`, built in the "Our projects"
+   carousel's idiom on request. See that file for why it is a separate
+   component and for the exact mechanism by which THE DESKTOP LAYOUT IS
+   UNCHANGED (three-or-fewer reviews render a static three-up row with no
+   controls, pixel-for-pixel what `grid-cols-3 gap-4` produced).
 
-/* ⚠️ Items arrive as a PROP and the CMS returns only PUBLISHED AND CONSENTED
+   The STUB below is still a grid, deliberately — see the note on it.
+
+   ⚠️ Items arrive as a PROP and the CMS returns only PUBLISHED AND CONSENTED
    quotes. No invented review text exists anywhere in this repository, and none
    may be added here — see the tombstone in content/pages.ts. */
 export function Testimonials({ items }: { items: readonly Testimonial[] }) {
-  /* 🔶 TEMPORARY — the /testimonials endpoint is not live yet, so
-     `getTestimonials()` falls back to [] and this section used to vanish
-     entirely. `TestimonialsStub` stands in that gap so the reserved area is
-     visible while the backend team wires the admin up.
+  /* 🔶 TEMPORARY — the /testimonials endpoint may legitimately return no rows
+     (it did for months before the admin was wired up), and this section used to
+     vanish entirely when it did. `TestimonialsStub` stands in that gap so the
+     reserved area stays visible.
 
      THE CMS WINS THE MOMENT IT RETURNS A ROW — the line below is the whole
-     switchover, so nothing needs unpicking the day the endpoint ships. To
-     retire the stub: restore `return null` here and delete `TestimonialsStub`
-     with its widths constant. DO NOT put quote text in the stub. */
+     switchover. To retire the stub: restore `return null` here and delete
+     `TestimonialsStub` with its widths constant. DO NOT put quote text in the
+     stub. */
   if (!items.length) return <TestimonialsStub />;
 
   return (
     <Shell>
-      {items.map((item, index) => (
-        <Reveal as="li" key={item.id} delay={index * 80}>
-          <Card
-            body={<p className="text-heading-xs leading-relaxed text-ink">“{item.body}”</p>}
-            caption={
-              <>
-                <span
-                  className="block font-mono text-body-xs text-ink"
-                  data-placeholder={isPlaceholder(item.name) ? '' : undefined}
-                >
-                  {item.name}
-                </span>
-                <span className="mt-1 block font-mono text-body-xs text-ink-faint">
-                  {item.role}
-                </span>
-              </>
-            }
-          />
-        </Reveal>
-      ))}
+      <TestimonialCarousel items={items} />
     </Shell>
   );
 }
 
-/* The section shell and the card chrome are shared by the real list and the
-   stub deliberately: two copies of this markup would drift the moment either
-   is touched, and the stub's entire job is to show the real layout. */
-function Shell({
-  note,
-  listHidden,
-  children,
-}: {
-  note?: string;
-  listHidden?: boolean;
-  children: ReactNode;
-}) {
+/* The section shell is shared by the real rail and the stub deliberately: two
+   copies of the heading block would drift the moment either is touched.
+
+   🔶 IT NO LONGER OWNS THE <ul>. It used to render the grid itself and take
+   `<li>`s as children, which cannot work now that the real list is a carousel
+   with its own list, its own controls and its own region role. Each caller
+   brings its own list markup; the shell brings the heading, the measure and
+   the spacing. */
+function Shell({ note, children }: { note?: string; children: ReactNode }) {
   return (
     <section className="px-gutter pt-section" aria-labelledby="reviews-title">
       <div className="container-page">
@@ -74,26 +60,9 @@ function Shell({
           {note ? <p className="mt-5 font-mono text-body-xs text-ink-faint">{note}</p> : null}
         </Reveal>
 
-        {/* The stub's cards carry no readable content, so they are hidden from
-            assistive tech — the visible note above says the same thing in words
-            and is read in their place. */}
-        <ul
-          aria-hidden={listHidden || undefined}
-          className="mt-14 grid gap-4 mid:grid-cols-2 tablet:grid-cols-3"
-        >
-          {children}
-        </ul>
+        <Reveal className="mt-14">{children}</Reveal>
       </div>
     </section>
-  );
-}
-
-function Card({ body, caption }: { body: ReactNode; caption: ReactNode }) {
-  return (
-    <figure className="flex h-full flex-col rounded-media bg-surface p-6 tablet:p-8">
-      <blockquote className="flex-1">{body}</blockquote>
-      <figcaption className="mt-8 border-t border-line pt-5">{caption}</figcaption>
-    </figure>
   );
 }
 
@@ -111,35 +80,47 @@ const STUB_BARS = [
   ['w-full', 'w-11/12', 'w-1/2'],
 ];
 
+/* 🔴 THE STUB STAYS A GRID AND IS NOT PUT THROUGH THE CAROUSEL. Three
+   content-free skeletons do not need navigating, and wrapping them in a region
+   labelled "Buyer reviews" with arrows and dots would announce a carousel of
+   reviews that do not exist. It also keeps the stub honest as a LAYOUT
+   placeholder: one column on a phone is what an empty reserved area should
+   look like. It renders the same `TestimonialCard` chrome as the real thing,
+   so the card itself cannot drift between the two. */
 function TestimonialsStub() {
   return (
-    <Shell note="Reviews are published from the admin." listHidden>
-      {STUB_BARS.map((widths, index) => (
-        <Reveal as="li" key={index} delay={index * 80}>
-          <Card
-            body={
-              <div className="flex flex-col gap-3">
-                {widths.map((width) => (
-                  <span key={width} className={`block h-3 rounded-full bg-line ${width}`} />
-                ))}
-              </div>
-            }
-            caption={
-              <>
-                <span className="block font-mono text-body-xs text-ink" data-placeholder="">
-                  [CLIENT NAME]
-                </span>
-                <span
-                  className="mt-1 block font-mono text-body-xs text-ink-faint"
-                  data-placeholder=""
-                >
-                  [LOCALITY · YEAR]
-                </span>
-              </>
-            }
-          />
-        </Reveal>
-      ))}
+    <Shell note="Reviews are published from the admin.">
+      {/* The stub's cards carry no readable content, so the list is hidden from
+          assistive tech — the visible note above says the same thing in words
+          and is read in its place. */}
+      <ul aria-hidden="true" className="grid gap-4 mid:grid-cols-2 tablet:grid-cols-3">
+        {STUB_BARS.map((widths, index) => (
+          <li key={index}>
+            <TestimonialCard
+              body={
+                <div className="flex flex-col gap-3">
+                  {widths.map((width) => (
+                    <span key={width} className={`block h-3 rounded-full bg-line ${width}`} />
+                  ))}
+                </div>
+              }
+              caption={
+                <>
+                  <span className="block font-mono text-body-xs text-ink" data-placeholder="">
+                    [CLIENT NAME]
+                  </span>
+                  <span
+                    className="mt-1 block font-mono text-body-xs text-ink-faint"
+                    data-placeholder=""
+                  >
+                    [LOCALITY · YEAR]
+                  </span>
+                </>
+              }
+            />
+          </li>
+        ))}
+      </ul>
     </Shell>
   );
 }

@@ -23,13 +23,25 @@ import { pageMetadata } from '@/lib/seo';
    mono label above, the centred column, the rise animation — is PageHero's
    treatment, so the page still opens like every other page on the site.
 
-   ─── A POST WITH AN `externalUrl` STILL GETS THIS PAGE ────────────────────
-   Its card links straight out, so this route is normally unreachable for such
-   a post — but it is NOT a 404. An admin who adds an external URL to a post
-   that was already shared would otherwise break every link already sent, and
-   a page carrying the title, the summary and one prominent button to the real
-   article is a better landing than a dead end. The body, if there is one, is
-   not rendered here: `externalUrl` means the writing lives elsewhere.
+   ─── 🔴 THIS IS NOW THE DESTINATION FOR EVERY POST, INCLUDING EXTERNAL ONES
+   It used to be "normally unreachable" for a post with an `externalUrl`,
+   because the card linked straight out. That changed on 13 Oct 2026: a card
+   goes to `/blog/<slug>` whatever the post is, the visitor reads here, and the
+   outbound link is one control WITHIN the article rather than the thing that
+   swallowed the click. See the note on `postHref()` in `src/lib/blog.ts`.
+
+   🔴 TWO THINGS FOLLOWED FROM THAT, and both are the opposite of what this
+   file used to do:
+
+     · `body` IS RENDERED ON AN EXTERNAL POST. It was suppressed on the
+       reasoning that "`externalUrl` means the writing lives elsewhere" — fair
+       when nobody arrived here, and wrong now that everybody does. An admin
+       who wrote an introduction and also cited a source would have had the
+       introduction silently dropped, leaving a title, an excerpt and a button.
+     · THE OUTBOUND BUTTON NAMES ITS HOST — "Read the full article on
+       geeksforgeeks.org". That labelling used to be on the card, where it
+       described a destination the card no longer has. A link that leaves the
+       site should say where it goes, at the point where it actually goes.
    ========================================================================== */
 
 type Params = { slug: string };
@@ -102,6 +114,18 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
   const videoId = post.video ? youtubeId(post.video.youtubeUrl) : null;
   const external = post.externalUrl?.trim();
 
+  /* The host, for the outbound button's label — parsed defensively because
+     `externalUrl` is admin input and a bracketed placeholder or a typo must
+     produce a generic label rather than throwing during a server render. */
+  let externalHost: string | null = null;
+  if (external) {
+    try {
+      externalHost = new URL(external).hostname.replace(/^www\./, '');
+    } catch {
+      externalHost = null;
+    }
+  }
+
   return (
     <article>
       <header className="px-gutter pb-4 pt-40 tablet:pt-56">
@@ -169,7 +193,7 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
           One <p> per string, at the reading measure `container-prose` exists
           for. No rich-text renderer and no `dangerouslySetInnerHTML`: the
           contract is paragraphs, for the reasons set out on `BlogPost.body`. */}
-      {!external && post.body?.length ? (
+      {post.body?.length ? (
         <div className="px-gutter pt-12 tablet:pt-16">
           <div className="container-prose flex flex-col gap-6">
             {post.body.map((paragraph, index) => (
@@ -189,9 +213,18 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
           family before it is discussed, and so does an article about one. */}
       <div className="px-gutter pt-12 tablet:pt-16">
         <div className="container-prose flex flex-wrap items-center gap-3">
+          {/* 🔴 THE ONE CONTROL THAT LEAVES THE SITE, and the only place the
+              external destination is reachable from. `LinkButton` routes it
+              through `anchorProps()`, which supplies `target="_blank"` with
+              `rel="noopener noreferrer"` — and renders a `[BRACKETED]`
+              placeholder INERT and struck through rather than as a live link
+              to nowhere, which is how an unfinished CMS row degrades safely.
+              An unparseable URL falls back to the unqualified label; it is
+              admin input, so `new URL` must not be allowed to throw during a
+              server render and take the whole page down. */}
           {external ? (
             <LinkButton href={external} size="lg">
-              Read the full article
+              Read the full article{externalHost ? ` on ${externalHost}` : ''}
               <Icon name="external" size={16} />
             </LinkButton>
           ) : null}

@@ -109,9 +109,40 @@ export default async function AboutPage() {
         <div className="container-page grid gap-10 tablet:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] tablet:gap-16">
           {/* Heading first, then the mark beneath it — the stack from the
               supplied screenshot. The logo is the committed emblem, the same
-              file the nav badge uses, on a `bg-surface` card: the artwork is a
-              white-background JPEG, and surface is the one ground on this page
-              that white disappears into instead of showing as a pale square.
+              file the nav badge uses.
+
+              ─── 🔴 THE WHITE CARD AROUND IT IS GONE (13 Oct 2026) ─────────
+              It was `rounded-card bg-surface p-6 tablet:p-8` — a surface-tinted
+              panel sized well past the artwork — and the reasoning written here
+              was that "the artwork is a white-background JPEG, and surface is
+              the one ground on this page that white disappears into instead of
+              showing as a pale square". THE PREMISE WAS WRONG: `bg-surface` is
+              the cream card colour, not the artwork's white, so the panel did
+              not hide the JPEG's background — it framed it, and the result was
+              a pale square sitting behind the mark. That square is what was
+              reported.
+
+              ─── WHY A CIRCULAR CLIP AND NOT A FILTER ─────────────────────
+              The artwork has NO transparency — it is a JPEG, and there is no
+              transparent asset in `public/images/logo/` or in the CMS (
+              `site-settings.logo` is unset in production). So the white has to
+              be removed geometrically, not chromatically.
+
+              A clip is exact here because of a measurement already recorded in
+              `Logo.tsx`: `newlogo.jpeg` is cropped tight and ITS GOLD RING
+              SPANS 98.8% OF THE WIDTH. A circular clip therefore lands on the
+              ring itself, removing only the four white corners outside it and
+              nothing else. The gold ring, the gold/green SV, the sunburst and
+              the DEVELOPERS lettering are all inside the circle and are
+              untouched — and the pale disc that remains INSIDE the ring is not
+              a placeholder, it is the medallion's own face.
+
+              🔴 NO `mix-blend-multiply`, NO `filter`. Multiply would knock the
+              white out against the cream page, and it would also eat the
+              highlights that give the gold its metallic roll and lighten the
+              dark-green lettering — the exact damage the brief warned against.
+              The nav badge already clips this same file to a circle for the
+              same reason; this is that treatment, at size.
 
               `aria-hidden`, because the page is already titled and the emblem
               repeats the brand rather than adding to it. */}
@@ -121,9 +152,15 @@ export default async function AboutPage() {
               We sell <em>what is already built</em>
             </h2>
 
+            {/* `rounded-full` + `overflow-hidden` is the clip; `aspect-square`
+                guarantees it is a CIRCLE rather than an ellipse, since the
+                source is square and a non-square box would stretch the ring.
+                No padding and no background — the mark is the whole element
+                now, so it also renders correctly on a dark surface if this
+                section is ever reskinned. */}
             <div
               aria-hidden="true"
-              className="mt-10 w-full max-w-80 overflow-hidden rounded-card bg-surface p-6 tablet:p-8"
+              className="mt-10 aspect-square w-full max-w-80 overflow-hidden rounded-full"
             >
               <Image
                 src="/images/logo/newlogo.jpeg"
@@ -131,7 +168,10 @@ export default async function AboutPage() {
                 width={384}
                 height={384}
                 sizes="(min-width: 1024px) 20rem, 60vw"
-                className="h-auto w-full"
+                /* `size-full` + `object-cover`, not `h-auto w-full`: the clip
+                   is on the wrapper, so the image has to FILL it or the circle
+                   would cut a square image that is shorter than its box. */
+                className="size-full object-cover"
               />
             </div>
           </Reveal>

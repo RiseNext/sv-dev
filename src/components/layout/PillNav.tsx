@@ -183,16 +183,84 @@ const WORDMARK_NAME = 'Shiva Varahi Developers';
    old behaviour above 1280, where the text is `nowrap` and shrinking it would
    spill the letters over the links rather than wrap them.
 
-   Gold rather than the links' white: it is brand lettering, not a control, and
-   `gold-line` on this green is about 9:1. Uppercase serif needs the positive
-   tracking — without it the caps close up and read as a single word. */
+   ─── 🔴 IT IS WHITE NOW, NOT GOLD ─────────────────────────────────────────
+   Changed on request (13 Oct 2026). It was `text-gold-line`, which measures
+   about 9:1 on this green and was never a contrast problem — the reason is
+   that on a phone the gold wordmark sat directly beside a 96px medallion whose
+   own lettering is gold, so the two competed and the NAME lost. White is the
+   links' colour (11.5:1) and it separates the words from the mark they sit
+   next to. The emblem is still the only gold object at the left end of the
+   bar, which is what it should be.
+
+   ─── 🔶 AND IT IS CENTRED ON THE MEDALLION, NOT ON THE BAR ────────────────
+   The second half of the same request: the name "does not appear as balanced
+   and horizontally aligned as it does on desktop". It did not, and the cause
+   was that the two were centred on DIFFERENT BOXES. The medallion is
+   `self-start` with `mt-1` because it OVERHANGS the bar (96px in a 64px bar);
+   the name inherited the row's `items-center` and so centred against the 64px
+   BAR. On a phone that left the name sitting visibly high against the mark.
+
+   THE FIX IS `BRAND` BELOW — a flex box holding the medallion and the name
+   together, `items-center`, which the nav row then positions as ONE item.
+   Deliberately NOT a top margin per breakpoint: the medallion is 96px in a
+   64px bar on a phone and 128px in an 88px bar from 1024px, and the name is
+   two lines at 14px, then two at 17px, then one at up to 38px — so "half the
+   medallion minus half the text block" is four different numbers that all
+   silently rot the next time any of those six values moves. A shared
+   alignment box has no numbers in it at all and cannot drift.
+
+   🔴 `text-pretty` AND `[overflow-wrap:anywhere]` ARE THE NO-CLIP GUARANTEE.
+   The first balances the two lines so "SHIVA VARAHI / DEVELOPERS" cannot break
+   as "SHIVA / VARAHI DEVELOPERS" at an awkward width. The second is the
+   backstop: DEVELOPERS is one unbreakable 73px word, so on the narrowest
+   screen it may break mid-word rather than push the bar wider than the
+   viewport. A clipped letter is recoverable; a horizontal scrollbar on every
+   page of the site is not.
+
+   Uppercase serif needs the positive tracking — without it the caps close up
+   and read as a single word. */
 const WORDMARK = cx(
-  'block',
-  'font-display uppercase leading-[1.15] tracking-[0.06em] text-gold-line',
+  'block text-pretty [overflow-wrap:anywhere]',
+  'font-display uppercase leading-[1.15] tracking-[0.06em] text-white',
   /* 7.5em holds "SHIVA VARAHI" and pushes "DEVELOPERS" to a second line. In em,
      so it tracks the font size rather than needing a second number. */
   'max-w-[7.5em] text-[0.875rem] mid:text-[1.0625rem]',
   'desktop:max-w-none desktop:shrink-0 desktop:whitespace-nowrap desktop:text-wordmark',
+);
+
+/* THE BRAND GROUP — the medallion and the name as one unit.
+   `self-start mt-1` moved here FROM the medallion: the group is what overhangs
+   the bar now, and `items-center` inside it is what lines the name up with the
+   mark at every width without a single magic number (see WORDMARK).
+
+   🔴 NO `shrink-0` BELOW 1280px, carried over from the name and still load
+   bearing. Everything else in the phone row is `shrink-0`, so this is the one
+   item flex can take width from when a narrow screen runs out — it gives up
+   width, the name wraps, and the Menu button is never pushed off the bar. The
+   medallion inside carries its own `shrink-0`, so what is given up comes
+   entirely out of the text. `desktop:shrink-0` restores the old behaviour
+   above 1280, where the name is `nowrap` and shrinking would spill letters
+   over the links rather than wrap them.
+
+   `gap-2.5` on a phone and `gap-4` from 1024px: the name used to sit at the
+   nav row's own `gap-2`, which at 96px of medallion beside 14px of type read
+   as the two touching. Part of the same "improve the spacing" request.
+
+   🔴 `desktop:h-22` IS WHAT KEEPS THE DESKTOP BAR BYTE-IDENTICAL, and it is
+   the least obvious line here. Centring the name on the medallion is the fix
+   for a phone — but above 1280px the name was ALREADY correct, centred on the
+   88px bar, and centring it on the 128px medallion instead would drop it 24px
+   and change a layout nobody asked to change.
+
+   So from 1280px the group is given the BAR's own height (`h-22` = 88px, the
+   same token `BAR_HEIGHT` uses) and dropped back to the row's own alignment.
+   `items-center` then resolves against 88px, which puts the name exactly where
+   it has always been. The medallion takes `desktop:self-start` + `mt-1` of its
+   own so it still starts 4px down and overhangs to 132px, exactly as before.
+   The two numbers that have to agree are this `h-22` and BAR_HEIGHT's. */
+const BRAND = cx(
+  'mt-1 flex items-center gap-2.5 self-start tablet:gap-4',
+  'desktop:mt-0 desktop:h-22 desktop:shrink-0 desktop:self-auto',
 );
 
 /* The medallion's frame, kept DELIBERATELY THIN: a 2px gold ring and a 2px
@@ -417,39 +485,50 @@ export function PillNav({
              what buys the wordmark its room beside the emblem — see WORDMARK. */
           className={cx('container-page relative flex items-center gap-2 tablet:gap-5', BAR_HEIGHT)}
         >
-          {/* The emblem, hard left.
+          {/* 🔴 THE EMBLEM AND THE NAME ARE ONE GROUP NOW. They were two
+              siblings of the nav row, each aligned against the BAR, which is
+              what left the name sitting high beside an emblem that overhangs
+              it. Grouped, `items-center` aligns the name to the MARK — see
+              BRAND. The group is also what the nav row now shrinks when a
+              320px screen runs out of width. */}
+          <div className={BRAND}>
+            {/* The emblem, hard left.
 
-              `self-start` + `mt-1` AT EVERY WIDTH, because at every width the
-              medallion is now taller than the bar. The bar is flush with the
-              top of the screen, so centring an oversized circle would push its
-              top off-screen — on a phone that would be 16px of it gone, and
-              there is no scrolling up to recover it. Top-aligned, the entire
-              overhang falls BELOW the bar, where the hero is.
+                `self-start` + `mt-1` AT EVERY WIDTH, because at every width the
+                medallion is taller than the bar. The bar is flush with the top
+                of the screen, so centring an oversized circle would push its
+                top off-screen — on a phone that would be 16px of it gone, and
+                there is no scrolling up to recover it. Top-aligned, the entire
+                overhang falls BELOW the bar, where the hero is.
 
-              (It was `tablet:` only while the phone emblem still fitted inside
-              the bar. It no longer does — see MEDALLION_SIZE.)
+                🔶 THE ALIGNMENT MOVED ONTO THE GROUP below 1280px, so here it
+                is needed only from `desktop`, where the group takes the bar's
+                own height and this has to keep starting 4px down inside it
+                rather than centring in 88px. Both forms exist because they are
+                answering different parents, not because one is redundant.
 
-              `prefetch={false}` because this is the THIRD link to `/` on
-              every page (the Home link and the overlay's copy of it both
-              point here, and both keep their prefetch), so prefetching it
-              again buys nothing. */}
-          <Link
-            href="/"
-            aria-label={`${siteName} — home`}
-            prefetch={false}
-            className={cx(MEDALLION, MEDALLION_SIZE, 'mt-1 self-start')}
-          >
-            <Logo siteName={siteName} logo={logo} size="sm" showName={false} />
-          </Link>
+                `prefetch={false}` because this is the THIRD link to `/` on
+                every page (the Home link and the overlay's copy of it both
+                point here, and both keep their prefetch), so prefetching it
+                again buys nothing. */}
+            <Link
+              href="/"
+              aria-label={`${siteName} — home`}
+              prefetch={false}
+              className={cx(MEDALLION, MEDALLION_SIZE, 'desktop:mt-1 desktop:self-start')}
+            >
+              <Logo siteName={siteName} logo={logo} size="sm" showName={false} />
+            </Link>
 
-          {/* Beside the emblem, NOT inside its link. The medallion's <Link> is
-              a fixed-size circle (MEDALLION_SIZE), so text put in it would
-              either be clipped by the circle or break the geometry the whole
-              overhang depends on. It is plain text rather than a second link
-              to `/`: there are already three of those on every page, and a
-              fourth adjacent to the emblem would mean tabbing past the same
-              destination twice in a row to reach Home. */}
-          <span className={WORDMARK}>{WORDMARK_NAME}</span>
+            {/* Beside the emblem, NOT inside its link. The medallion's <Link>
+                is a fixed-size circle (MEDALLION_SIZE), so text put in it would
+                either be clipped by the circle or break the geometry the whole
+                overhang depends on. It is plain text rather than a second link
+                to `/`: there are already three of those on every page, and a
+                fourth adjacent to the emblem would mean tabbing past the same
+                destination twice in a row to reach Home. */}
+            <span className={WORDMARK}>{WORDMARK_NAME}</span>
+          </div>
 
             {/* `ml-auto` here is what pushes the links AND everything after
                 them to the right cap, leaving the emblem alone on the left. */}

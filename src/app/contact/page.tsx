@@ -61,13 +61,23 @@ export default async function ContactPage() {
       <section className="px-gutter pt-16" aria-label="Enquiry">
         <div className="container-page grid gap-4 tablet:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
           {/* A soft dark bloom sits under the enquiry card — decorative only, so
-              it is blurred well inside the gutter and never carries type. It
-              lifts the white form off the off-white field without introducing
-              the hard dark band the palette rules out. */}
+              it never carries type. It lifts the white form off the off-white
+              field without introducing the hard dark band the palette rules
+              out.
+
+              🔴 `-inset-2` ON THE NARROWEST SCREENS, AND IT IS A BUG FIX, NOT A
+              STYLE TWEAK. The note here used to claim the bloom was "blurred
+              well inside the gutter"; measured at 320px it was not. The card's
+              right edge sits 10px inside the viewport there, so a 12px
+              `-inset-3` put the bloom's box at 322px — a 2px horizontal
+              overflow, and a horizontal scrollbar on /contact at 320px. 8px
+              fits with room to spare, and `mid:-inset-3` restores the original
+              figure the moment there is width for it, so nothing changes at any
+              size anyone was looking at. */}
           <Reveal className="relative isolate">
             <div
               aria-hidden
-              className="pointer-events-none absolute -inset-3 -z-10 rounded-[2rem] bg-ink/20 blur-2xl tablet:-inset-5"
+              className="pointer-events-none absolute -inset-2 -z-10 rounded-[2rem] bg-ink/20 blur-2xl mid:-inset-3 tablet:-inset-5"
             />
             <div className="rounded-media bg-surface p-6 tablet:p-10">
               <Suspense fallback={null}>

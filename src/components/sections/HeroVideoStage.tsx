@@ -13,11 +13,31 @@ import type { HeroMediaItem } from '@/types/heroMedia';
    HERO MEDIA STAGE — the bordered pane the hero type sits on.
 
    ONE COMPONENT, TWO LAYOUTS, chosen by how many items the CMS returns:
-     · exactly one   → a still pane. No controls are rendered at all, because a
-                       carousel with one slide is furniture that does nothing.
+     · exactly one   → a still pane. No dots and no arrows, because a carousel
+                       with one slide is furniture that does nothing. (A single
+                       self-playing MP4 still gets its pause control — see
+                       `hasSelfPlaying`.)
      · more than one → the same pane, plus a crossfade and a control cluster.
    The frame, the wash and the type treatment are IDENTICAL across both, so
    adding a second item changes what moves, never how the hero looks.
+
+   ─── 🔴 VISITORS CAN NOW STEP THE SLIDES BY HAND ──────────────────────────
+   The cluster was pause + dots. It is now PREVIOUS · PAUSE · DOTS · NEXT, in
+   `ProjectCarousel`'s idiom, because dots alone are a POSITION INDICATOR that
+   doubles as navigation — they say "there are four" without ever saying "go
+   forward", and with four or more slides the targets are small enough that
+   nobody treats them as a stepper. The arrows are the explicit affordance.
+
+   THE ARROWS WRAP, THE CAROUSEL'S DO NOT, and the difference is not an
+   oversight: `ProjectCarousel` runs once and stops at the last project, so its
+   arrows disable at the ends. This rotation is a loop — auto-advance already
+   carries slide N back to slide 1 — so an arrow that disabled at an end would
+   contradict what the pane does on its own three seconds later.
+
+   EVERY CONTROL IS 44px. The pause button and the dots were `size-8` (32px),
+   under the 44×44 target size that WCAG 2.5.8 asks for and genuinely awkward
+   with a thumb. The DOTS THEMSELVES are still 8px of paint — only the hit area
+   grew, exactly as the project carousel does it.
 
    ─── IT NOW TAKES THREE KINDS OF SLIDE, NOT ONE ───────────────────────────
    🔴 THIS FILE USED TO RENDER EVERY SLIDE AS `<video src>`, and that is the
@@ -86,6 +106,13 @@ const SLIDE_BASE = 'absolute inset-0 -z-10 size-full object-cover';
 const SLIDE_FADE =
   'transition-opacity duration-700 ease-out-soft motion-reduce:transition-none';
 
+/* One appearance for every control in the cluster — arrows, pause and dots
+   alike — so the pill cannot end up with three different hit areas in it.
+   44px is WCAG 2.5.8's target size, and on a phone it is the difference
+   between stepping the hero and missing it. */
+const CONTROL =
+  'inline-flex size-11 shrink-0 items-center justify-center rounded-pill text-ink transition-colors hover:bg-white/60 motion-reduce:transition-none';
+
 export function HeroVideoStage({
   items,
   children,
@@ -113,6 +140,17 @@ export function HeroVideoStage({
      "playing" flag holding the rotation for ever. */
   const [playingKey, setPlayingKey] = useState<string | null>(null);
 
+  /* 🔴 WHICH MP4s FAILED TO LOAD. `<video>` does NOT fall back to its `poster`
+     when the source 404s or decodes badly — it holds the poster only until it
+     has enough data to paint, then shows a black box if the data never comes.
+     A wrong Cloudinary path is therefore invisible in review and a black slide
+     in production, which is exactly the failure `HeroVideo` warns about in
+     `types/heroMedia.ts`. Recording the failure lets the slide fall back to
+     the poster image it already has, so a broken upload degrades to a
+     photograph rather than to a hole. A Set keyed by slide key, because the
+     same clip may legitimately appear twice and both copies fail together. */
+  const [failedVideos, setFailedVideos] = useState<ReadonlySet<string>>(() => new Set());
+
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const paneRef = useRef<HTMLDivElement>(null);
 
@@ -122,11 +160,33 @@ export function HeroVideoStage({
      with no way to stop it, which is the plain reading of a WCAG 2.2.2
      failure. Images and YouTube facades do not move on their own, so a
      single-image hero correctly still shows nothing. */
-  const hasSelfPlaying = items.some((item) => item.kind === 'video');
+  /* A clip that failed does not count: once it has fallen back to its poster
+     nothing on that slide moves, so a hero of one broken MP4 correctly stops
+     offering a pause button for motion that is not happening. */
+  const hasSelfPlaying = items.some(
+    (item) => item.kind === 'video' && !failedVideos.has(heroKey(item)),
+  );
 
   const activeKey = items[index] ? heroKey(items[index]!) : null;
   const youtubePlaying = playingKey !== null && playingKey === activeKey;
   const advancing = multi && !reduceMotion && !userPaused && !hoverPaused && !youtubePlaying;
+
+  /* THE VISITOR'S OWN NAVIGATION. Wrapping, for the reason in the header note:
+     the rotation already carries the last slide round to the first, so an
+     arrow that stopped there would disagree with the pane. `items.length` is
+     read inside the updater rather than captured, so a CMS change between
+     renders cannot leave a stale modulus behind. */
+  const goTo = useCallback((target: number) => {
+    setIndex(target);
+  }, []);
+
+  const prev = useCallback(() => {
+    setIndex((current) => (current - 1 + items.length) % items.length);
+  }, [items.length]);
+
+  const next = useCallback(() => {
+    setIndex((current) => (current + 1) % items.length);
+  }, [items.length]);
 
   /* THE SCROLL-SHRINK. Writes `--hero-p` onto the SECTION, not onto the pane:
      the sticky wrapper's gutter and nav clearance are interpolated from the
@@ -261,7 +321,18 @@ export function HeroVideoStage({
            own bottom padding is what holds it off the edge, so it keeps the
            same clearance at every breakpoint and at every point of the shrink. */
         'flex flex-col items-center justify-end',
-        'px-5 py-16 mid:px-8 mid:py-20 tablet:px-12 tablet:py-28',
+        /* 🔴 THE BOTTOM PADDING IS NO LONGER THE TOP'S TWIN, and the asymmetry
+           is the whole point: the control cluster sits in the bottom band, and
+           `justify-end` parks the enquiry pill against this padding. It was
+           `py-16` (64px) against a 44px-tall cluster at `bottom-4` — 4px of
+           clearance, which the taller 44px controls would have closed into an
+           overlap, and which a wrapped second row of dots on a 320px screen
+           would have turned into the cluster sitting ON the booking form.
+
+           `pb-32` (128px) clears the cluster at its tallest (two wrapped rows,
+           ~104px from the pane's bottom edge) at every width. The top padding
+           is unchanged — nothing is anchored up there. */
+        'px-5 pb-32 pt-16 mid:px-8 mid:pt-20 tablet:px-12 tablet:pt-28',
       )}
       /* Hover and focus pause the rotation, so a slide cannot change out from
          under someone reading it or tabbing through the controls.
@@ -356,7 +427,26 @@ export function HeroVideoStage({
           );
         }
 
-        /* ---- AN UPLOADED MP4 ---- the original behaviour, untouched. */
+        /* ---- AN UPLOADED MP4 ----
+           🔴 A FAILED CLIP FALLS BACK TO ITS POSTER rather than staying a
+           black rectangle — see `failedVideos` above. `poster` is optional on
+           `HeroVideo` (the CMS always sends one, but the type does not promise
+           it), so a failure with nothing to fall back to drops the slide's
+           picture entirely and lets the slides underneath show through. That
+           is still better than a black box, and it is the one case an
+           administrator will actually notice and fix.
+
+           A plain `<img>`, NOT next/image: this path is reached only when
+           something is already wrong, and next/image would throw at BUILD time
+           for a poster host outside the allowlist — turning one bad upload
+           into a failed deploy. */
+        if (failedVideos.has(key)) {
+          return item.poster ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={key} src={item.poster} alt="" aria-hidden="true" className={fade} />
+          ) : null;
+        }
+
         return (
           <video
             key={key}
@@ -365,6 +455,15 @@ export function HeroVideoStage({
             }}
             src={item.src}
             poster={item.poster}
+            /* Fires for a 404, a DNS failure, an unsupported codec — every way
+               a `<video src>` can fail to become playable. Guarded on "not
+               already recorded" so a browser that fires it repeatedly cannot
+               spin the state. */
+            onError={() => {
+              setFailedVideos((failed) =>
+                failed.has(key) ? failed : new Set(failed).add(key),
+              );
+            }}
             /* `muted` and `playsInline` are not preferences — every browser
                refuses to autoplay without both. `loop` because a single clip
                ending on a frozen frame is worse than no video. */
@@ -407,10 +506,16 @@ export function HeroVideoStage({
                  occupied the same bottom band at the same z-index, so on a
                  narrow viewport the play button and the slideshow dots
                  overlapped and the upper one swallowed the other's clicks.
-                 The pill is centred at bottom-4/6; this sits a control-height
-                 above it, still in the corner, and at a higher z so it is
-                 never the one that loses. */
-              'absolute bottom-16 right-4 z-30 inline-flex items-center gap-2 tablet:bottom-20 tablet:right-6',
+                 The pill is centred at bottom-4/6; this sits above it, still
+                 in the corner, and at a higher z so it is never the one that
+                 loses.
+
+                 🔶 RAISED FROM 16/20 TO 28/32 when the cluster's controls grew
+                 to 44px: the pill's top edge is now ~72px off the pane bottom,
+                 which `bottom-16` (64px) sat inside. These two numbers move
+                 together with CONTROL's height — if one changes, check the
+                 other. */
+              'absolute bottom-28 right-4 z-30 inline-flex items-center gap-2 tablet:bottom-32 tablet:right-6',
               'rounded-pill border border-white/50 bg-surface/80 py-2 pl-3 pr-4 backdrop-blur-[13px]',
               'text-body-sm font-medium text-ink transition-colors hover:bg-surface',
             )}
@@ -425,13 +530,56 @@ export function HeroVideoStage({
       {multi || (hasSelfPlaying && !reduceMotion) ? (
         <div
           className={cx(
-            'absolute bottom-4 left-1/2 z-10 -translate-x-1/2 tablet:bottom-6',
-            'flex items-center gap-1 rounded-pill border border-white/50 bg-surface/80 p-1.5',
-            'backdrop-blur-[13px]',
+            /* 🔴 `inset-x-0 mx-auto w-fit`, NOT `left-1/2 -translate-x-1/2`,
+               AND THE DIFFERENCE IS LOAD-BEARING NOW THAT THIS WRAPS.
+
+               An absolutely positioned box with no width is SHRINK-TO-FIT, and
+               shrink-to-fit resolves against "the containing block minus the
+               inset" — so `left: 50%` gave this element HALF the pane to size
+               itself in. With `flex-wrap` added, a 244px cluster that fits a
+               320px screen four times over was being wrapped into two rows
+               inside a 159px box. Measured: 159×104 at 320px, 214×104 at 430px.
+
+               `inset-x-0` makes the available width the whole pane, `w-fit`
+               takes the cluster's natural width, and `mx-auto` centres it —
+               which is also simpler than a transform. */
+            'absolute inset-x-0 bottom-4 z-10 mx-auto w-fit tablet:bottom-6',
+            /* `max-w` + `flex-wrap` remain the 320px insurance, and now they
+               only fire when they are actually needed. Today's cluster is
+               ~244px (two arrows, a pause and four dots) against a 288px cap at
+               320px, so it stays on one row; a hero of six or more slides wraps
+               the dots to a second row rather than pushing the arrows off the
+               edge of the pane. */
+            'flex max-w-[calc(100vw-2rem)] flex-wrap items-center justify-center gap-0.5',
+            'rounded-pill border border-white/50 bg-surface/80 p-1.5 backdrop-blur-[13px]',
           )}
           role="group"
           aria-label="Hero slideshow controls"
+          /* 🔴 ARROW KEYS, scoped to the cluster rather than to the window. A
+             listener on the pane would swallow Left/Right for anyone using
+             them to move the caret inside the enquiry field, which also lives
+             in this subtree. Here it fires only while a control has focus,
+             which is the behaviour the APG's carousel pattern describes. */
+          onKeyDown={(event) => {
+            if (!multi) return;
+            if (event.key === 'ArrowLeft') {
+              event.preventDefault();
+              prev();
+            } else if (event.key === 'ArrowRight') {
+              event.preventDefault();
+              next();
+            }
+          }}
         >
+          {/* The arrows bracket the cluster and exist only when there is
+              somewhere to go — the same rule the dots have always followed. */}
+          {multi ? (
+            <button type="button" onClick={prev} className={CONTROL}>
+              <span className="visually-hidden">Previous slide</span>
+              <Icon name="arrowRight" size={16} className="rotate-180" />
+            </button>
+          ) : null}
+
           {/* WCAG 2.2.2 (Pause, Stop, Hide): content that moves or auto-updates
               for more than five seconds needs a way to stop it. Both the
               rotation AND the footage qualify, so this is required, not a
@@ -442,7 +590,7 @@ export function HeroVideoStage({
               type="button"
               onClick={() => setUserPaused((paused) => !paused)}
               aria-pressed={userPaused}
-              className="inline-flex size-8 items-center justify-center rounded-pill text-ink transition-colors hover:bg-white/60"
+              className={CONTROL}
             >
               <span className="visually-hidden">
                 {userPaused ? 'Play hero slideshow' : 'Pause hero slideshow'}
@@ -453,26 +601,36 @@ export function HeroVideoStage({
 
           {/* The dots navigate BETWEEN slides, so they appear only when there
               is somewhere to go. A single-MP4 hero shows the pause button
-              alone. */}
-          {multi ? items.map((item, i) => (
-            <button
-              key={heroKey(item)}
-              type="button"
-              onClick={() => setIndex(i)}
-              aria-current={i === index ? 'true' : undefined}
-              className="inline-flex size-8 items-center justify-center rounded-pill"
-            >
-              <span className="visually-hidden">{label(item, i)}</span>
-              <span
-                aria-hidden="true"
-                className={cx(
-                  'block size-2 rounded-full transition-all duration-300 ease-out-soft',
-                  'motion-reduce:transition-none',
-                  i === index ? 'w-5 bg-ink' : 'bg-ink/30',
-                )}
-              />
+              alone. The hit area is 44px tall and 28px wide — the carousel's
+              exact figures — while the paint stays an 8px dot. */}
+          {multi
+            ? items.map((item, i) => (
+                <button
+                  key={heroKey(item)}
+                  type="button"
+                  onClick={() => goTo(i)}
+                  aria-current={i === index ? 'true' : undefined}
+                  className="inline-flex h-11 w-7 shrink-0 items-center justify-center rounded-pill"
+                >
+                  <span className="visually-hidden">{label(item, i)}</span>
+                  <span
+                    aria-hidden="true"
+                    className={cx(
+                      'block size-2 rounded-full transition-all duration-300 ease-out-soft',
+                      'motion-reduce:transition-none',
+                      i === index ? 'w-5 bg-ink' : 'bg-ink/30',
+                    )}
+                  />
+                </button>
+              ))
+            : null}
+
+          {multi ? (
+            <button type="button" onClick={next} className={CONTROL}>
+              <span className="visually-hidden">Next slide</span>
+              <Icon name="arrowRight" size={16} />
             </button>
-          )) : null}
+          ) : null}
         </div>
       ) : null}
     </div>

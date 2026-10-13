@@ -39,20 +39,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  /* 🔴 EXTERNAL POSTS ARE EXCLUDED. A post with an `externalUrl` renders no
-     page of its own on this site — its card links straight out — so listing
-     `/blog/<slug>` for one would put a URL in the sitemap that exists only as a
-     courtesy landing page. `lastModified` comes from the post's own
-     `publishedAt`, which is the one date in the contract that means "when this
-     content changed"; `weekly` because a blog index genuinely does. */
-  const postEntries: MetadataRoute.Sitemap = posts
-    .filter((post) => !post.externalUrl?.trim())
-    .map((post) => ({
-      url: `${siteUrl}/blog/${post.slug}`,
-      lastModified: post.publishedAt,
-      changeFrequency: 'weekly',
-      priority: 0.6,
-    }));
+  /* 🔴 EVERY PUBLISHED POST IS LISTED, EXTERNAL ONES INCLUDED. They used to be
+     filtered out, and the reasoning was sound at the time: "a post with an
+     `externalUrl` renders no page of its own on this site — its card links
+     straight out — so listing `/blog/<slug>` would put a URL in the sitemap
+     that exists only as a courtesy landing page."
+
+     THAT PREMISE IS NO LONGER TRUE. Since 13 Oct 2026 the card goes to
+     `/blog/<slug>` for every post and the external URL is a link inside the
+     article (see `postHref()` in `src/lib/blog.ts`), so an external post's page
+     is now its CANONICAL and only destination. Leaving the filter in place
+     would have withheld from the sitemap exactly the pages the site links to
+     most prominently — and `generateStaticParams` in `/blog/[slug]` has always
+     pre-rendered them, so these URLs were already being built and served.
+
+     `lastModified` comes from the post's own `publishedAt`, which is the one
+     date in the contract that means "when this content changed"; `weekly`
+     because a blog index genuinely does. */
+  const postEntries: MetadataRoute.Sitemap = posts.map((post) => ({
+    url: `${siteUrl}/blog/${post.slug}`,
+    lastModified: post.publishedAt,
+    changeFrequency: 'weekly',
+    priority: 0.6,
+  }));
 
   return [...staticEntries, ...projectEntries, ...postEntries];
 }
